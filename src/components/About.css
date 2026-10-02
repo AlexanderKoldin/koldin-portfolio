@@ -1,0 +1,142 @@
+.about {
+  position: relative;
+  overflow: hidden;
+}
+
+.about__inner {
+  max-width: var(--container);
+  min-height: 760px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 32px;
+}
+
+.about__content {
+  flex: 1 1 480px;
+  padding: 120px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.about__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.12;
+}
+
+.about__lead {
+  margin: 0;
+  max-width: 560px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.about__rules {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.about__rule {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.about__rules--visible .about__rule {
+  opacity: 1;
+  transform: none;
+}
+
+.about__rules--visible .about__rule:nth-child(2) {
+  transition-delay: 0.15s;
+}
+
+.about__rules--visible .about__rule:nth-child(3) {
+  transition-delay: 0.3s;
+}
+
+.about__marker {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 9px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+
+.about__rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about__rule-title {
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.about__rule-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.about__photo {
+  flex: 1 1 440px;
+  min-height: 640px;
+  position: relative;
+}
+
+.about__photo img {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about__rule {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .about__content {
+    padding: 96px 0 24px;
+  }
+
+  .about__photo {
+    min-height: 520px;
+  }
+}
+
+@media (max-width: 520px) {
+  .about__photo {
+    min-height: 420px;
+  }
+}
