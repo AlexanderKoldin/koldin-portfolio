@@ -158,3 +158,10 @@
     padding: 28px 24px;
   }
 }
+
+@media (min-width: 1600px) {
+  .stack__sub,
+  .stack__note {
+    font-size: 17px;
+  }
+}

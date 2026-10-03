@@ -140,3 +140,17 @@
     min-height: 420px;
   }
 }
+
+@media (min-width: 1600px) {
+  .about__lead {
+    font-size: 20px;
+  }
+
+  .about__rule-title {
+    font-size: 19px;
+  }
+
+  .about__rule-text {
+    font-size: 17px;
+  }
+}
