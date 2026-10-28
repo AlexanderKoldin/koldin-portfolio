@@ -10,7 +10,6 @@
 .dojo-bar span{color:#8a8a8a;font-size:13px}
 </style>
 </head><body><title>Что выведет</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -112,7 +111,7 @@ const pick = (a) => a[R(a.length)];
 const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = R(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const NAMES = ["Саша", "Оля", "Вова", "Кира", "Лёша", "Маша", "Дима", "Аня"];
-const STEPS = "https://claude.ai/artifact/Qearhq4Zc533ucopRDNXRU";
+const STEPS = "js.html";
 
 function fmt(v, top) {
   if (typeof v === "string") return top ? v : `'${v}'`;
@@ -449,8 +448,8 @@ T.push({ topic: "mapset", make() {
 
 
 /* ===================== React: выполнение на настоящем React ===================== */
-const STEPS_R = "https://claude.ai/artifact/JwqYKModzMEYPDuKgBStU3";
-const STEPS_T = "https://claude.ai/artifact/E8ByRSdWC2wWxB5LD8PScL";
+const STEPS_R = "react.html";
+const STEPS_T = "typescript.html";
 const LIBS = [
   "https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js",
   "https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js",
@@ -688,10 +687,10 @@ T.push({ topic: "ts-generic", make() {
 
 /* ===================== Остальные разделы ===================== */
 const STEPS_SEC = {
-  Redux: "https://claude.ai/artifact/BXbx6VQfw5Q7AG8sPgb5yL", Router: "https://claude.ai/artifact/TP9eYdPv7FiEpwUp5oY7bD",
-  "Сеть": "https://claude.ai/artifact/X1PbcQsyF6tQTqWV4qroUL", Git: "https://claude.ai/artifact/6PxiVi3FGeQFJrT9UMzMSd",
-  CSS: "https://claude.ai/artifact/W6EHFceYVo3W5jZnd9NNkD", "Тесты": "https://claude.ai/artifact/GeQjAK9md1fUmzqeSYybaX",
-  "Браузер": "https://claude.ai/artifact/9ApaWANBc8xRU2mWhcyg5f",
+  Redux: "redux.html", Router: "router.html",
+  "Сеть": "network.html", Git: "git.html",
+  CSS: "html-css.html", "Тесты": "testing.html",
+  "Браузер": "browser.html",
 };
 const opt = (arr) => arr.map((x) => [x]);
 
@@ -1056,7 +1055,7 @@ function renderQuestion() {
   const verdict = a ? `<div class="verdict ${a.ok ? "ok" : "bad"}">
       <h3>${a.ok ? "Верно" : "Неверно — правильный вариант подсвечен"}</h3>
       <p>${q.explain}</p>
-      <div class="links"><a href="${q.topic.sec === "JS" ? STEPS : q.topic.sec === "TS" ? STEPS_T : q.topic.sec === "React" ? STEPS_R : STEPS_SEC[q.topic.sec]}#${q.topic.tab}" target="_blank" rel="noopener">▶ Разобрать по шагам: ${esc(q.topic.name)}</a></div>
+      <div class="links"><a href="${q.topic.sec === "JS" ? STEPS : q.topic.sec === "TS" ? STEPS_T : q.topic.sec === "React" ? STEPS_R : STEPS_SEC[q.topic.sec]}#${q.topic.tab}" >▶ Разобрать по шагам: ${esc(q.topic.name)}</a></div>
       <div class="bar"><button class="b primary" id="next">${state.i < state.qs.length - 1 ? "Дальше" : "Итог"}</button></div>
     </div>` : "";
   $("main").innerHTML = `<section class="card" aria-live="polite">
@@ -1141,7 +1140,6 @@ document.addEventListener("keydown", (e) => {
 window.addEventListener("unhandledrejection", (e) => e.preventDefault());
 renderTopics();
 start();
-(async () => { try { state.db = await window.claude?.use?.("db"); } catch (e) { state.db = null; } })();
 </script>
 <script>
 (function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
