@@ -1,0 +1,1152 @@
+<!doctype html><html lang="ru"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head><body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Что выведет</span></nav><title>Что выведет</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: одна колонка — шапка с темами, карточка вопроса (код + 4 варианта-консоли), разбор после ответа. Тёмная тема Додзё — осознанно одна. */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1c191a; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.16);
+  --ok:#6cc08b; --ok-soft:rgba(108,192,139,.14); --bad:#e2685f; --bad-soft:rgba(226,104,95,.14);
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:820px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:10px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,4vw,30px);margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 span{color:var(--accent)}
+.sub{margin:0;color:var(--muted);max-width:62ch}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;font-weight:600}
+.topics{display:grid;gap:8px}
+.sec{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.secbtn{font-family:var(--display);font-weight:500;min-width:64px}
+.chip{font:600 13px var(--body);color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{color:var(--fg);border-color:var(--accent);background:var(--accent-soft)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+button.b{font:600 14px var(--body);color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible,a:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.progress{display:flex;gap:4px;flex:1;min-width:160px}
+.progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.progress i.ok{background:var(--ok)}.progress i.bad{background:var(--bad)}.progress i.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:14px;min-width:0}
+.qhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.qhead h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0}
+.tag{font-size:12px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.08em}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.7;background:var(--panel2);border-radius:8px;padding:12px 14px;overflow-x:auto;tab-size:2}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.opts{grid-template-columns:minmax(0,1fr)}}
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;text-align:left;background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--fg);cursor:pointer;font:inherit}
+.opt:hover:not(:disabled){border-color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt .k{font:600 12px var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;margin-top:2px}
+.out{display:flex;flex-direction:column;gap:2px;font-family:var(--mono);font-size:13.5px;min-width:0}
+.out span{overflow-wrap:anywhere}
+.out span::before{content:"› ";color:var(--muted)}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.dim{opacity:.45}
+.verdict{display:grid;gap:8px;border-top:1px dashed var(--line);padding-top:14px}
+.verdict h3{margin:0;font-size:16px}
+.verdict.ok h3{color:var(--ok)}.verdict.bad h3{color:var(--bad)}
+.verdict p{margin:0;max-width:66ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+pre code{background:none;padding:0;font-size:inherit;border-radius:0}
+.links{display:flex;gap:14px;flex-wrap:wrap;font-size:14px}
+a{color:var(--fg)}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.score{font-family:var(--display);font-size:44px;font-weight:700;margin:0;line-height:1}
+.score small{font-size:18px;color:var(--muted);font-weight:500}
+.mist{display:grid;gap:10px}
+.mist details{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.mist summary{cursor:pointer;font-weight:600}
+.mist .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+@media (max-width:560px){.mist .row{grid-template-columns:minmax(0,1fr)}}
+.hist{display:flex;gap:8px;flex-wrap:wrap}
+.hist span{font-family:var(--mono);font-size:13px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;color:var(--muted)}
+.loading{color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Что <span>выведет</span></h1>
+    <p class="sub">10 задач, каждый раз новые. JS и React страница выполняет прямо здесь (React — настоящий), ответы по TS считает по правилам компилятора. Неверные варианты — типичные ошибки. Остальные разделы включи, когда дойдёшь до них.</p>
+    <p class="lbl">Темы</p>
+    <div class="topics" id="topics"></div>
+    <div class="bar">
+      <button class="b primary" id="newTest">Новый тест</button>
+      <div class="progress" id="progress" aria-hidden="true"></div>
+      <span class="count" id="count"></span>
+    </div>
+  </header>
+  <main id="main"><p class="loading">Собираю задачи…</p></main>
+  <p class="hint">Клавиши: <b>1–4</b> — ответ, <b>Enter</b> — дальше.</p>
+</div>
+
+<script>
+/* ===================== утилиты ===================== */
+const R = (n) => Math.floor(Math.random() * n);
+const pick = (a) => a[R(a.length)];
+const shuffle = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = R(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const NAMES = ["Саша", "Оля", "Вова", "Кира", "Лёша", "Маша", "Дима", "Аня"];
+const STEPS = "https://claude.ai/artifact/Qearhq4Zc533ucopRDNXRU";
+
+function fmt(v, top) {
+  if (typeof v === "string") return top ? v : `'${v}'`;
+  if (typeof v === "number") return Object.is(v, -0) ? "-0" : String(v);
+  if (v === null) return "null";
+  if (v === undefined) return "undefined";
+  if (typeof v === "function") return "[Function]";
+  if (Array.isArray(v)) return "[" + v.map((x) => fmt(x, false)).join(", ") + "]";
+  if (v instanceof Error) return `${v.name}: ${v.message}`;
+  if (v instanceof Set) return `Set(${v.size}) {${[...v].map((x) => fmt(x, false)).join(", ")}}`;
+  if (v instanceof Map) return `Map(${v.size})`;
+  if (typeof v === "object") {
+    const ks = Object.keys(v);
+    return ks.length ? "{ " + ks.map((k) => `${k}: ${fmt(v[k], false)}`).join(", ") + " }" : "{}";
+  }
+  return String(v);
+}
+
+async function run(code) {
+  const out = [];
+  const con = { log: (...a) => { out.push(a.map((x) => fmt(x, true)).join(" ")); } };
+  try { new Function("console", '"use strict";\n' + code)(con); }
+  catch (e) { out.push("Uncaught " + e.name); }
+  await new Promise((r) => setTimeout(r, 40));
+  return out;
+}
+
+/* подсветка кода */
+const KW = /\b(const|let|var|function|return|if|else|for|new|class|extends|super|static|this|async|await|try|catch|finally|typeof|delete|in|of|null|undefined|true|false)\b/;
+const TOK = new RegExp(String.raw`(\/\/.*$)|('[^']*'|"[^"]*"|\x60[^\x60]*\x60)|(\b\d[\d.]*\b)|` + KW.source + String.raw`|([A-Za-z_$][\w$]*(?=\s*\())`, "gm");
+function hl(code) {
+  let out = "", last = 0;
+  code.replace(TOK, (m, cm, str, num, kw, fn, idx) => {
+    out += esc(code.slice(last, idx));
+    const cls = cm ? "cm" : str ? "str" : num ? "num" : kw ? "kw" : "fn";
+    out += `<span class="${cls}">${esc(m)}</span>`;
+    last = idx + m.length; return m;
+  });
+  return out + esc(code.slice(last));
+}
+
+/* ===================== шаблоны задач ===================== */
+const TOPICS = [
+  { key: "eventloop", name: "Event Loop", tab: "eventloop" },
+  { key: "promise", name: "Promise", tab: "promise" },
+  { key: "async", name: "async/await", tab: "promise" },
+  { key: "closure", name: "Замыкание", tab: "closure" },
+  { key: "scope", name: "var/let, hoisting", tab: "varletconst" },
+  { key: "this", name: "this", tab: "this" },
+  { key: "refs", name: "Ссылки и копии", tab: "primitives" },
+  { key: "types", name: "Типы и ==", tab: "equality" },
+  { key: "arrays", name: "Массивы", tab: "arrays" },
+  { key: "syntax", name: "?. и ??", tab: "syntax" },
+  { key: "destr", name: "Деструктуризация", tab: "destructuring" },
+  { key: "proto", name: "Прототипы", tab: "proto" },
+  { key: "mapset", name: "Map и Set", tab: "mapset" },
+  { key: "r-state", name: "useState и батчинг", tab: "usestate", sec: "React" },
+  { key: "r-effect", name: "Порядок эффектов", tab: "useeffect", sec: "React" },
+  { key: "r-render", name: "Ре-рендер и memo", tab: "memo", sec: "React" },
+  { key: "r-ref", name: "useRef и state", tab: "useref", sec: "React" },
+  { key: "r-key", name: "key и состояние", tab: "key", sec: "React" },
+  { key: "ts-narrow", name: "Сужение типов", tab: "ts_narrowing", sec: "TS" },
+  { key: "ts-util", name: "Utility types", tab: "ts_utility", sec: "TS" },
+  { key: "ts-unknown", name: "any и unknown", tab: "ts_basic", sec: "TS" },
+  { key: "ts-literal", name: "Вывод типов и as const", tab: "ts_enum", sec: "TS" },
+  { key: "ts-generic", name: "Дженерики", tab: "ts_generics", sec: "TS" },
+  { key: "rd-reducer", name: "Редьюсер", tab: "rtk_flow", sec: "Redux" },
+  { key: "rd-thunk", name: "Порядок thunk", tab: "rtk_thunk", sec: "Redux" },
+  { key: "rr-match", name: "Какой маршрут", tab: "rr_routes", sec: "Router" },
+  { key: "net-code", name: "Статус-коды", tab: "net_codes", sec: "Сеть" },
+  { key: "net-cors", name: "CORS", tab: "net_cors", sec: "Сеть" },
+  { key: "net-cache", name: "Кэширование", tab: "net_cache", sec: "Сеть" },
+  { key: "git-sim", name: "reset и revert", tab: "git_reset", sec: "Git" },
+  { key: "css-spec", name: "Специфичность", tab: "css_spec", sec: "CSS" },
+  { key: "css-box", name: "Box model и единицы", tab: "css_box", sec: "CSS" },
+  { key: "test-rtl", name: "RTL и матчеры", tab: "test_rtl", sec: "Тесты" },
+  { key: "br-render", name: "Reflow и repaint", tab: "br_reflow", sec: "Браузер" },
+  { key: "br-scripts", name: "async и defer", tab: "css_script", sec: "Браузер" },
+];
+TOPICS.forEach((t) => { t.sec = t.sec || "JS"; });
+
+const T = [];
+
+/* --- Event Loop --- */
+T.push({ topic: "eventloop", make() {
+  const kinds = shuffle(["sync", "sync", "micro", "macro", pick(["queue", "chain", "macroMicro", "microMacro", "micro", "macro"])]);
+  let L = 0; const lab = () => "ABCDEFGH"[L++];
+  const lines = [], naive = [], cls = {};
+  for (const k of kinds) {
+    if (k === "sync") { const a = lab(); lines.push(`console.log('${a}');`); naive.push(a); cls[a] = "s"; }
+    if (k === "micro") { const a = lab(); lines.push(`Promise.resolve().then(() => console.log('${a}'));`); naive.push(a); cls[a] = "mi"; }
+    if (k === "queue") { const a = lab(); lines.push(`queueMicrotask(() => console.log('${a}'));`); naive.push(a); cls[a] = "mi"; }
+    if (k === "macro") { const a = lab(); lines.push(`setTimeout(() => console.log('${a}'), 0);`); naive.push(a); cls[a] = "ma"; }
+    if (k === "chain") { const a = lab(), b = lab(); lines.push(`Promise.resolve()\n  .then(() => console.log('${a}'))\n  .then(() => console.log('${b}'));`); naive.push(a, b); cls[a] = cls[b] = "mi"; }
+    if (k === "macroMicro") { const a = lab(), b = lab(); lines.push(`setTimeout(() => {\n  console.log('${a}');\n  Promise.resolve().then(() => console.log('${b}'));\n}, 0);`); naive.push(a, b); cls[a] = cls[b] = "ma"; }
+    if (k === "microMacro") { const a = lab(), b = lab(); lines.push(`Promise.resolve().then(() => {\n  console.log('${a}');\n  setTimeout(() => console.log('${b}'), 0);\n});`); naive.push(a, b); cls[a] = "mi"; cls[b] = "ma"; }
+  }
+  const by = (t) => naive.filter((x) => cls[x] === t);
+  return {
+    code: lines.join("\n"),
+    joinLine: true,
+    wrongs: [naive, [...by("s"), ...by("ma"), ...by("mi")], [...by("mi"), ...by("s"), ...by("ma")]],
+    explain: "Сначала весь синхронный код. Когда стек пуст — <b>все</b> микрозадачи (<code>then</code>, <code>queueMicrotask</code>), потом <b>одна</b> макрозадача (<code>setTimeout</code>), после неё снова все микрозадачи. Микрозадача, созданная внутри микрозадачи, выполняется в этом же круге; <code>setTimeout</code> внутри <code>then</code> встаёт в конец очереди макрозадач.",
+  };
+}});
+
+/* --- Promise chain --- */
+T.push({ topic: "promise", make() {
+  const ok = R(2) === 0, n = 1 + R(5), msg = pick(["упс", "сеть", "500", "таймаут"]);
+  let L = 0; const lab = () => "ABCDEFG"[L++];
+  const parts = [ok ? `Promise.resolve(${n})` : `Promise.reject(new Error('${msg}'))`];
+  const pool = shuffle(["add", "throw", "catch", "add", "fin"]).slice(0, 4);
+  if (!pool.includes("catch")) pool[R(pool.length)] = "catch";
+  const lc = pool.lastIndexOf("catch"), lt = pool.lastIndexOf("throw");
+  if (lt > lc) { pool[lc] = "throw"; pool[lt] = "catch"; } // ошибка всегда где-то ловится
+  for (const p of pool) {
+    const a = lab(), k = 1 + R(4), m = R(10);
+    if (p === "add") parts.push(`  .then((x) => { console.log('${a}', x); return x + ${k}; })`);
+    if (p === "throw") parts.push(`  .then((x) => { console.log('${a}', x); throw new Error('стоп'); })`);
+    if (p === "catch") parts.push(`  .catch((e) => { console.log('${a}', e.message); return ${m}; })`);
+    if (p === "fin") parts.push(`  .finally(() => console.log('${a}'))`);
+  }
+  const z = lab();
+  parts.push(`  .then((x) => console.log('${z}', x));`);
+  const code = parts.join("\n");
+  return {
+    code,
+    variants: [code.replace(/\.catch\(\(e\) => \{ console\.log\('(\w)', e\.message\); return (\d+); \}\)/g, ".then((x) => { console.log('$1', x); return $2; })"),
+               code.replace(/throw new Error\('стоп'\);/g, "")],
+    explain: "У промиса две колеи. На колее успеха срабатывают <code>then</code>, а <code>catch</code> пропускаются. Ошибка (<code>reject</code> или <code>throw</code>) перекидывает на колею ошибки: все <code>then</code> пропускаются до ближайшего <code>catch</code>. Если <code>catch</code> вернул значение — дальше снова успех с этим значением. <code>finally</code> срабатывает всегда и значение не меняет.",
+  };
+}});
+
+/* --- then без return --- */
+T.push({ topic: "promise", make() {
+  const n = 1 + R(9), k = 2 + R(3), style = R(3);
+  const mid = [`(x) => x * ${k}`, `(x) => { x * ${k} }`, `(x) => { return x * ${k}; }`][style];
+  const code = `Promise.resolve(${n})\n  .then(${mid})\n  .then((x) => x + 1)\n  .then((x) => console.log(x));`;
+  return {
+    code,
+    variants: [code.replace(mid, `(x) => x * ${k}`), code.replace(mid, `(x) => { x * ${k} }`), code.replace("(x) => x + 1", "(x) => { x + 1 }")],
+    pool: [String(n + 1), String(n * k), "undefined", "NaN"],
+    explain: "Следующий <code>then</code> получает то, что вернул предыдущий. Стрелка без фигурных скобок возвращает выражение сама. Со скобками <code>{ }</code> нужен явный <code>return</code>, иначе вернётся <code>undefined</code> — а <code>undefined + 1</code> это <code>NaN</code>.",
+  };
+}});
+
+/* --- async/await порядок --- */
+T.push({ topic: "async", make() {
+  let L = 0; const lab = () => "ABCDEFGH"[L++];
+  const pre = R(2) ? lab() : null;
+  const a = lab(), b = lab();
+  const awaitWhat = pick(["null", "Promise.resolve()", "0"]);
+  const fn = `async function run() {\n  console.log('${a}');\n  await ${awaitWhat};\n  console.log('${b}');\n}`;
+  const extra = pick(["timeout", "then", "none"]);
+  const x = extra === "none" ? null : lab(), z = lab();
+  const lines = [fn];
+  if (pre) lines.push(`console.log('${pre}');`);
+  if (extra === "timeout") lines.push(`setTimeout(() => console.log('${x}'), 0);`);
+  lines.push("run();");
+  if (extra === "then") lines.push(`Promise.resolve().then(() => console.log('${x}'));`);
+  lines.push(`console.log('${z}');`);
+  const seq = (arr) => arr.filter(Boolean);
+  const naive = seq([pre, extra === "timeout" ? x : null, a, b, extra === "then" ? x : null, z]);
+  const late = seq([pre, z, a, b, x]);
+  return {
+    code: lines.join("\n"), joinLine: true,
+    wrongs: [naive, late, seq([pre, a, z, x === null ? null : x, b])],
+    explain: "<code>async</code>-функция начинает выполняться <b>сразу, синхронно</b> — до первого <code>await</code>. На <code>await</code> функция встаёт на паузу, а код снаружи идёт дальше. Продолжение после <code>await</code> — это микрозадача: после синхронного кода, раньше <code>setTimeout</code>.",
+  };
+}});
+
+/* --- await отклонённого промиса --- */
+T.push({ topic: "async", make() {
+  const ok = R(3) === 0, fin = R(2) === 0;
+  const val = pick(["данные", "200", "ок"]), err = pick(["нет сети", "403", "таймаут"]);
+  const code = `async function load() {\n  try {\n    console.log('A');\n    const res = await Promise.${ok ? `resolve('${val}')` : `reject(new Error('${err}'))`};\n    console.log('B', res);\n  } catch (e) {\n    console.log('C', e.message);\n  }${fin ? ` finally {\n    console.log('D');\n  }` : ""}\n  return 'E';\n}\nload().then((r) => console.log(r));\nconsole.log('F');`;
+  return {
+    code,
+    variants: [code.replace(ok ? `resolve('${val}')` : `reject(new Error('${err}'))`, ok ? `reject(new Error('${err}'))` : `resolve('${val}')`)],
+    transforms: [(o) => o.filter((x) => x !== "F").concat("F"), (o) => o.includes("B " + val) ? o : (() => { const r = [...o]; r.splice(r.indexOf("A") + 1, 0, "B undefined"); return r; })()],
+    explain: "До <code>await</code> всё синхронно, поэтому <code>A</code> раньше <code>F</code>. Если промис под <code>await</code> отклонён, <code>await</code> <b>выбрасывает ошибку, как <code>throw</code> на этой строке</b>: остаток <code>try</code> пропускается, срабатывает <code>catch</code>, потом <code>finally</code>. После обработки функция идёт дальше и возвращает значение в <code>then</code>.",
+  };
+}});
+
+/* --- Замыкание: счётчик --- */
+T.push({ topic: "closure", make() {
+  const s = R(4), k = 1 + R(3), style = R(3);
+  const body = [`    count += ${k};\n    return count;`, `    return count++;`, `    return ++count;`][style];
+  const calls = shuffle(["c1", "c1", "c2", pick(["c1", "c2"])]);
+  if (!calls.includes("c2")) calls[3] = "c2";
+  const mk = (where) => {
+    const inner = where === "inner" ? `    let count = ${s};\n` : "";
+    const outerDecl = where === "outer" ? `  let count = ${s};\n` : "";
+    const glob = where === "global" ? `let count = ${s};\n` : "";
+    return `${glob}function makeCounter() {\n${outerDecl}  return function () {\n${inner}${body}\n  };\n}\nconst c1 = makeCounter();\nconst c2 = makeCounter();\nconsole.log(${calls.map((c) => c + "()").join(", ")});`;
+  };
+  return {
+    code: mk("outer"),
+    variants: [mk("global"), mk("inner")],
+    explain: "Каждый вызов <code>makeCounter()</code> создаёт <b>новое</b> окружение со своей <code>count</code>, поэтому у <code>c1</code> и <code>c2</code> счёт независимый. Внутренняя функция помнит переменную, а не значение, — между вызовами одного счётчика значение сохраняется. <code>count++</code> возвращает старое значение, <code>++count</code> — новое.",
+  };
+}});
+
+/* --- var/let в цикле --- */
+T.push({ topic: "scope", alt: "closure", make() {
+  const kw = pick(["var", "let"]), s = R(2), e = s + 3, mul = pick(["", " * 2", " + 10"]), done = R(2) === 0;
+  const mk = (k) => `for (${k} i = ${s}; i < ${e}; i++) {\n  setTimeout(() => console.log(i${mul}), 0);\n}${done ? "\nconsole.log('готово');" : ""}`;
+  return {
+    code: mk(kw), variants: [mk(kw === "var" ? "let" : "var")],
+    explain: "У <code>var</code> одна переменная на весь цикл: колбэки <code>setTimeout</code> срабатывают после цикла и все видят последнее значение. <code>let</code> создаёт новую <code>i</code> на каждой итерации — каждый колбэк замыкает свою. Синхронный <code>console.log</code> после цикла выводится раньше всех таймеров.",
+  };
+}});
+
+/* --- hoisting --- */
+T.push({ topic: "scope", make() {
+  const pieces = shuffle([
+    { use: "console.log(a);", decl: "var a = 1;" },
+    { use: "console.log(b);", decl: "let b = 2;" },
+    { use: "console.log(sum(2, 3));", decl: "function sum(x, y) {\n  return x + y;\n}" },
+    { use: "console.log(mul(2, 3));", decl: "var mul = function (x, y) {\n  return x * y;\n};" },
+    { use: "console.log(c);", decl: "const c = 3;" },
+    { use: "console.log(half(10));", decl: "const half = (n) => n / 2;" },
+  ]).slice(0, 3);
+  const mk = (ps) => `const show = (fn) => {\n  try { fn(); } catch (e) { console.log(e.name); }\n};\n` +
+    ps.map((p) => `show(() => ${p.use.replace(/;$/, "")});`).join("\n") + "\n\n" + ps.map((p) => p.decl).join("\n");
+  const swapKw = (ps) => ps.map((p) => ({ ...p, decl: p.decl.replace(/^var /, "§").replace(/^let /, "var ").replace(/^const /, "var ").replace(/^§/, "let ").replace(/^function (\w+)\(x, y\) \{\n  return x \+ y;\n\}/, "const $1 = (x, y) => x + y;") }));
+  return {
+    code: mk(pieces), variants: [mk(swapKw(pieces))],
+    pool: ["undefined", "ReferenceError", "TypeError", "5", "6", "1", "2", "3"],
+    explain: "<code>var</code> поднимается со значением <code>undefined</code>. <code>let</code> и <code>const</code> до своей строки в TDZ — <code>ReferenceError</code>. Function Declaration поднимается целиком и работает до объявления. Функция в <code>var</code> до присваивания — это <code>undefined</code>, вызвать её — <code>TypeError: … is not a function</code>.",
+  };
+}});
+
+/* --- this --- */
+T.push({ topic: "this", make() {
+  const n1 = pick(NAMES), n2 = pick(NAMES.filter((x) => x !== n1));
+  const calls = shuffle([
+    "user.hi()", "f()", `f.call({ name: '${n2}' })`, `user.hi.bind({ name: '${n2}' })()`,
+    `user.hi.bind(user).call({ name: '${n2}' })`, "user.arrow()", "user.later()",
+  ]).slice(0, 4);
+  const code = `const user = {\n  name: '${n1}',\n  hi() { return this.name; },\n  arrow: () => typeof this,\n  later() {\n    const inner = () => this.name;\n    return inner();\n  },\n};\nconst f = user.hi;\nconst show = (fn) => {\n  try { console.log(fn()); } catch (e) { console.log(e.name); }\n};\n` + calls.map((c) => `show(() => ${c});`).join("\n");
+  return {
+    code, pool: [n1, n2, "TypeError", "undefined", "object"],
+    explain: "<code>this</code> обычной функции определяется вызовом: через точку — объект слева; просто <code>f()</code> — <code>undefined</code> (строгий режим), и <code>this.name</code> падает с <code>TypeError</code>. <code>call</code> подставляет объект; <code>bind</code> закрепляет его навсегда, <code>call</code> его не перебьёт. У стрелки своего <code>this</code> нет: в методе-стрелке он внешний (<code>undefined</code>), а стрелка внутри метода берёт <code>this</code> метода.",
+  };
+}});
+
+/* --- ссылки и копии --- */
+T.push({ topic: "refs", make() {
+  const x = 1 + R(5), y = x + 1 + R(5), s = R(5), t = s + 1 + R(5), copy = R(2) === 0;
+  const mk = (c) => `const a = { n: ${x}, tags: ['js'] };\nconst b = ${c ? "{ ...a }" : "a"};\nb.n = ${y};\nb.tags.push('react');\n\nlet p = ${s};\nlet q = p;\nq = ${t};\nconsole.log(a.n, a.tags.length, p, a === b);`;
+  return {
+    code: mk(copy), variants: [mk(!copy)],
+    pool: null,
+    explain: "Примитивы копируются по значению — <code>p</code> не меняется. Объект копируется по ссылке: <code>b = a</code> — это тот же объект. Spread создаёт новый объект, но копия <b>поверхностная</b>: вложенный массив <code>tags</code> общий. Объекты сравниваются по ссылке.",
+  };
+}});
+
+/* --- типы и сравнение --- */
+T.push({ topic: "types", make() {
+  const all = ["'5' == 5", "'5' === 5", "0 == ''", "null == undefined", "null === undefined", "NaN === NaN", "[] == false",
+    "typeof null", "typeof []", "typeof NaN", "typeof function () {}", "typeof undefined", "Boolean('0')", "Boolean([])", "!!''",
+    "1 + '2'", "'3' * '4'", "true + 1", "'10' - 1", "[] + []", "0.1 + 0.2 === 0.3", "typeof typeof 1"];
+  const ex = shuffle(all).slice(0, 4);
+  return {
+    code: ex.map((e) => `console.log(${e});`).join("\n"),
+    pool: ["true", "false", "object", "number", "string", "undefined", "function", "12", "3", "NaN", "2", "9", "", "'12'", "boolean"],
+    explain: "<code>===</code> не приводит типы, <code>==</code> приводит (поэтому <code>0 == ''</code> — <code>true</code>). <code>typeof null</code> — <code>'object'</code>, у массива тоже <code>'object'</code>, у <code>NaN</code> — <code>'number'</code>. Плюс со строкой склеивает, остальные арифметические операторы приводят к числу. Пустой массив и <code>'0'</code> — truthy.",
+  };
+}});
+
+/* --- массивы --- */
+T.push({ topic: "arrays", make() {
+  const nums = shuffle([1, 2, 3, 4, 5, 10, 25].slice(0, 5));
+  const k = 2 + R(3), t = 2 + R(3);
+  const ops = shuffle([
+    `nums.map((n) => n * ${k})`, `nums.filter((n) => n > ${t})`, `nums.reduce((acc, n) => acc + n, 0)`,
+    `nums.find((n) => n > ${t})`, `nums.forEach((n) => n * 2)`, `[...nums].sort()`, `nums.includes('${nums[0]}')`, `nums.findIndex((n) => n > 100)`,
+  ]).slice(0, 3);
+  const mk = (o) => `const nums = [${nums.join(", ")}];\n` + o.map((x) => `console.log(${x});`).join("\n");
+  return {
+    code: mk(ops),
+    variants: [mk(ops.map((o) => o.replace("[...nums].sort()", "[...nums].sort((a, b) => a - b)").replace("nums.find(", "nums.filter(").replace(", 0)", ")"))),
+               mk(ops.map((o) => o.replace("nums.filter(", "nums.find(").replace("forEach", "map").replace("includes('", "includes(").replace(/includes\((\d+)'\)/, "includes($1)")))],
+    explain: "<code>map</code> — новый массив той же длины, <code>filter</code> — массив подходящих, <code>find</code> — первый элемент или <code>undefined</code>, <code>findIndex</code> — индекс или <code>-1</code>, <code>reduce</code> — одно значение, <code>forEach</code> — всегда <code>undefined</code>. <code>sort()</code> без функции сравнивает <b>как строки</b>: <code>10</code> встанет перед <code>2</code>. <code>includes</code> сравнивает строго: строка не равна числу.",
+  };
+}});
+
+/* --- ?. ?? || --- */
+T.push({ topic: "syntax", make() {
+  const vol = pick(["0", "null", "undefined", "30"]), title = pick(["''", "null", "'Плейлист'"]), theme = pick(["null", "{ dark: true }", "undefined"]);
+  const mk = (op) => `const s = { volume: ${vol}, title: ${title}, theme: ${theme} };\nconsole.log(s.volume ${op} 50);\nconsole.log(s.title ${op} 'Без названия');\nconsole.log(s.theme?.dark);\nconsole.log(s.user?.name ${op} 'гость');`;
+  const op = pick(["??", "||"]);
+  return {
+    code: mk(op), variants: [mk(op === "??" ? "||" : "??")],
+    pool: ["0", "50", "30", "", "Без названия", "Плейлист", "true", "undefined", "гость", "null"],
+    explain: "<code>??</code> подставляет правое значение только для <code>null</code> и <code>undefined</code>. <code>||</code> — для любого falsy: <code>0</code>, <code>''</code>, <code>false</code> тоже заменятся. <code>?.</code> возвращает <code>undefined</code> вместо ошибки, если слева <code>null</code> или <code>undefined</code>.",
+  };
+}});
+
+/* --- деструктуризация --- */
+T.push({ topic: "destr", make() {
+  const n = pick(NAMES), role = pick(["undefined", "null", "'senior'"]), age = 18 + R(30), third = pick(["'html'", null]);
+  const tags = third ? `['js', 'css', ${third}]` : "['js', 'css']";
+  const mk = (r) => `const user = { name: '${n}', role: ${r}, tags: ${tags} };\nconst { role: position = 'junior', age = ${age}, ...rest } = user;\nconst [first, , last = 'нет'] = user.tags;\nconsole.log(position, age, Object.keys(rest).length, first, last);`;
+  return {
+    code: mk(role), variants: [mk(role === "null" ? "undefined" : "null")],
+    pool: ["junior", "null", "undefined", "senior", String(age), "1", "2", "3", "нет", "html", "css"],
+    explain: "Значение по умолчанию срабатывает только для <code>undefined</code> — если в объекте <code>null</code>, будет <code>null</code>. <code>role: position</code> — переименование. <code>...rest</code> собирает <b>оставшиеся</b> поля (без уже взятых). В массиве деструктуризация по позиции, пустое место пропускает элемент.",
+  };
+}});
+
+/* --- прототипы --- */
+T.push({ topic: "proto", make() {
+  const k1 = pick(["зверь", "кот", "робот"]), k2 = pick(["Барсик", "Мурка", "R2"]), shadow = R(2) === 0;
+  const mk = (sh) => `const base = {\n  kind: '${k1}',\n  hello() { return 'Я ' + this.kind; },\n};\nconst child = Object.create(base);\n${sh ? `child.kind = '${k2}';\n` : ""}console.log(child.hello());\nconsole.log(Object.hasOwn(child, 'kind'), 'kind' in child);\ndelete child.kind;\nconsole.log(child.kind, child.fly);`;
+  return {
+    code: mk(shadow), variants: [mk(!shadow)],
+    pool: [`Я ${k1}`, `Я ${k2}`, "true true", "false true", "true false", `${k1} undefined`, `undefined undefined`, `${k2} undefined`],
+    explain: "Свойство ищется сначала в объекте, потом по цепочке прототипов. Собственное свойство перекрывает прототип. <code>hasOwn</code> смотрит только сам объект, <code>in</code> — всю цепочку. <code>delete</code> удаляет только собственное свойство — после этого снова видно значение из прототипа. Нет нигде — <code>undefined</code>.",
+  };
+}});
+
+/* --- Map и Set --- */
+T.push({ topic: "mapset", make() {
+  const base = shuffle([1, 2, 3, 4]).slice(0, 2 + R(2));
+  const arr = shuffle([...base, ...base.slice(0, 1 + R(base.length)), String(base[0])]);
+  const code = `const set = new Set([${arr.map((x) => typeof x === "string" ? `'${x}'` : x).join(", ")}]);\nconst map = new Map([[1, 'a'], ['1', 'b']]);\nconst obj = { 1: 'a', '1': 'b' };\nconsole.log(set.size, map.size, Object.keys(obj).length);\nconsole.log(map.get(1), obj[1]);`;
+  return {
+    code, pool: null,
+    explain: "<code>Set</code> хранит уникальные значения и сравнивает строго: <code>1</code> и <code>'1'</code> — разные. В <code>Map</code> ключ может быть любого типа, поэтому <code>1</code> и <code>'1'</code> — два ключа. У объекта ключи — строки: <code>1</code> превращается в <code>'1'</code>, и второе значение перезаписывает первое.",
+  };
+}});
+
+
+/* ===================== React: выполнение на настоящем React ===================== */
+const STEPS_R = "https://claude.ai/artifact/JwqYKModzMEYPDuKgBStU3";
+const STEPS_T = "https://claude.ai/artifact/E8ByRSdWC2wWxB5LD8PScL";
+const LIBS = [
+  "https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js",
+  "https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js",
+  "https://cdn.jsdelivr.net/npm/@babel/standalone@7.24.7/babel.min.js",
+];
+let reactReady = null;
+function ensureReact() {
+  if (!reactReady) reactReady = LIBS.reduce((p, src) => p.then(() => new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("load")); document.head.appendChild(s);
+  })), Promise.resolve());
+  return reactReady;
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function runReact(code, actions, afterOnly) {
+  await ensureReact();
+  const out = [];
+  const con = { log: (...a) => { out.push(a.map((x) => fmt(x, true)).join(" ")); } };
+  const full = "const { useState, useEffect, useLayoutEffect, useRef, memo, useCallback, useMemo } = React;\n" + code + "\nreturn App;";
+  const compiled = Babel.transform(full, { presets: ["react"], parserOpts: { allowReturnOutsideFunction: true } }).code;
+  const App = new Function("React", "console", compiled)(React, con);
+  const box = document.createElement("div"); box.hidden = true; document.body.appendChild(box);
+  const root = ReactDOM.createRoot(box);
+  ReactDOM.flushSync(() => root.render(React.createElement(App)));
+  await wait(30);
+  const mark = out.length;
+  for (const sel of actions) {
+    if (sel === "unmount") { root.unmount(); await wait(20); continue; }
+    box.querySelector(sel).click(); await wait(30);
+  }
+  const res = afterOnly ? out.slice(mark) : out.slice();
+  try { root.unmount(); } catch (e) {}
+  box.remove();
+  return res;
+}
+
+/* --- React: батчинг --- */
+T.push({ topic: "r-state", make() {
+  const calls = shuffle([
+    () => { const k = 1 + R(3); return [`setCount(count + ${k});`, `setCount((c) => c + ${k});`]; },
+    () => { const k = 1 + R(3); return [`setCount((c) => c + ${k});`, `setCount(count + ${k});`]; },
+    () => { const k = 5 + R(5); return [`setCount(${k});`, `setCount(${k});`]; },
+  ]).slice(0, 2 + R(2)).map((f) => f());
+  const body = calls.map((c) => "    " + c[0]).join("\n");
+  const alt = calls.map((c) => "    " + c[1]).join("\n");
+  const clicks = 1 + R(2);
+  const mk = (b) => `function App() {\n  const [count, setCount] = useState(0);\n  console.log('render', count);\n  function handleClick() {\n${b}\n    console.log('click', count);\n  }\n  return <button onClick={handleClick}>{count}</button>;\n}\n// кликнули ${clicks === 1 ? "один раз" : "два раза"}`;
+  return {
+    code: mk(body), react: true, actions: Array(clicks).fill("button"),
+    variants: [mk(alt)],
+    transforms: [(o) => o.map((l) => l.startsWith("click") ? l.replace(/\d+$/, (n) => String(Number(n) + 1)) : l), (o) => o.flatMap((l) => l.startsWith("click") ? [l, l.replace("click", "render")] : [l])],
+    explain: "Сеттер не меняет <code>count</code> сразу: в обработчике это значение текущего рендера, поэтому <code>click</code> печатает старое число. <code>setCount(count + k)</code> берёт снимок, <code>setCount((c) => c + k)</code> — актуальное значение из очереди. Все обновления одного клика объединяются в <b>один</b> ре-рендер.",
+  };
+}});
+
+/* --- React: порядок эффектов --- */
+T.push({ topic: "r-effect", make() {
+  const deps = () => pick(["[]", "[n]", ""]);
+  const dc = deps(), da = deps();
+  const arr = (d) => d === "" ? "" : `, ${d}`;
+  const mk = (c, a) => `function Child({ n }) {\n  console.log('render Child');\n  useEffect(() => {\n    console.log('effect Child');\n    return () => console.log('cleanup Child');\n  }${arr(c)});\n  return <p>{n}</p>;\n}\n\nfunction App() {\n  const [n, setN] = useState(0);\n  console.log('render App');\n  useEffect(() => {\n    console.log('effect App');\n    return () => console.log('cleanup App');\n  }${arr(a)});\n  return <>\n    <button onClick={() => setN(n + 1)}>+</button>\n    <Child n={n} />\n  </>;\n}\n// после монтирования кликнули один раз`;
+  const other = (d) => d === "[]" ? "[n]" : "[]";
+  return {
+    code: mk(dc, da), react: true, actions: ["button"],
+    variants: [mk(other(dc), da), mk(dc, other(da))],
+    transforms: [(o) => { const r = [...o]; const i = r.indexOf("effect Child"), j = r.indexOf("effect App"); if (i >= 0 && j >= 0) { r[i] = "effect App"; r[j] = "effect Child"; } return r; }],
+    explain: "Сначала рендерятся родитель, потом ребёнок. Эффекты запускаются после отрисовки и <b>снизу вверх</b>: сначала ребёнок, потом родитель. При обновлении сначала все очистки (тоже ребёнок → родитель), потом новые эффекты. Эффект с <code>[]</code> после монтирования не перезапускается; без массива — после каждого рендера; с <code>[n]</code> — когда изменился <code>n</code>.",
+  };
+}});
+
+/* --- React: кто перерендерится --- */
+T.push({ topic: "r-render", make() {
+  const useCb = R(2) === 0, useMemoObj = R(2) === 0;
+  const comps = shuffle(["Plain", "Pure", "WithFn", "WithObj", "WithNum"]).slice(0, 3 + R(2));
+  const defs = {
+    Plain: "const Plain = () => { console.log('Plain'); return null; };",
+    Pure: "const Pure = memo(() => { console.log('Pure'); return null; });",
+    WithFn: "const WithFn = memo(({ onClick }) => { console.log('WithFn'); return null; });",
+    WithObj: "const WithObj = memo(({ style }) => { console.log('WithObj'); return null; });",
+    WithNum: "const WithNum = memo(({ value }) => { console.log('WithNum'); return null; });",
+  };
+  const use = { Plain: "<Plain />", Pure: "<Pure />", WithFn: "<WithFn onClick={handle} />", WithObj: "<WithObj style={style} />", WithNum: "<WithNum value={n} />" };
+  const mk = (cb, mo) => comps.map((c) => defs[c]).join("\n") +
+    `\n\nfunction App() {\n  const [n, setN] = useState(0);\n  const handle = ${cb ? "useCallback(() => {}, [])" : "() => {}"};\n  const style = ${mo ? "useMemo(() => ({ color: 'red' }), [])" : "{ color: 'red' }"};\n  console.log('App');\n  return <>\n    <button onClick={() => setN(n + 1)}>+</button>\n    ${comps.map((c) => use[c]).join("\n    ")}\n  </>;\n}\n// что выведет консоль ПОСЛЕ клика?`;
+  return {
+    code: mk(useCb, useMemoObj), react: true, actions: ["button"], afterOnly: true,
+    variants: [mk(!useCb, useMemoObj), mk(useCb, !useMemoObj), mk(!useCb, !useMemoObj)],
+    transforms: [(o) => ["App", ...comps], (o) => ["App"]],
+    explain: "При ре-рендере родителя все дети вызываются заново. <code>memo</code> пропускает рендер, если props не изменились <b>по ссылке</b>. Стрелка и объект, созданные в теле компонента, — новые на каждом рендере и ломают <code>memo</code>; <code>useCallback</code> и <code>useMemo</code> сохраняют ссылку. Проп с изменившимся числом (<code>n</code>) — честное изменение.",
+  };
+}});
+
+/* --- React: ref, state, переменная --- */
+T.push({ topic: "r-ref", make() {
+  const seq = shuffle(["ref", "ref", "state", pick(["ref", "state"])]).slice(0, 3);
+  if (!seq.includes("state")) seq[2] = "state";
+  const code = `function App() {\n  const [s, setS] = useState(0);\n  const r = useRef(0);\n  let v = 0;\n  console.log('render', s, r.current, v);\n  return <>\n    <button className="ref" onClick={() => { r.current++; v++; }}>ref</button>\n    <button className="state" onClick={() => setS(s + 1)}>state</button>\n  </>;\n}\n// клики по порядку: ${seq.join(" → ")}`;
+  return {
+    code, react: true, actions: seq.map((x) => "button." + x),
+    transforms: [(o) => o.map((l, i) => i === 0 ? l : l.replace(/ (\d+)$/, (m, d) => " " + (o.length - 1))), (o) => o.concat(o.slice(-1)), (o) => o.map((l) => l.replace(/^render (\d+) (\d+) \d+$/, "render $1 $1 0"))],
+    explain: "Изменение <code>ref.current</code> не вызывает ре-рендер — на экране и в консоли ничего не происходит, но значение копится и видно при следующем рендере. Обычная переменная создаётся заново в каждом рендере — всегда 0. Ре-рендер вызывает только сеттер state.",
+  };
+}});
+
+/* --- React: useLayoutEffect и useEffect --- */
+T.push({ topic: "r-effect", make() {
+  const withChild = R(2) === 0;
+  const code = (withChild ? `function Child() {\n  console.log('render Child');\n  useEffect(() => console.log('effect Child'));\n  useLayoutEffect(() => console.log('layout Child'));\n  return null;\n}\n` : "") +
+    `function App() {\n  console.log('render App');\n  useEffect(() => console.log('effect App'));\n  useLayoutEffect(() => console.log('layout App'));\n  return ${withChild ? "<Child />" : "null"};\n}`;
+  return {
+    code, react: true, actions: [],
+    transforms: [(o) => [...o.filter((l) => l.startsWith("render")), ...o.filter((l) => l.startsWith("effect")), ...o.filter((l) => l.startsWith("layout"))],
+                 (o) => { const r = [...o]; return r.map((l) => l.replace("App", "§").replace("Child", "App").replace("§", "Child")); }],
+    explain: "Порядок: рендер (родитель → ребёнок) → React меняет DOM → <code>useLayoutEffect</code> синхронно, <b>до</b> отрисовки → браузер рисует → <code>useEffect</code>. Эффекты каждого вида идут снизу вверх: ребёнок раньше родителя.",
+  };
+}});
+
+/* --- React: key сбрасывает состояние --- */
+T.push({ topic: "r-key", make() {
+  const dyn = R(2) === 0;
+  const pre = 1 + R(2), post = 1 + R(2);
+  const mk = (d) => `function Counter() {\n  const [c, setC] = useState(0);\n  console.log('Counter', c);\n  return <button className="inc" onClick={() => setC(c + 1)}>{c}</button>;\n}\n\nfunction App() {\n  const [k, setK] = useState('a');\n  return <>\n    <Counter ${d ? "key={k} " : ""}/>\n    <button className="swap" onClick={() => setK(k === 'a' ? 'b' : 'a')}>сменить</button>\n  </>;\n}\n// клики: inc ×${pre} → сменить → inc ×${post}`;
+  return {
+    code: mk(dyn), react: true, actions: [...Array(pre).fill("button.inc"), "button.swap", ...Array(post).fill("button.inc")],
+    variants: [mk(!dyn)],
+    explain: "Новый <code>key</code> — для React это другой компонент: старый размонтируется, новый монтируется с начальным состоянием. Без смены key компонент тот же, и состояние сохраняется при ре-рендере родителя.",
+  };
+}});
+
+/* ===================== TypeScript: ответ считается по правилам TS ===================== */
+const show = (set, order) => { const l = order.filter((t) => set.includes(t)); return l.length ? l.join(" | ") : "never"; };
+T.push({ topic: "ts-narrow", make() {
+  const ALL = ["string", "number", "boolean", "string[]", "null", "undefined"];
+  let types = shuffle(ALL).slice(0, 3 + R(2));
+  const checks = [
+    { c: "typeof x === 'string'", yes: ["string"] },
+    { c: "typeof x === 'number'", yes: ["number"] },
+    { c: "typeof x === 'object'", yes: ["string[]", "null"] },
+    { c: "x !== null", yes: ALL.filter((t) => t !== "null") },
+    { c: "x == null", yes: ["null", "undefined"] },
+    { c: "Array.isArray(x)", yes: ["string[]"] },
+  ];
+  const ch = pick(checks.filter((k) => k.yes.some((t) => types.includes(t)) && types.some((t) => !k.yes.includes(t))));
+  if (!ch) return T.find((t) => t.topic === "ts-narrow").make();
+  const order = ALL.filter((t) => types.includes(t));
+  const yes = types.filter((t) => ch.yes.includes(t)), no = types.filter((t) => !ch.yes.includes(t));
+  const decl = order.join(" | ");
+  const code = `function f(x: ${decl}) {\n  if (${ch.c}) {\n    x; // тип 1?\n  } else {\n    x; // тип 2?\n  }\n}`;
+  const ans = [`1: ${show(yes, order)}`, `2: ${show(no, order)}`];
+  const wrongs = [
+    [`1: ${show(yes, order)}`, `2: ${decl}`],
+    [`1: ${show(yes.concat(types.includes("null") ? ["null"] : []), order)}`, `2: ${show(no.filter((t) => t !== "null"), order)}`],
+    [`1: ${show(yes.filter((t) => t !== "null"), order)}`, `2: ${show(no, order)}`],
+    [`1: ${decl}`, `2: ${show(no, order)}`],
+    [`1: ${show(no, order)}`, `2: ${show(yes, order)}`],
+  ];
+  return {
+    code, ts: true, ask: "Какой тип у x в строках 1 и 2?", answer: ans, wrongs,
+    explain: "TS сужает тип по проверке: в ветке <code>if</code> — то, что прошло проверку, в <code>else</code> — всё остальное. Ловушки: <code>typeof null</code> — <code>'object'</code>, поэтому <code>typeof x === 'object'</code> оставляет и массив, и <code>null</code>; <code>x == null</code> ловит и <code>null</code>, и <code>undefined</code>.",
+  };
+}});
+
+T.push({ topic: "ts-util", make() {
+  const pool = shuffle([["id", "number", false], ["name", "string", false], ["email", "string", true], ["age", "number", false], ["admin", "boolean", true]]).slice(0, 4);
+  const iface = `interface User {\n${pool.map(([k, t, o]) => `  ${k}${o ? "?" : ""}: ${t};`).join("\n")}\n}`;
+  const keys = pool.map((p) => p[0]);
+  const pk = shuffle(keys).slice(0, 2);
+  const fmtObj = (fs, mode) => "{ " + fs.map(([k, t, o]) => `${k}${(mode === "opt" || (mode !== "req" && o)) ? "?" : ""}: ${t}`).join("; ") + " }";
+  const ops = [
+    { op: "Partial<User>", res: fmtObj(pool, "opt"), w: [fmtObj(pool, ""), fmtObj(pool, "req")] },
+    { op: "Required<User>", res: fmtObj(pool, "req"), w: [fmtObj(pool, ""), fmtObj(pool, "opt")] },
+    { op: `Pick<User, ${pk.map((k) => `'${k}'`).join(" | ")}>`, res: fmtObj(pool.filter((p) => pk.includes(p[0])), ""), w: [fmtObj(pool.filter((p) => !pk.includes(p[0])), ""), fmtObj(pool.filter((p) => pk.includes(p[0])), "opt")] },
+    { op: `Omit<User, ${pk.map((k) => `'${k}'`).join(" | ")}>`, res: fmtObj(pool.filter((p) => !pk.includes(p[0])), ""), w: [fmtObj(pool.filter((p) => pk.includes(p[0])), ""), fmtObj(pool, "")] },
+    { op: "keyof User", res: keys.map((k) => `'${k}'`).join(" | "), w: [pool.map((p) => p[1]).join(" | "), keys.filter((k, i) => !pool[i][2]).map((k) => `'${k}'`).join(" | ")] },
+  ];
+  const o = pick(ops);
+  return {
+    code: `${iface}\n\ntype Result = ${o.op};`, ts: true, ask: "Какой тип получится у Result?", answer: [o.res], wrongs: o.w.map((x) => [x]),
+    pool: null,
+    explain: "<code>Partial</code> — все поля необязательные, <code>Required</code> — все обязательные (знак <code>?</code> снимается), <code>Pick</code> — только перечисленные, <code>Omit</code> — все кроме перечисленных, <code>keyof</code> — union имён ключей, а не их типов.",
+  };
+}});
+
+T.push({ topic: "ts-unknown", make() {
+  const lines = shuffle([
+    ["const s1: string = a;", false], ["a.foo.bar();", false], ["u.toUpperCase();", true], ["const n: number = u;", true],
+    ["if (typeof u === 'string') u.toUpperCase();", false], ["const x: unknown = 5;", false], ["const y: number = 'пять';", true], ["let z: any = 1; z = 'a';", false],
+  ]).slice(0, 4);
+  const code = "declare const a: any;\ndeclare const u: unknown;\n\n" + lines.map(([l], i) => `${l} // ${i + 1}`).join("\n");
+  const err = lines.map((l, i) => l[1] ? i + 1 : 0).filter(Boolean);
+  const fmtErr = (e) => e.length ? "ошибки в строках: " + e.join(", ") : "ошибок нет";
+  const all = [1, 2, 3, 4];
+  const w = [all.filter((n) => !err.includes(n)), all, err.slice(0, Math.max(0, err.length - 1)), [...err, ...all.filter((n) => !err.includes(n)).slice(0, 1)].sort()];
+  return {
+    code, ts: true, ask: "В каких пронумерованных строках будет ошибка компиляции?", answer: [fmtErr(err)], wrongs: w.map((e) => [fmtErr(e)]),
+    explain: "<code>any</code> отключает проверку: с ним можно всё — и присвоить куда угодно. <code>unknown</code> принять можно, а использовать нельзя: ни вызвать метод, ни присвоить в переменную конкретного типа, пока не сузили (<code>typeof</code>). Присвоить в <code>unknown</code> можно что угодно.",
+  };
+}});
+
+T.push({ topic: "ts-literal", make() {
+  const table = [
+    ["const a = 'hi';", "'hi'", "string"], ["let b = 'hi';", "string", "'hi'"], ["const c = 5;", "5", "number"], ["let d = 5;", "number", "5"],
+    ["const e = ['a', 'b'];", "string[]", "readonly ['a', 'b']"], ["const f = ['a', 'b'] as const;", "readonly ['a', 'b']", "string[]"],
+    ["const g = { mode: 'dark' };", "{ mode: string }", "{ mode: 'dark' }"], ["const h = { mode: 'dark' } as const;", "{ readonly mode: 'dark' }", "{ mode: string }"],
+    ["const k = true;", "true", "boolean"], ["let l = true;", "boolean", "true"], ["const m = [1, 'a'];", "(string | number)[]", "[number, string]"],
+  ];
+  const rows = shuffle(table).slice(0, 3);
+  const names = rows.map((r) => r[0].match(/(?:const|let) (\w)/)[1]);
+  const code = rows.map((r) => r[0]).join("\n");
+  const ans = rows.map((r, i) => `${names[i]}: ${r[1]}`);
+  const flip = (idx) => rows.map((r, i) => `${names[i]}: ${idx.includes(i) ? r[2] : r[1]}`);
+  return {
+    code, ts: true, ask: "Какие типы выведет TypeScript?", answer: ans, wrongs: [flip([0]), flip([1]), flip([2]), flip([0, 1]), flip([0, 1, 2])],
+    explain: "<code>const</code> с примитивом получает <b>литеральный</b> тип (<code>'hi'</code>, <code>5</code>), <code>let</code> — расширенный (<code>string</code>, <code>number</code>), потому что его можно переприсвоить. В массивах и объектах значения расширяются даже у <code>const</code> — поля можно менять. <code>as const</code> оставляет литералы и делает всё readonly.",
+  };
+}});
+
+T.push({ topic: "ts-generic", make() {
+  const calls = shuffle([
+    ["first([1, 2, 3])", "number | undefined", ["number", "number[] | undefined", "unknown"]],
+    ["first(['a', 'b'])", "string | undefined", ["string", "string[]", "any"]],
+    ["first([1, 'a'])", "string | number | undefined", ["number | undefined", "(string | number)[]", "string | number"]],
+    ["get({ id: 1, name: 'Саша' }, 'name')", "string", ["'Саша'", "string | number", "unknown"]],
+    ["get({ id: 1, name: 'Саша' }, 'id')", "number", ["1", "string | number", "'id'"]],
+  ]).slice(0, 2);
+  const code = `function first<T>(arr: T[]): T | undefined {\n  return arr[0];\n}\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\n\nconst r1 = ${calls[0][0]};\nconst r2 = ${calls[1][0]};`;
+  const ans = [`r1: ${calls[0][1]}`, `r2: ${calls[1][1]}`];
+  const w = [0, 1, 2].map((i) => R(2) ? [`r1: ${calls[0][2][i]}`, `r2: ${calls[1][1]}`] : [`r1: ${calls[0][1]}`, `r2: ${calls[1][2][i]}`]);
+  w.push([`r1: ${calls[0][2][0]}`, `r2: ${calls[1][2][0]}`]);
+  return {
+    code, ts: true, ask: "Какие типы у r1 и r2?", answer: ans, wrongs: w,
+    explain: "TS выводит <code>T</code> по аргументам: из массива чисел — <code>number</code>, из смешанного — union. <code>arr[0]</code> может не существовать, поэтому в сигнатуре <code>| undefined</code>. <code>T[K]</code> — тип конкретного поля по ключу; литералы в объекте расширяются (<code>name: string</code>).",
+  };
+}});
+
+
+/* ===================== Остальные разделы ===================== */
+const STEPS_SEC = {
+  Redux: "https://claude.ai/artifact/BXbx6VQfw5Q7AG8sPgb5yL", Router: "https://claude.ai/artifact/TP9eYdPv7FiEpwUp5oY7bD",
+  "Сеть": "https://claude.ai/artifact/X1PbcQsyF6tQTqWV4qroUL", Git: "https://claude.ai/artifact/6PxiVi3FGeQFJrT9UMzMSd",
+  CSS: "https://claude.ai/artifact/W6EHFceYVo3W5jZnd9NNkD", "Тесты": "https://claude.ai/artifact/GeQjAK9md1fUmzqeSYybaX",
+  "Браузер": "https://claude.ai/artifact/9ApaWANBc8xRU2mWhcyg5f",
+};
+const opt = (arr) => arr.map((x) => [x]);
+
+/* --- Redux: редьюсер --- */
+T.push({ topic: "rd-reducer", make() {
+  const ops = shuffle([
+    () => { const t = pick(["Чай", "Сыр", "Хлеб"]); return [`{ type: 'add', item: '${t}' }`]; },
+    () => [`{ type: 'add', item: '${pick(["Кофе", "Мёд"])}' }`],
+    () => [`{ type: 'remove', index: 0 }`],
+    () => [`{ type: 'clear' }`],
+    () => [`{ type: 'unknown' }`],
+  ]).slice(0, 3 + R(2)).map((f) => f()[0]);
+  const mut = R(3) === 0;
+  const add = mut ? "state.items.push(action.item);\n      return state;" : "return { ...state, items: [...state.items, action.item] };";
+  const mk = (addBody) => `function reducer(state = { items: [] }, action) {\n  switch (action.type) {\n    case 'add':\n      ${addBody}\n    case 'remove':\n      return { ...state, items: state.items.filter((_, i) => i !== action.index) };\n    case 'clear':\n      return { ...state, items: [] };\n    default:\n      return state;\n  }\n}\n\nlet state = reducer(undefined, { type: '@@init' });\nconst first = state;\n${ops.map((o) => `state = reducer(state, ${o});`).join("\n")}\nconsole.log(state.items, state === first);`;
+  return {
+    code: mk(add),
+    variants: [mk(mut ? "return { ...state, items: [...state.items, action.item] };" : "state.items.push(action.item);\n      return state;")],
+    transforms: [
+      (o) => o.map((l) => l.replace(/(true|false)$/, (b) => (b === "true" ? "false" : "true"))),
+      (o) => o.map((l) => l.replace(/^\[[^\]]*\]/, "[]")),
+      (o) => o.map((l) => l.replace(/^\[/, "['Чай', ").replace("['Чай', ]", "['Чай']")),
+      (o) => o.map((l) => l.replace(/^\[[^\]]*\]/, "undefined")),
+    ],
+    explain: "Редьюсер возвращает <b>новый</b> объект на каждое известное действие, поэтому ссылка меняется. Неизвестный <code>type</code> попадает в <code>default</code> и возвращает то же состояние. Мутация через <code>push</code> + <code>return state</code> оставляет ту же ссылку — Redux и React не увидят изменения (в RTK так можно только внутри <code>createSlice</code>, где работает Immer).",
+  };
+}});
+
+/* --- Redux: порядок thunk --- */
+T.push({ topic: "rd-thunk", make() {
+  const fail = R(2) === 0, before = R(2) === 0;
+  const mk = (f) => `const dispatch = (action) => console.log(action.type);\nconst api = () => ${f ? "Promise.reject(new Error('500'))" : "Promise.resolve({ name: 'Саша' })"};\n\nconst fetchUser = () => async (dispatch) => {\n  dispatch({ type: 'user/pending' });\n  try {\n    await api();\n    dispatch({ type: 'user/fulfilled' });\n  } catch (e) {\n    dispatch({ type: 'user/rejected' });\n  }\n};\n${before ? "console.log('до');\n" : ""}fetchUser()(dispatch);\nconsole.log('после');`;
+  return {
+    code: mk(fail), variants: [mk(!fail)],
+    transforms: [(o) => o.filter((l) => l !== "после").concat("после"), (o) => o.filter((l) => !l.startsWith("user/pending")).concat(o.filter((l) => l.startsWith("user/pending")))],
+    explain: "Thunk — обычная async-функция: до первого <code>await</code> всё синхронно, поэтому <code>pending</code> уходит сразу, раньше кода после dispatch. Результат (<code>fulfilled</code> или <code>rejected</code>) — после <code>await</code>, микрозадачей. Так же работает <code>createAsyncThunk</code>.",
+  };
+}});
+
+/* --- Router: какой маршрут --- */
+T.push({ topic: "rr-match", make() {
+  const urls = ["/", "/users", "/users/42", "/users/new", "/users/42/edit", "/about", "/blabla", "/settings/profile"];
+  const url = pick(urls);
+  const routes = `<Routes>\n  <Route path="/" element={<Layout />}>\n    <Route index element={<Home />} />\n    <Route path="users" element={<Users />}>\n      <Route path=":id" element={<User />} />\n      <Route path="new" element={<NewUser />} />\n    </Route>\n    <Route path="about" element={<About />} />\n  </Route>\n  <Route path="settings/*" element={<Settings />} />\n  <Route path="*" element={<NotFound />} />\n</Routes>\n// адрес: ${url}`;
+  const ans = {
+    "/": "Layout > Home", "/users": "Layout > Users", "/users/42": "Layout > Users > User (id = '42')", "/users/new": "Layout > Users > NewUser",
+    "/users/42/edit": "NotFound", "/about": "Layout > About", "/blabla": "NotFound", "/settings/profile": "Settings",
+  }[url];
+  const pool = ["Layout > Home", "Layout > Users", "Layout > Users > User (id = '42')", "Layout > Users > User (id = 'new')", "Layout > Users > NewUser", "Layout > About", "NotFound", "Settings", "User (id = '42')", "Layout > NotFound", "Layout > Users > User (id = '42/edit')"];
+  return {
+    code: routes, ts: true, ask: "Какие компоненты отрисуются (снаружи внутрь)?", answer: [ans],
+    wrongs: opt(shuffle(pool.filter((p) => p !== ans)).slice(0, 5)),
+    explain: "Вложенные маршруты рендерятся внутри родителя через <code>Outlet</code>, поэтому сначала Layout. Статический путь сильнее параметра: <code>/users/new</code> — это NewUser, а не User с id 'new'. <code>:id</code> совпадает с одним сегментом — <code>/users/42/edit</code> не подходит ни к чему и уходит в <code>*</code>. <code>settings/*</code> ловит всё, что начинается с settings/.",
+  };
+}});
+
+/* --- Сеть: статус-код --- */
+T.push({ topic: "net-code", make() {
+  const sc = shuffle([
+    ["POST /api/users — пользователь создан", "201"], ["GET /api/users/999 — такого нет", "404"], ["GET /api/profile без токена", "401"],
+    ["DELETE /api/users/1 от обычного пользователя (нужен админ)", "403"], ["POST /api/users с пустым email — сервер отклонил данные", "400"],
+    ["DELETE /api/users/5 — удалено, тело ответа пустое", "204"], ["GET /app.js с If-None-Match, файл не менялся", "304"],
+    ["GET /api/report — на сервере упало исключение", "500"], ["GET /old-page — страница навсегда переехала", "301"], ["GET /api/users — список получен", "200"],
+  ])[0];
+  const all = ["200", "201", "204", "301", "304", "400", "401", "403", "404", "500"];
+  const near = { "401": ["403", "400", "404"], "403": ["401", "404", "400"], "201": ["200", "204", "202"], "204": ["200", "201", "404"], "304": ["200", "301", "204"], "301": ["302", "304", "404"], "400": ["422", "401", "500"], "404": ["400", "410", "204"], "500": ["503", "400", "404"], "200": ["201", "204", "304"] }[sc[1]];
+  return {
+    code: `// ситуация:\n// ${sc[0]}`, ts: true, ask: "Какой статус-код должен вернуть сервер?", answer: [sc[1]], wrongs: opt(near),
+    explain: "2xx — успех (200 ок, 201 создано, 204 без тела), 3xx — перенаправление (301 переехал, 304 бери из кэша), 4xx — ошибка клиента (400 неверные данные, 401 не аутентифицирован, 403 нет прав, 404 нет ресурса), 5xx — ошибка сервера.",
+  };
+}});
+
+/* --- Сеть: CORS --- */
+T.push({ topic: "net-cors", make() {
+  const page = pick(["https://app.ru", "http://localhost:5173", "https://shop.ru"]);
+  const api = pick(["https://app.ru/api", "https://api.app.ru", "http://app.ru/api", "https://app.ru:8443/api", "http://localhost:3000", "http://localhost:5173/api", "https://shop.ru/api"]);
+  const method = pick(["GET", "POST", "DELETE", "PUT"]);
+  const json = method !== "GET" && R(2) === 0;
+  const auth = R(3) === 0;
+  const o = (u) => { const x = new URL(u); return x.protocol + "//" + x.hostname + ":" + (x.port || (x.protocol === "https:" ? "443" : "80")); };
+  const cross = o(page) !== o(api);
+  const pre = cross && (!["GET", "POST", "HEAD"].includes(method) || json || auth);
+  const fmtA = (c, p) => !c ? "тот же origin — CORS не нужен" : p ? "другой origin, сначала preflight OPTIONS" : "другой origin, простой запрос без preflight";
+  const ans = fmtA(cross, pre);
+  const all = [fmtA(false, false), fmtA(true, true), fmtA(true, false), "браузер заблокирует запрос полностью, до сервера он не дойдёт"];
+  const code = `// страница открыта на: ${page}\nfetch('${api}/users', {\n  method: '${method}',${json ? "\n  headers: { 'Content-Type': 'application/json' }," : ""}${auth ? `\n  headers: { Authorization: 'Bearer …' },` : ""}\n});`;
+  return {
+    code, ts: true, ask: "Что произойдёт с точки зрения CORS?", answer: [ans], wrongs: opt(all.filter((x) => x !== ans)),
+    explain: "Origin — протокол + домен + порт; отличие в любом — другой origin (поддомен и другой порт тоже). Простой запрос — GET/POST/HEAD без своих заголовков и без JSON. Для остального браузер сначала шлёт preflight OPTIONS. Разрешение даёт сервер заголовком <code>Access-Control-Allow-Origin</code>.",
+  };
+}});
+
+/* --- Сеть: кэш --- */
+T.push({ topic: "net-cache", make() {
+  const cases = [
+    ["Cache-Control: max-age=600", "через 5 минут", "запроса нет — копия из кэша"],
+    ["Cache-Control: max-age=600\nETag: \"v3\"", "через 20 минут, файл не менялся", "запрос с If-None-Match → 304, копия из кэша"],
+    ["Cache-Control: no-cache\nETag: \"v3\"", "через 1 минуту, файл не менялся", "запрос с If-None-Match → 304, копия из кэша"],
+    ["Cache-Control: no-store", "через 1 минуту", "полный запрос → 200, ничего не хранилось"],
+    ["Cache-Control: max-age=31536000, immutable", "через неделю", "запроса нет — копия из кэша"],
+    ["Cache-Control: no-cache\nETag: \"v3\"", "через 1 минуту, файл изменился (v4)", "запрос с If-None-Match → 200 с новым файлом"],
+  ];
+  const c = pick(cases);
+  const all = ["запроса нет — копия из кэша", "запрос с If-None-Match → 304, копия из кэша", "полный запрос → 200, ничего не хранилось", "запрос с If-None-Match → 200 с новым файлом"];
+  return {
+    code: `// первый ответ сервера:\n${c[0]}\n\n// пользователь открыл страницу снова ${c[1]}`, ts: true, ask: "Что сделает браузер?", answer: [c[2]], wrongs: opt(all.filter((x) => x !== c[2])),
+    explain: "<code>max-age=N</code> — N секунд берём из кэша без запроса; после — проверяем по ETag. <code>no-cache</code> — хранить можно, но перед каждым использованием проверить: не изменилось — 304 без тела. <code>no-store</code> — не хранить совсем.",
+  };
+}});
+
+/* --- Git: симулятор --- */
+T.push({ topic: "git-sim", make() {
+  const ops = pick([
+    ["git commit -m C", "git reset --soft HEAD~1"], ["git commit -m C", "git reset HEAD~1"], ["git commit -m C", "git reset --hard HEAD~1"],
+    ["git commit -m C", "git revert HEAD"], ["git commit -m C", "git commit -m D", "git reset --hard HEAD~2"], ["git commit -m C", "git commit -m D", "git revert HEAD"],
+  ]);
+  let log = ["A", "B"], staged = "нет", work = "чисто";
+  const changes = { C: "c.txt", D: "d.txt" };
+  for (const op of ops) {
+    if (op.startsWith("git commit")) log.push(op.slice(-1));
+    else if (op.startsWith("git revert")) { const t = log[log.length - 1]; log.push(`revert ${t}`); }
+    else {
+      const n = op.includes("HEAD~2") ? 2 : 1; const removed = log.splice(log.length - n, n);
+      const files = removed.map((x) => changes[x]).join(", ");
+      if (op.includes("--soft")) staged = files; else if (op.includes("--hard")) {} else work = files + " (не в индексе)";
+    }
+  }
+  const fmtS = (l, s, w) => [`log: ${l.join(" — ")}`, `индекс: ${s}`, `рабочая папка: ${w}`];
+  const ans = fmtS(log, staged, work);
+  const last = ops[ops.length - 1];
+  const wr = [];
+  const lc = ops.filter((o) => o.startsWith("git commit")).map((o) => o.slice(-1));
+  wr.push(fmtS(["A", "B", ...lc], "нет", "чисто"));
+  wr.push(fmtS(["A", "B"], lc.map((x) => changes[x]).join(", "), "чисто"));
+  wr.push(fmtS(["A", "B"], "нет", lc.map((x) => changes[x]).join(", ") + " (не в индексе)"));
+  wr.push(fmtS(["A", "B"], "нет", "чисто"));
+  wr.push(fmtS(["A", "B", ...lc, `revert ${lc[lc.length - 1]}`], "нет", "чисто"));
+  return {
+    code: `# история: A — B, всё закоммичено\n${ops.join("\n")}`, ts: true, ask: "Какое состояние репозитория в итоге?", answer: ans,
+    wrongs: wr.filter((w) => key(w) !== key(ans)),
+    explain: "<code>revert</code> добавляет новый коммит-отмену, история не переписывается. <code>reset</code> сдвигает ветку назад: <code>--soft</code> — изменения остаются в индексе, без флага (<code>--mixed</code>) — в рабочей папке, <code>--hard</code> — удаляются.",
+  };
+}});
+
+/* --- CSS: специфичность --- */
+T.push({ topic: "css-spec", make() {
+  const cands = shuffle([
+    ["a", [0, 0, 1]], [".link", [0, 1, 0]], ["nav a", [0, 0, 2]], [".nav .link", [0, 2, 0]], ["#menu a", [1, 0, 1]],
+    [".link.active", [0, 2, 0]], ["nav .link.active", [0, 2, 1]], ["a:hover", [0, 1, 1]], ["#menu .link", [1, 1, 0]], [":where(#menu) a", [0, 0, 1]], [":is(#menu, .x) a", [1, 0, 1]],
+  ]).slice(0, 3 + R(2));
+  const colors = shuffle(["red", "blue", "green", "orange", "purple"]);
+  const imp = R(4) === 0 ? R(cands.length) : -1;
+  const rules = cands.map(([s, sp], i) => ({ s, sp, c: colors[i], imp: i === imp }));
+  const cmp = (a, b) => (a.imp - b.imp) || (a.sp[0] - b.sp[0]) || (a.sp[1] - b.sp[1]) || (a.sp[2] - b.sp[2]);
+  let win = rules[0]; rules.forEach((r) => { if (cmp(r, win) >= 0) win = r; });
+  const code = `<nav id="menu" class="nav">\n  <a class="link active">Чай</a>\n</nav>\n/* курсор наведён на ссылку */\n\n` + rules.map((r) => `${r.s.padEnd(18)} { color: ${r.c}${r.imp ? " !important" : ""}; }`).join("\n");
+  return {
+    code, ts: true, ask: "Какого цвета будет ссылка?", answer: [win.c], wrongs: opt(rules.filter((r) => r !== win).map((r) => r.c).concat(["black"])),
+    explain: "Сначала <code>!important</code>, потом специфичность (id, классы/псевдоклассы, теги) — сравниваем слева направо, при равенстве побеждает правило ниже. <code>:where()</code> даёт 0, <code>:is()</code> — по самому сильному аргументу.",
+  };
+}});
+
+/* --- CSS: box model и единицы --- */
+T.push({ topic: "css-box", make() {
+  if (R(2)) {
+    const w = 100 + 20 * R(10), p = 5 * (1 + R(6)), b = 1 + R(5), m = 5 * R(4), bs = pick(["content-box", "border-box"]);
+    const res = bs === "content-box" ? w + 2 * p + 2 * b : w;
+    return {
+      code: `.box {\n  box-sizing: ${bs};\n  width: ${w}px;\n  padding: ${p}px;\n  border: ${b}px solid;\n  margin: ${m}px;\n}`, ts: true, ask: "Какая будет видимая ширина блока (с рамкой)?", answer: [`${res}px`],
+      wrongs: opt([...new Set([w, w + 2 * p + 2 * b, w + p + b, w + 2 * p + 2 * b + 2 * m, w + 2 * p])].filter((x) => x !== res).map((x) => `${x}px`)),
+      explain: "<code>content-box</code> (по умолчанию): width — только контент, padding и border прибавляются с двух сторон. <code>border-box</code>: width уже включает padding и border. margin в ширину блока не входит.",
+    };
+  }
+  const root = pick([16, 10, 20]), a = pick([1.25, 1.5, 2]), b2 = pick([1.5, 2, 0.75]), unit = pick(["em", "rem"]);
+  const res = unit === "em" ? root * a * b2 : root * b2;
+  return {
+    code: `html { font-size: ${root}px; }\n.card { font-size: ${a}em; }\n.card .title { font-size: ${b2}${unit}; }`, ts: true, ask: "Какой font-size у .title в пикселях?", answer: [`${+res.toFixed(2)}px`],
+    wrongs: opt([...new Set([root * a * b2, root * b2, root * a, b2 * 16, root * a + b2])].filter((x) => +x.toFixed(2) !== +res.toFixed(2)).map((x) => `${+x.toFixed(2)}px`)),
+    explain: "<code>rem</code> всегда от font-size корня <code>html</code>. <code>em</code> для font-size — от размера шрифта родителя, поэтому во вложенности множители перемножаются.",
+  };
+}});
+
+/* --- Тесты: запросы RTL и матчеры --- */
+T.push({ topic: "test-rtl", make() {
+  const sc = pick([
+    ["getByText('Привет')", "элемент есть", "вернёт элемент"], ["getByText('Привет')", "элемента нет", "тест упадёт с ошибкой"],
+    ["queryByText('Ошибка')", "элемента нет", "вернёт null"], ["queryByText('Ошибка')", "элемент есть", "вернёт элемент"],
+    ["findByText('Готово')", "появится через 300 мс", "промис выполнится с элементом"], ["findByText('Готово')", "так и не появится", "промис отклонится по таймауту (тест упадёт)"],
+    ["getAllByRole('listitem')", "в списке 3 пункта", "вернёт массив из 3 элементов"], ["getByRole('listitem')", "в списке 3 пункта", "тест упадёт: найдено несколько элементов"],
+  ]);
+  const all = ["вернёт элемент", "вернёт null", "тест упадёт с ошибкой", "промис выполнится с элементом", "промис отклонится по таймауту (тест упадёт)", "вернёт массив из 3 элементов", "тест упадёт: найдено несколько элементов", "вернёт undefined"];
+  return {
+    code: `// на экране: ${sc[1]}\nscreen.${sc[0]};`, ts: true, ask: "Что произойдёт?", answer: [sc[2]], wrongs: opt(shuffle(all.filter((x) => x !== sc[2])).slice(0, 4)),
+    explain: "<code>getBy</code> — элемент должен быть ровно один, иначе ошибка (и если нет, и если несколько). <code>queryBy</code> — вернёт <code>null</code>, для проверки отсутствия. <code>findBy</code> — промис, ждёт появления. <code>getAllBy</code> — массив.",
+  };
+}});
+T.push({ topic: "test-rtl", make() {
+  const pairs = shuffle([
+    ["expect(2 + 2).toBe(4)", true], ["expect({ a: 1 }).toBe({ a: 1 })", false], ["expect({ a: 1 }).toEqual({ a: 1 })", true],
+    ["expect([1, 2]).toEqual([1, 2])", true], ["expect([1, 2]).toBe([1, 2])", false], ["expect(0.1 + 0.2).toBe(0.3)", false],
+    ["expect(0.1 + 0.2).toBeCloseTo(0.3)", true], ["expect(NaN).toBe(NaN)", true], ["expect(null).toBeUndefined()", false], ["expect('').toBeFalsy()", true],
+  ]).slice(0, 4);
+  const ans = pairs.map(([e, ok], i) => `${i + 1}: ${ok ? "✓" : "✗"}`);
+  const flip = (idx) => pairs.map(([e, ok], i) => `${i + 1}: ${(idx.includes(i) ? !ok : ok) ? "✓" : "✗"}`);
+  return {
+    code: pairs.map(([e], i) => `${e}; // ${i + 1}`).join("\n"), ts: true, ask: "Какие проверки пройдут (✓), а какие упадут (✗)?", answer: ans,
+    wrongs: [flip([0]), flip([1]), flip([2]), flip([3]), flip([1, 2])],
+    explain: "<code>toBe</code> сравнивает через <code>Object.is</code>: разные объекты и массивы не равны, а <code>NaN</code> равен <code>NaN</code>. <code>toEqual</code> сравнивает содержимое. Дробные числа — <code>toBeCloseTo</code>, потому что <code>0.1 + 0.2</code> — это 0.30000000000000004.",
+  };
+}});
+
+/* --- Браузер: что пересчитывается --- */
+T.push({ topic: "br-render", make() {
+  const props = shuffle([
+    ["width", "layout → paint → composite"], ["height", "layout → paint → composite"], ["margin-top", "layout → paint → composite"], ["font-size", "layout → paint → composite"],
+    ["top (у absolute)", "layout → paint → composite"], ["color", "paint → composite"], ["background-color", "paint → composite"], ["box-shadow", "paint → composite"],
+    ["transform", "только composite"], ["opacity", "только composite"],
+  ]);
+  const [p, a] = props[0];
+  const all = ["layout → paint → composite", "paint → composite", "только composite", "ничего не пересчитывается"];
+  return {
+    code: `// анимируем свойство:\n.box { transition: ${p.split(" ")[0]} 0.3s; }`, ts: true, ask: "Какие этапы браузер выполняет на каждом кадре?", answer: [a], wrongs: opt(all.filter((x) => x !== a)),
+    explain: "Геометрия (размеры, отступы, позиция, шрифт) — layout, paint и composite: дорого. Цвет, фон, тень — paint и composite. <code>transform</code> и <code>opacity</code> — только composite, часто на GPU: их и анимируют.",
+  };
+}});
+
+/* --- Браузер: async и defer --- */
+T.push({ topic: "br-scripts", make() {
+  const P = 100;
+  const scripts = shuffle([
+    { n: "a.js", t: "async", load: pick([30, 60, 150]) }, { n: "b.js", t: "defer", load: pick([20, 120]) },
+    { n: "c.js", t: "defer", load: pick([10, 80]) }, { n: "d.js", t: "async", load: pick([40, 200]) },
+  ]).slice(0, 3);
+  if (!scripts.some((s) => s.t === "defer")) scripts[0].t = "defer";
+  const lastDefer = Math.max(P, ...scripts.filter((s) => s.t === "defer").map((s) => s.load));
+  const ev = [];
+  scripts.forEach((s, i) => { if (s.t === "async") ev.push({ n: s.n, time: s.load, k: 0 }); });
+  scripts.filter((s) => s.t === "defer").forEach((s, i) => ev.push({ n: s.n, time: lastDefer, k: 1 + i * 0.01 }));
+  ev.push({ n: "DOMContentLoaded", time: lastDefer, k: 2 });
+  ev.sort((x, y) => x.time - y.time || x.k - y.k);
+  const ans = [ev.map((e) => e.n).join(" → ")];
+  const docOrder = [...scripts.map((s) => s.n), "DOMContentLoaded"].join(" → ");
+  const byLoad = [...scripts].sort((x, y) => x.load - y.load).map((s) => s.n).concat("DOMContentLoaded").join(" → ");
+  const dclFirst = ["DOMContentLoaded", ...ev.filter((e) => e.n !== "DOMContentLoaded").map((e) => e.n)].join(" → ");
+  const deferAfter = [...ev.filter((e) => !scripts.find((s) => s.n === e.n && s.t === "defer") && e.n !== "DOMContentLoaded").map((e) => e.n), "DOMContentLoaded", ...scripts.filter((s) => s.t === "defer").map((s) => s.n)].join(" → ");
+  const code = `<head>\n${scripts.map((s) => `  <script ${s.t} src="${s.n}"><\/script>  <!-- загрузится за ${s.load} мс -->`).join("\n")}\n</head>\n<!-- разбор всего HTML занимает ${P} мс -->`;
+  return {
+    code, ts: true, ask: "В каком порядке выполнятся скрипты и событие DOMContentLoaded?", answer: ans, wrongs: opt([docOrder, byLoad, dclFirst, deferAfter]),
+    explain: "<code>async</code> выполняется сразу, как загрузится, — даже до конца разбора и до DOMContentLoaded. <code>defer</code> ждёт конца разбора HTML и выполняется в порядке подключения (не загрузки), после этого — DOMContentLoaded.",
+  };
+}});
+
+/* ===================== генерация вариантов ===================== */
+const key = (a) => JSON.stringify(a);
+function tweakNum(lines) {
+  const i = R(lines.length);
+  const m = lines[i].match(/-?\d+(\.\d+)?/g);
+  if (!m) return null;
+  const v = pick(m), d = pick([1, -1, 2]);
+  if (Number(v) + d < 0) return null;
+  const r = [...lines]; r[i] = lines[i].replace(v, String(Number(v) + d)); return r;
+}
+function swapAdj(lines) { if (lines.length < 2) return null; const i = R(lines.length - 1), r = [...lines]; [r[i], r[i + 1]] = [r[i + 1], r[i]]; return r; }
+function dropOne(lines) { if (lines.length < 2) return null; const r = [...lines]; r.splice(R(r.length), 1); return r; }
+function fromPool(lines, pool) {
+  if (!pool || !lines.length) return null;
+  const r = [...lines], i = R(r.length);
+  const whole = pool.filter((p) => p.includes(" ") && p !== r[i]);
+  if (whole.length && R(2)) { r[i] = pick(whole); return r; }
+  const parts = r[i].split(" "); const j = R(parts.length);
+  const cand = pool.filter((p) => !p.includes(" ") && p !== parts[j]); if (!cand.length) return null;
+  parts[j] = pick(cand); r[i] = parts.join(" "); return r;
+}
+function tsMutate(lines) {
+  const r = [...lines], i = R(r.length), l = r[i];
+  const ops = [
+    () => { const m = [...l.matchAll(/(\w+)(\??): /g)]; if (!m.length) return null; const x = pick(m); return l.slice(0, x.index) + x[1] + (x[2] ? "" : "?") + ": " + l.slice(x.index + x[0].length); },
+    () => l.includes(" | ") ? l.replace(/ \| [^|;}]+$/, "") : null,
+    () => l.endsWith("undefined") ? null : l + " | undefined",
+    () => l.includes("string") ? l.replace("string", "any") : l.replace(/number|boolean/, "unknown"),
+  ];
+  const v = pick(ops)(); if (!v || v === l) return null; r[i] = v; return r;
+}
+function tweakWord(lines) {
+  const r = [...lines], i = R(r.length);
+  const map = { "true": "false", "false": "true", "undefined": "null", "null": "undefined", "NaN": "undefined", "TypeError": "undefined", "ReferenceError": "undefined" };
+  const parts = r[i].split(" "), idx = parts.findIndex((p) => map[p]);
+  if (idx < 0) return null; parts[idx] = map[parts[idx]]; r[i] = parts.join(" "); return r;
+}
+
+async function buildQuestion(tpl) {
+  const q = tpl.make();
+  const exec = (c) => q.react ? runReact(c, q.actions, q.afterOnly) : run(c);
+  const correct = q.ts ? q.answer : await exec(q.code);
+  const opts = [correct];
+  const seen = new Set([key(correct)]);
+  const add = (o) => { if (o && o.length && !seen.has(key(o))) { seen.add(key(o)); opts.push(o); } };
+  const cands = [];
+  for (const v of q.variants || []) cands.push(await exec(v));
+  for (const w of q.wrongs || []) cands.push(w);
+  for (const f of q.transforms || []) cands.push(f(correct));
+  for (const c of shuffle(cands)) { if (opts.length < 4) add(c); }
+  let guard = 0;
+  while (opts.length < 4 && guard++ < 200) {
+    const base = guard < 60 ? correct : pick(opts);
+    const f = q.ts ? tsMutate : guard < 150 ? pick([tweakNum, swapAdj, tweakWord, (l) => fromPool(l, q.pool), (l) => fromPool(l, q.pool)]) : dropOne;
+    add(f(base));
+  }
+  while (opts.length < 4) add([...correct, "undefined".repeat(opts.length)]);
+  const order = shuffle(opts.map((o, i) => ({ o, right: i === 0 })));
+  const t = TOPICS.find((x) => x.key === tpl.topic);
+  return { topic: t, code: q.code, options: order, explain: q.explain, joinLine: q.joinLine, ask: q.ask || "что выведет консоль?" };
+}
+
+/* ===================== состояние и отрисовка ===================== */
+const $ = (id) => document.getElementById(id);
+const state = { on: new Set(TOPICS.filter((t) => t.sec === "JS").map((t) => t.key)), qs: [], i: 0, answers: [], db: null };
+
+function renderTopics() {
+  $("topics").innerHTML = ["JS", "React", "TS", "Redux", "Router", "Сеть", "Git", "CSS", "Тесты", "Браузер"].map((sec) => {
+    const ts = TOPICS.filter((t) => t.sec === sec);
+    const all = ts.every((t) => state.on.has(t.key));
+    return `<div class="sec"><button class="chip secbtn" data-sec="${sec}" aria-pressed="${all}">${sec}</button>` +
+      ts.map((t) => `<button class="chip" data-k="${t.key}" aria-pressed="${state.on.has(t.key)}">${t.name}</button>`).join("") + "</div>";
+  }).join("");
+}
+$("topics").onclick = (e) => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  if (b.dataset.sec) {
+    const ts = TOPICS.filter((t) => t.sec === b.dataset.sec);
+    const all = ts.every((t) => state.on.has(t.key));
+    ts.forEach((t) => all ? state.on.delete(t.key) : state.on.add(t.key));
+    if (!state.on.size) ts.forEach((t) => state.on.add(t.key));
+    renderTopics(); return;
+  }
+  const k = b.dataset.k;
+  if (state.on.has(k) && state.on.size > 1) state.on.delete(k); else state.on.add(k);
+  renderTopics();
+};
+
+function outHTML(lines, joinLine) {
+  if (!lines.length) return '<div class="out"><span>(ничего)</span></div>';
+  if (joinLine) return `<div class="out"><span>${esc(lines.join(" "))}</span></div>`;
+  return '<div class="out">' + lines.map((l) => `<span>${esc(l === "" ? "''" : l)}</span>`).join("") + "</div>";
+}
+function renderProgress() {
+  $("progress").innerHTML = state.qs.map((_, n) => {
+    const a = state.answers[n];
+    return `<i class="${a === undefined ? (n === state.i ? "cur" : "") : a.ok ? "ok" : "bad"}"></i>`;
+  }).join("");
+  const done = state.answers.filter(Boolean).length, ok = state.answers.filter((a) => a && a.ok).length;
+  $("count").textContent = state.qs.length ? `${ok} верно из ${done}` : "";
+}
+
+function renderQuestion() {
+  const q = state.qs[state.i], a = state.answers[state.i];
+  const opts = q.options.map((o, n) => {
+    let cls = "opt";
+    if (a) cls += o.right ? " right" : n === a.pick ? " wrong" : " dim";
+    return `<button class="${cls}" data-n="${n}" ${a ? "disabled" : ""}><span class="k">${n + 1}</span>${outHTML(o.o, q.joinLine)}</button>`;
+  }).join("");
+  const verdict = a ? `<div class="verdict ${a.ok ? "ok" : "bad"}">
+      <h3>${a.ok ? "Верно" : "Неверно — правильный вариант подсвечен"}</h3>
+      <p>${q.explain}</p>
+      <div class="links"><a href="${q.topic.sec === "JS" ? STEPS : q.topic.sec === "TS" ? STEPS_T : q.topic.sec === "React" ? STEPS_R : STEPS_SEC[q.topic.sec]}#${q.topic.tab}" target="_blank" rel="noopener">▶ Разобрать по шагам: ${esc(q.topic.name)}</a></div>
+      <div class="bar"><button class="b primary" id="next">${state.i < state.qs.length - 1 ? "Дальше" : "Итог"}</button></div>
+    </div>` : "";
+  $("main").innerHTML = `<section class="card" aria-live="polite">
+    <div class="qhead"><h2>Задача ${state.i + 1} из ${state.qs.length}: ${esc(q.ask)}</h2><span class="tag">${esc(q.topic.name)}</span></div>
+    <pre><code>${hl(q.code)}</code></pre>
+    <div class="opts">${opts}</div>${verdict}</section>`;
+  $("main").querySelectorAll(".opt").forEach((b) => b.onclick = () => answer(+b.dataset.n));
+  const nx = $("next"); if (nx) { nx.onclick = next; nx.focus(); }
+  renderProgress();
+}
+
+function answer(n) {
+  if (state.answers[state.i]) return;
+  const q = state.qs[state.i];
+  state.answers[state.i] = { pick: n, ok: q.options[n].right };
+  renderQuestion();
+}
+function next() {
+  if (state.i < state.qs.length - 1) { state.i++; renderQuestion(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  else finish();
+}
+
+async function finish() {
+  const ok = state.answers.filter((a) => a.ok).length;
+  const mistakes = state.qs.map((q, n) => ({ q, a: state.answers[n] })).filter((x) => !x.a.ok);
+  const mlist = mistakes.map(({ q, a }) => `<details><summary>${esc(q.topic.name)}</summary>
+      <pre><code>${hl(q.code)}</code></pre>
+      <div class="row"><div><p class="lbl">Твой ответ</p>${outHTML(q.options[a.pick].o, q.joinLine)}</div>
+      <div><p class="lbl">Правильно</p>${outHTML(q.options.find((o) => o.right).o, q.joinLine)}</div></div>
+      <p>${q.explain}</p></details>`).join("");
+  $("main").innerHTML = `<section class="card">
+    <p class="lbl">Итог</p>
+    <p class="score">${ok}<small> из ${state.qs.length}</small></p>
+    ${mistakes.length ? `<p class="lbl">Ошибки — разбери их</p><div class="mist">${mlist}</div>` : "<p>Без ошибок.</p>"}
+    <div id="hist"></div>
+    <div class="bar"><button class="b primary" id="again">Ещё 10</button></div>
+  </section>`;
+  $("again").onclick = start; $("again").focus();
+  renderProgress();
+  await saveResult(ok, mistakes);
+}
+
+async function saveResult(ok, mistakes) {
+  const db = state.db; if (!db) return;
+  const now = new Date();
+  const doc = {
+    at: now.toISOString(), score: ok, total: state.qs.length,
+    topics: [...state.on],
+    mistakes: mistakes.map(({ q, a }) => ({ topic: q.topic.key, code: q.code, picked: q.options[a.pick].o, correct: q.options.find((o) => o.right).o })),
+  };
+  try { await db.collection("results").doc(String(now.getTime())).set(doc); } catch (e) { /* без сохранения — тест всё равно работает */ }
+  try {
+    const snap = await db.collection("results").orderBy("at", "desc").limit(8).get();
+    const h = snap.docs.map((d) => d.data()).filter(Boolean);
+    if (h.length) $("hist").innerHTML = `<p class="lbl">Последние попытки</p><div class="hist">${h.map((r) => `<span>${new Date(r.at).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })} · ${r.score}/${r.total}</span>`).join("")}</div>`;
+  } catch (e) { /* истории нет — не страшно */ }
+}
+
+async function start() {
+  state.qs = []; state.i = 0; state.answers = [];
+  $("main").innerHTML = '<p class="loading">Собираю задачи…</p>';
+  renderProgress();
+  const pool = T.filter((t) => state.on.has(t.topic) || (t.alt && state.on.has(t.alt)));
+  const picks = [];
+  while (picks.length < 10) picks.push(...shuffle(pool));
+  const chosen = picks.slice(0, 10);
+  const built = await Promise.all(chosen.map((t) => buildQuestion(t).catch(() => null)));
+  state.qs = built.filter(Boolean);
+  if (!state.qs.length) { $("main").innerHTML = '<p class="loading">Не получилось загрузить React для задач — нужен интернет. Выбери темы JS или TS.</p>'; return; }
+  if (state.qs.length < chosen.length) { const extra = await Promise.all(shuffle(T.filter((t) => !t.make.toString().includes("react: true") && state.on.has(t.topic))).slice(0, chosen.length - state.qs.length).map(buildQuestion)); state.qs.push(...extra); }
+  renderQuestion();
+}
+$("newTest").onclick = start;
+
+document.addEventListener("keydown", (e) => {
+  if (!state.qs.length || e.target.closest("input,textarea")) return;
+  if (["1", "2", "3", "4"].includes(e.key) && !state.answers[state.i] && state.i < state.qs.length) answer(+e.key - 1);
+  else if (e.key === "Enter" && state.answers[state.i] && $("next")) { e.preventDefault(); next(); }
+});
+
+// неверные варианты иногда специально оставляют ошибку без catch — гасим её, чтобы не шумела в консоли
+window.addEventListener("unhandledrejection", (e) => e.preventDefault());
+renderTopics();
+start();
+(async () => { try { state.db = await window.claude?.use?.("db"); } catch (e) { state.db = null; } })();
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"quiz",n:"Что выведет",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body></html>

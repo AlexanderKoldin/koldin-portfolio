@@ -1,0 +1,1158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JS по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>JavaScript</span></nav>
+<div class="wrap">
+  <header>
+    <h1>JS <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== ЗАМЫКАНИЕ ===== */
+closure: {
+  name:'Замыкание',
+  code:[
+  '<span class="kw">function</span> <span class="fn">makeCounter</span>() {',
+  '  <span class="kw">let</span> count = <span class="num">0</span>;',
+  '  <span class="kw">return</span> <span class="kw">function</span> () {',
+  '    count++;',
+  '    <span class="kw">return</span> count;',
+  '  };',
+  '}',
+  '',
+  '<span class="kw">const</span> counter = <span class="fn">makeCounter</span>();',
+  'console.<span class="fn">log</span>(<span class="fn">counter</span>()); <span class="cm">// ?</span>',
+  'console.<span class="fn">log</span>(<span class="fn">counter</span>()); <span class="cm">// ?</span>',
+  '<span class="kw">const</span> other = <span class="fn">makeCounter</span>();',
+  'console.<span class="fn">log</span>(<span class="fn">other</span>());   <span class="cm">// ?</span>'],
+  panels:[['global','Глобальная область','items','wide'],['envs','Окружения вызовов makeCounter','envs','wide'],['stack','Стек вызовов','stack'],['out','Консоль','console']],
+  say:'<ol class="say-steps"><li><b>Что:</b> замыкание — это функция вместе с её <b>лексическим окружением</b>, то есть с переменными из того места, где она была <b>создана</b>.</li><li><b>Как работает:</b> внешняя функция завершилась, а внутренняя хранит <b>ссылку</b> на её переменные, поэтому <b>сборщик мусора</b> их не удаляет.</li><li><b>Пример:</b> <code>createCounter</code> возвращает функцию, которая делает <code>count++</code>. Снаружи <code>count</code> не достать, а функция его помнит.</li><li><b>Зачем / подвох:</b> приватные данные, фабрики функций, <code>debounce</code>. Подвох — <code>var</code> в цикле с <code>setTimeout</code> выводит <code>3 3 3</code>.</li></ol><p class="say-note">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>',
+  steps:[
+   {line:[1,2,3,4,5,6,7], t:'Объявление функции',
+    x:'Движок кладёт функцию <code>makeCounter</code> в глобальную область. Код внутри пока не выполняется.',
+    p:{global:[it('<b>makeCounter</b> '+fnv())], envs:[], stack:[it('global')], out:[]}},
+   {line:[9], t:'Вызов makeCounter()', hl:'envs',
+    x:'На каждый вызов функции создаётся новое лексическое окружение — место для её локальных переменных. Функция попадает в стек.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> <span class="cmut">ещё нет значения</span>')], envs:[env(1,'—','вызов выполняется')], stack:[it('global'),it('makeCounter()')], out:[]}},
+   {line:[2], t:'let count = 0', hl:'envs',
+    x:'В окружении вызова появляется <code>count = 0</code>. Снаружи эту переменную не видно.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> <span class="cmut">ещё нет значения</span>')], envs:[env(1,0,'вызов выполняется')], stack:[it('global'),it('makeCounter()')], out:[]}},
+   {line:[3,4,5,6], t:'Создаётся внутренняя функция', hl:'envs',
+    x:'Создаётся анонимная функция. В момент создания она запоминает ссылку на окружение, где родилась (скрытое свойство <code>[[Environment]]</code>). Это и есть момент появления замыкания.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> <span class="cmut">ещё нет значения</span>')], envs:[env(1,0,'вызов выполняется','<div><b>(анонимная fn)</b> <span class="chip c1">помнит это окружение</span></div>')], stack:[it('global'),it('makeCounter()')], out:[]}},
+   {line:[9], t:'makeCounter завершилась', hl:'global',
+    x:'<code>makeCounter</code> вернула функцию и ушла из стека. Обычно её окружение удалил бы сборщик мусора, но на него ссылается возвращённая функция, поэтому <code>count</code> живёт дальше. Функция записана в <code>counter</code>.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1'),'new')], envs:[env(1,0,'вызов закончен, но окружение живо: на него ссылается <b class="c1">counter</b>')], stack:[it('global')], out:[]}},
+   {line:[10,4], t:'Первый вызов counter()', hl:'envs',
+    x:'Внутри функции своей <code>count</code> нет. Движок идёт по ссылке во внешнее окружение, находит <code>count</code> и увеличивает: <code>0 → 1</code>. Возвращается <code>1</code>.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1'))], envs:[env(1,1,'живо: на него ссылается <b class="c1">counter</b>')], stack:[it('global'),it('counter()')], out:[it('1','new')]}},
+   {line:[11,4], t:'Второй вызов counter()', hl:'envs',
+    x:'Тот же <code>counter</code> смотрит в то же самое окружение. Значение не сбросилось: <code>1 → 2</code>.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1'))], envs:[env(1,2,'живо: на него ссылается <b class="c1">counter</b>')], stack:[it('global'),it('counter()')], out:[it('1'),it('2','new')]}},
+   {line:[12,2,3], t:'Новый вызов makeCounter()', hl:'envs',
+    x:'Второй вызов создаёт второе, отдельное окружение со своей <code>count = 0</code>. Новая функция запоминает уже его и записывается в <code>other</code>.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1')),it('<b>other</b> '+fnv('окружение №2','c2'),'new')], envs:[env(1,2,'живо: <b class="c1">counter</b>'),env(2,0,'живо: <b class="c2">other</b>')], stack:[it('global')], out:[it('1'),it('2')]}},
+   {line:[13,4], t:'Вызов other()', hl:'envs',
+    x:'<code>other</code> меняет только своё окружение: <code>0 → 1</code>. У <code>counter</code> по-прежнему <code>2</code> — окружения независимы.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1')),it('<b>other</b> '+fnv('окружение №2','c2'))], envs:[env(1,2,'живо: <b class="c1">counter</b>'),env(2,1,'живо: <b class="c2">other</b>')], stack:[it('global'),it('other()')], out:[it('1'),it('2'),it('1','new')]}},
+   {line:[], t:'Итог', fin:true,
+    x:'Вывод: <code>1</code>, <code>2</code>, <code>1</code>. Функция носит с собой окружение, в котором создана. Сколько вызовов внешней функции — столько независимых окружений.',
+    p:{global:[it('<b>makeCounter</b> '+fnv()),it('<b>counter</b> '+fnv('окружение №1','c1')),it('<b>other</b> '+fnv('окружение №2','c2'))], envs:[env(1,2,'живо: <b class="c1">counter</b>'),env(2,1,'живо: <b class="c2">other</b>')], stack:[it('global')], out:[it('1'),it('2'),it('1')]}},
+  ]
+},
+
+/* ===== EVENT LOOP ===== */
+eventloop: {
+  name:'Event Loop',
+  code:[
+  'console.<span class="fn">log</span>(<span class="str">\'A\'</span>);',
+  '<span class="fn">setTimeout</span>(() => {',
+  '  console.<span class="fn">log</span>(<span class="str">\'B\'</span>);',
+  '  Promise.<span class="fn">resolve</span>().<span class="fn">then</span>(() => console.<span class="fn">log</span>(<span class="str">\'E\'</span>));',
+  '}, <span class="num">0</span>);',
+  '<span class="fn">setTimeout</span>(() => console.<span class="fn">log</span>(<span class="str">\'F\'</span>), <span class="num">0</span>);',
+  'Promise.<span class="fn">resolve</span>().<span class="fn">then</span>(() => console.<span class="fn">log</span>(<span class="str">\'C\'</span>));',
+  'console.<span class="fn">log</span>(<span class="str">\'D\'</span>);'],
+  panels:[['stack','Стек вызовов','stack'],['out','Консоль','console'],['micro','Очередь микрозадач (Promise.then, await)','queue','wide'],['macro','Очередь макрозадач (setTimeout, события)','queue','wide']],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Event Loop — механизм, который позволяет <b>однопоточному</b> JS выполнять асинхронный код: он берёт задачи из <b>очередей</b> и передаёт в <b>стек вызовов</b>.</li><li><b>Как работает:</b> сначала весь <b>синхронный код</b>; когда стек пуст — <b>все микрозадачи</b>, потом <b>одна макрозадача</b>, и снова все микрозадачи.</li><li><b>Пример:</b> <code>setTimeout(fn, 0)</code> и <code>Promise.resolve().then(fn)</code> — <code>then</code> выполнится раньше, потому что это микрозадача.</li><li><b>Подвох:</b> долгий синхронный код <b>блокирует</b> страницу — клики и таймеры ждут, пока освободится стек.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:'Синхронный console.log', hl:'out',
+    x:'Обычный синхронный код выполняется сразу, в стеке. Выводится <code>A</code>.',
+    p:{stack:[it('global'),it("log('A')")], out:[it('A','new')], micro:[], macro:[]}},
+   {line:[2,3,4,5], t:'Первый setTimeout', hl:'macro',
+    x:'<code>setTimeout</code> не выполняет колбэк сейчас. Таймер на 0 мс отдаётся браузеру, и колбэк встаёт в очередь <b>макрозадач</b>. Назовём его T1.',
+    p:{stack:[it('global'),it('setTimeout()')], out:[it('A')], micro:[], macro:[it('T1: B + then(E)','new')]}},
+   {line:[6], t:'Второй setTimeout', hl:'macro',
+    x:'Ещё один колбэк — T2 — встаёт в очередь макрозадач за T1.',
+    p:{stack:[it('global'),it('setTimeout()')], out:[it('A')], micro:[], macro:[it('T1: B + then(E)'),it('T2: F','new')]}},
+   {line:[7], t:'Promise.then', hl:'micro',
+    x:'Промис уже выполнен, поэтому колбэк <code>then</code> сразу встаёт в очередь <b>микрозадач</b>. Но выполнится он только когда стек опустеет.',
+    p:{stack:[it('global'),it('then()')], out:[it('A')], micro:[it('then: C','new')], macro:[it('T1: B + then(E)'),it('T2: F')]}},
+   {line:[8], t:'Синхронный console.log', hl:'out',
+    x:'Синхронный код идёт дальше: <code>D</code>. Обрати внимание — <code>D</code> раньше <code>C</code>, хотя <code>then</code> написан выше.',
+    p:{stack:[it('global'),it("log('D')")], out:[it('A'),it('D','new')], micro:[it('then: C')], macro:[it('T1: B + then(E)'),it('T2: F')]}},
+   {line:[], t:'Стек пуст → все микрозадачи', hl:'micro',
+    x:'Синхронный код закончился, стек пуст. Event Loop первым делом выполняет <b>все</b> микрозадачи: выводится <code>C</code>.',
+    p:{stack:[it('then: C')], out:[it('A'),it('D'),it('C','new')], micro:[], macro:[it('T1: B + then(E)'),it('T2: F')]}},
+   {line:[2,3], t:'Одна макрозадача: T1', hl:'macro',
+    x:'Микрозадач больше нет. Event Loop берёт <b>одну</b> макрозадачу — T1. Выводится <code>B</code>.',
+    p:{stack:[it('T1')], out:[it('A'),it('D'),it('C'),it('B','new')], micro:[], macro:[it('T2: F')]}},
+   {line:[4], t:'Внутри T1 — новый then', hl:'micro',
+    x:'Прямо внутри T1 создаётся <code>then</code>: его колбэк встаёт в очередь микрозадач. T2 ждёт.',
+    p:{stack:[it('T1'),it('then()')], out:[it('A'),it('D'),it('C'),it('B')], micro:[it('then: E','new')], macro:[it('T2: F')]}},
+   {line:[], t:'После макрозадачи → все микрозадачи', hl:'micro',
+    x:'T1 закончилась. Перед следующей макрозадачей Event Loop снова выполняет все микрозадачи: <code>E</code>. Поэтому <code>E</code> раньше <code>F</code>.',
+    p:{stack:[it('then: E')], out:[it('A'),it('D'),it('C'),it('B'),it('E','new')], micro:[], macro:[it('T2: F')]}},
+   {line:[6], t:'Следующая макрозадача: T2', hl:'macro',
+    x:'Микрозадач нет — берём T2. Выводится <code>F</code>. Очереди пусты.',
+    p:{stack:[it('T2')], out:[it('A'),it('D'),it('C'),it('B'),it('E'),it('F','new')], micro:[], macro:[]}},
+   {line:[], t:'Итог', fin:true,
+    x:'Вывод: <code>A D C B E F</code>. Правило: синхронный код → все микро → одна макро → все микро → одна макро…',
+    p:{stack:[], out:[it('A'),it('D'),it('C'),it('B'),it('E'),it('F')], micro:[], macro:[]}},
+  ]
+},
+
+/* ===== PROMISE / ASYNC ===== */
+promise: {
+  name:'Promise и async/await',
+  code:[
+  '<span class="kw">async function</span> <span class="fn">load</span>() {',
+  '  console.<span class="fn">log</span>(<span class="str">\'1\'</span>);',
+  '  <span class="kw">try</span> {',
+  '    <span class="kw">await</span> Promise.<span class="fn">reject</span>(<span class="kw">new</span> <span class="fn">Error</span>(<span class="str">\'нет сети\'</span>));',
+  '    console.<span class="fn">log</span>(<span class="str">\'2\'</span>);',
+  '  } <span class="kw">catch</span> (err) {',
+  '    console.<span class="fn">log</span>(<span class="str">\'3\'</span>, err.message);',
+  '  } <span class="kw">finally</span> {',
+  '    console.<span class="fn">log</span>(<span class="str">\'4\'</span>);',
+  '  }',
+  '  <span class="kw">return</span> <span class="str">\'готово\'</span>;',
+  '}',
+  '',
+  '<span class="fn">load</span>().<span class="fn">then</span>(r => console.<span class="fn">log</span>(r));',
+  'console.<span class="fn">log</span>(<span class="str">\'5\'</span>);'],
+  panels:[['stack','Стек вызовов','stack'],['out','Консоль','console'],['prom','Промисы и их состояние','items','wide'],['micro','Очередь микрозадач','queue','wide']],
+  say:'<ol class="say-steps"><li><b>Что:</b> промис — это объект, который представляет <b>результат асинхронной операции</b>, например ответ сервера.</li><li><b>Как работает:</b> у него <b>три состояния</b> — <b>pending</b>, <b>fulfilled</b>, <b>rejected</b>; меняется один раз. Внутри вызываем <code>resolve</code> или <code>reject</code>.</li><li><b>Обработка:</b> <code>then</code> — успех, <code>catch</code> — ошибка, <code>finally</code> — всегда. Колбэки идут <b>микрозадачами</b>, после синхронного кода.</li><li><b>async/await:</b> те же промисы, код читается сверху вниз; <code>await</code> приостанавливает функцию, ошибки ловим через <code>try/catch</code>.</li></ol><p class="say-note">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>',
+  steps:[
+   {line:[14], t:'Вызов load()', hl:'prom',
+    x:'<code>async</code>-функция начинает выполняться <b>сразу, синхронно</b>. При вызове она создаёт промис P для своего результата — пока <code>pending</code>.',
+    p:{stack:[it('global'),it('load()')], out:[], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span>','new')], micro:[]}},
+   {line:[2], t:'Синхронная часть', hl:'out',
+    x:'До первого <code>await</code> всё идёт как обычный код: выводится <code>1</code>.',
+    p:{stack:[it('global'),it('load()')], out:[it('1','new')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span>')], micro:[]}},
+   {line:[4], t:'await отклонённого промиса', hl:'micro',
+    x:'<code>Promise.reject(...)</code> сразу создаёт промис в состоянии <code>rejected</code>. На <code>await</code> функция ставится на паузу, а её продолжение встаёт в очередь микрозадач. <code>load</code> уходит из стека и отдаёт наружу P.',
+    p:{stack:[it('global')], out:[it('1')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span>'),it('<b>R</b> = reject <span class="chip cbad">rejected: нет сети</span>','new')], micro:[it('продолжить load() после await','new')]}},
+   {line:[14], t:'.then() на P', hl:'prom',
+    x:'На P вешается обработчик <code>then</code>. P ещё <code>pending</code>, поэтому колбэк пока просто ждёт — в очередь он не попадает.',
+    p:{stack:[it('global'),it('then()')], out:[it('1')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span> · ждёт then(r)'),it('<b>R</b> = reject <span class="chip cbad">rejected: нет сети</span>')], micro:[it('продолжить load() после await')]}},
+   {line:[15], t:'Синхронный console.log', hl:'out',
+    x:'Синхронный код идёт дальше: <code>5</code>. Вот почему <code>5</code> раньше всего, что после <code>await</code>.',
+    p:{stack:[it('global'),it("log('5')")], out:[it('1'),it('5','new')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span> · ждёт then(r)'),it('<b>R</b> = reject <span class="chip cbad">rejected: нет сети</span>')], micro:[it('продолжить load() после await')]}},
+   {line:[4], skip:[5], t:'Микрозадача: await = throw', hl:'stack',
+    x:'Стек пуст — выполняется микрозадача, <code>load</code> продолжает работу. Промис отклонён, поэтому <code>await</code> <b>выбрасывает ошибку, как <code>throw</code> на этой строке</b>. Строка с <code>\'2\'</code> не выполнится — остаток <code>try</code> пропускается.',
+    p:{stack:[it('load() (продолжение)')], out:[it('1'),it('5')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span> · ждёт then(r)'),it('<b>R</b> = reject <span class="chip cbad">rejected: нет сети</span>')], micro:[]}},
+   {line:[6,7], skip:[5], t:'catch', hl:'out',
+    x:'Ошибка попадает в <code>catch</code>: <code>err</code> — тот самый <code>Error</code>. Выводится <code>3 нет сети</code>.',
+    p:{stack:[it('load() (продолжение)')], out:[it('1'),it('5'),it('3 нет сети','new')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span> · ждёт then(r)')], micro:[]}},
+   {line:[8,9], skip:[5], t:'finally', hl:'out',
+    x:'<code>finally</code> выполняется всегда — и при успехе, и при ошибке. Выводится <code>4</code>.',
+    p:{stack:[it('load() (продолжение)')], out:[it('1'),it('5'),it('3 нет сети'),it('4','new')], prom:[it('<b>P</b> = load() <span class="chip cmut">pending</span> · ждёт then(r)')], micro:[]}},
+   {line:[11], skip:[5], t:'return из async-функции', hl:'prom',
+    x:'Ошибка обработана, функция дошла до <code>return</code>. P переходит в <code>fulfilled</code> со значением <code>\'готово\'</code>, и колбэк <code>then</code> встаёт в очередь микрозадач.',
+    p:{stack:[it('load() (продолжение)')], out:[it('1'),it('5'),it('3 нет сети'),it('4')], prom:[it('<b>P</b> = load() <span class="chip cok">fulfilled: готово</span>','new')], micro:[it("then: r => log(r)",'new')]}},
+   {line:[14], skip:[5], t:'Микрозадача: then', hl:'out',
+    x:'Колбэк <code>then</code> получает значение промиса и выводит <code>готово</code>.',
+    p:{stack:[it('then(r)')], out:[it('1'),it('5'),it('3 нет сети'),it('4'),it('готово','new')], prom:[it('<b>P</b> = load() <span class="chip cok">fulfilled: готово</span>')], micro:[]}},
+   {line:[], skip:[5], t:'Итог', fin:true,
+    x:'Вывод: <code>1</code>, <code>5</code>, <code>3 нет сети</code>, <code>4</code>, <code>готово</code>. <code>2</code> не выводится никогда: <code>await</code> отклонённого промиса — это <code>throw</code>.',
+    p:{stack:[], out:[it('1'),it('5'),it('3 нет сети'),it('4'),it('готово')], prom:[it('<b>P</b> = load() <span class="chip cok">fulfilled: готово</span>')], micro:[]}},
+  ]
+},
+
+/* ===== THIS ===== */
+this: {
+  name:'this',
+  code:[
+  '<span class="kw">const</span> user = {',
+  '  name: <span class="str">\'Саша\'</span>,',
+  '  <span class="fn">greet</span>() {',
+  '    console.<span class="fn">log</span>(<span class="kw">this</span>.name);',
+  '  },',
+  '  <span class="fn">arrow</span>: () => {',
+  '    console.<span class="fn">log</span>(<span class="kw">this</span>);',
+  '  },',
+  '  <span class="fn">later</span>() {',
+  '    <span class="kw">const</span> inner = () => console.<span class="fn">log</span>(<span class="kw">this</span>.name);',
+  '    <span class="fn">inner</span>();',
+  '  },',
+  '};',
+  '',
+  'user.<span class="fn">greet</span>();',
+  '<span class="kw">const</span> fn = user.greet;',
+  '<span class="kw">try</span> { <span class="fn">fn</span>(); } <span class="kw">catch</span> (e) { console.<span class="fn">log</span>(e.name); }',
+  'user.<span class="fn">arrow</span>();',
+  'user.<span class="fn">later</span>();',
+  'fn.<span class="fn">call</span>({ name: <span class="str">\'Гость\'</span> });',
+  '<span class="kw">const</span> bound = fn.<span class="fn">bind</span>(user);',
+  '<span class="fn">bound</span>();',
+  'bound.<span class="fn">call</span>({ name: <span class="str">\'Гость\'</span> });'],
+  panels:[['call','Как вызвали → какое правило','items','wide'],['this','Чему равен this внутри','items'],['out','Консоль','console'],['stack','Стек вызовов','stack','wide']],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>this</code> — это <b>контекст вызова</b>: объект, с которым функция работает в момент вызова.</li><li><b>Как работает:</b> у обычной функции <code>this</code> зависит от того, <b>как её вызвали</b>: через точку — объект слева, просто <code>fn()</code> — <code>undefined</code> в <b>strict mode</b>, через <code>new</code> — новый объект, через <code>call/apply/bind</code> — указанный объект.</li><li><b>Пример:</b> <code>user.greet()</code> — <code>this</code> равен <code>user</code>; <code>const f = user.greet; f()</code> — контекст <b>потерян</b>.</li><li><b>Подвох:</b> у <b>стрелочной функции своего <code>this</code> нет</b> — она берёт его из места создания; метод, переданный как колбэк, теряет <code>this</code>, чиним через <code>bind</code> или стрелку.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1,2,3,4,5,6,7,8,9,10,11,12,13], t:'Создаём объект',
+    x:'Код считаем модулем, как в Vite: строгий режим, и вне функций <code>this</code> = <code>undefined</code>. В объекте три функции. Пока ни одна не вызвана, <code>this</code> внутри них ещё <b>не определён</b> — он решается в момент вызова.',
+    p:{call:[it('<span class="cmut">вызовов ещё не было</span>')], this:[it('<span class="cmut">—</span>')], out:[], stack:[it('global')]}},
+   {line:[15,4], t:'Вызов через точку', hl:'this',
+    x:'<code>user.greet()</code> — слева от точки стоит <code>user</code>, значит <code>this</code> = <code>user</code>. Выводится <code>Саша</code>.',
+    p:{call:[it('<code>user.greet()</code> <span class="chip c1">через точку → объект слева</span>','new')], this:[it('user  { name: \'Саша\' }','new')], out:[it('Саша','new')], stack:[it('global'),it('greet()')]}},
+   {line:[16], t:'Метод скопировали в переменную', hl:'call',
+    x:'<code>fn</code> — ссылка на ту же самую функцию. Объект она не запоминает: связь с <code>user</code> была только в момент вызова через точку. Здесь ничего не вызывается.',
+    p:{call:[it('<code>fn = user.greet</code> <span class="chip cmut">не вызов, просто ссылка</span>','new')], this:[it('<span class="cmut">—</span>')], out:[it('Саша')], stack:[it('global')]}},
+   {line:[17,4], t:'Потеря контекста', hl:'out',
+    x:'<code>fn()</code> вызвана без точки. В строгом режиме <code>this</code> = <code>undefined</code>, а <code>undefined.name</code> — это <code>TypeError</code>. <code>catch</code> выводит имя ошибки. То же самое случится в <code>setTimeout(user.greet)</code> или <code>onClick={user.greet}</code>.',
+    p:{call:[it('<code>fn()</code> <span class="chip cbad">без точки → undefined</span>','new')], this:[it('undefined','new')], out:[it('Саша'),it('TypeError','new')], stack:[it('global'),it('fn()')]}},
+   {line:[18,6,7], t:'Стрелочная функция как метод', hl:'this',
+    x:'Хотя вызов через точку, точка тут не важна: у стрелки <b>нет своего <code>this</code></b>. Она берёт его из места, где создана. Литерал объекта <code>{ }</code> — не функция и своего <code>this</code> не даёт, поэтому стрелка берёт <code>this</code> модуля — <code>undefined</code>.',
+    p:{call:[it('<code>user.arrow()</code> <span class="chip c2">стрелка → this снаружи</span>','new')], this:[it('undefined  (this модуля)','new')], out:[it('Саша'),it('TypeError'),it('undefined','new')], stack:[it('global'),it('arrow()')]}},
+   {line:[19], t:'later() через точку', hl:'this',
+    x:'<code>later</code> — обычный метод, вызван через точку, значит внутри <code>later</code> <code>this</code> = <code>user</code>.',
+    p:{call:[it('<code>user.later()</code> <span class="chip c1">через точку → объект слева</span>','new')], this:[it('в later: user','new')], out:[it('Саша'),it('TypeError'),it('undefined')], stack:[it('global'),it('later()')]}},
+   {line:[10,11], t:'Стрелка внутри метода', hl:'out',
+    x:'<code>inner</code> — стрелка, созданная внутри <code>later</code>. Своего <code>this</code> у неё нет, она берёт <code>this</code> из <code>later</code>, то есть <code>user</code>. Выводится <code>Саша</code>. Вот где стрелки реально полезны.',
+    p:{call:[it('<code>inner()</code> <span class="chip c2">стрелка → this из later</span>','new')], this:[it('в inner: user (взят из later)','new')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша','new')], stack:[it('global'),it('later()'),it('inner()')]}},
+   {line:[20,4], t:'call — this указываем явно', hl:'this',
+    x:'<code>call</code> вызывает функцию сразу, первым аргументом передаём <code>this</code>. Выводится <code>Гость</code>. <code>apply</code> делает то же, только аргументы передаются массивом.',
+    p:{call:[it('<code>fn.call(гость)</code> <span class="chip cok">явно → первый аргумент</span>','new')], this:[it('{ name: \'Гость\' }','new')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша'),it('Гость','new')], stack:[it('global'),it('fn()')]}},
+   {line:[21], t:'bind — новая функция', hl:'call',
+    x:'<code>bind</code> <b>не вызывает</b> функцию. Он возвращает новую функцию, у которой <code>this</code> закреплён за <code>user</code> навсегда.',
+    p:{call:[it('<code>bound = fn.bind(user)</code> <span class="chip cmut">не вызов, новая функция</span>','new')], this:[it('<span class="cmut">—</span> (у bound закреплён user)')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша'),it('Гость')], stack:[it('global')]}},
+   {line:[22,4], t:'Вызов bound() без точки', hl:'out',
+    x:'Хоть вызов и без точки, <code>this</code> уже закреплён — <code>user</code>. Выводится <code>Саша</code>. Так чинят потерю контекста в колбэках.',
+    p:{call:[it('<code>bound()</code> <span class="chip cok">bind → закреплённый this</span>','new')], this:[it('user','new')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша'),it('Гость'),it('Саша','new')], stack:[it('global'),it('bound()')]}},
+   {line:[23,4], t:'call на привязанной функции', hl:'out',
+    x:'Ловушка: <code>call</code> пытается подставить гостя, но <code>bind</code> закрепил <code>this</code> навсегда — переопределить его нельзя. Снова <code>Саша</code>.',
+    p:{call:[it('<code>bound.call(гость)</code> <span class="chip cbad">bind сильнее call</span>','new')], this:[it('user (call проигнорирован)','new')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша'),it('Гость'),it('Саша'),it('Саша','new')], stack:[it('global'),it('bound()')]}},
+   {line:[], t:'Итог', fin:true,
+    x:'Вывод: <code>Саша</code>, <code>TypeError</code>, <code>undefined</code>, <code>Саша</code>, <code>Гость</code>, <code>Саша</code>, <code>Саша</code>. Порядок проверки: стрелка? → <code>this</code> снаружи. Иначе: <code>new</code>? → <code>bind</code>/<code>call</code>/<code>apply</code>? → вызов через точку? → иначе <code>undefined</code>.',
+    p:{call:[it('стрелка → this из места создания'),it('new → новый объект'),it('bind / call / apply → указанный объект'),it('через точку → объект слева'),it('просто fn() → undefined (strict)')], this:[it('<span class="cmut">зависит от вызова</span>')], out:[it('Саша'),it('TypeError'),it('undefined'),it('Саша'),it('Гость'),it('Саша'),it('Саша')], stack:[]}},
+  ]
+},
+/* ===== CALL, APPLY, BIND ===== */
+callapplybind: {
+  name:"call, apply, bind",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">greet</span>(greeting, mark) {",
+  "  console.<span class=\"fn\">log</span>(greeting + <span class=\"str\">', '</span> + <span class=\"kw\">this</span>.name + mark);",
+  "}",
+  "<span class=\"kw\">const</span> user = { name: <span class=\"str\">'Саша'</span> };",
+  "",
+  "greet.<span class=\"fn\">call</span>(user, <span class=\"str\">'Привет'</span>, <span class=\"str\">'!'</span>);",
+  "greet.<span class=\"fn\">apply</span>(user, [<span class=\"str\">'Хай'</span>, <span class=\"str\">'?'</span>]);",
+  "<span class=\"kw\">const</span> bound = greet.<span class=\"fn\">bind</span>(user, <span class=\"str\">'Йо'</span>);",
+  "<span class=\"fn\">bound</span>(<span class=\"str\">'.'</span>);",
+  "bound.<span class=\"fn\">call</span>({ name: <span class=\"str\">'Гость'</span> }, <span class=\"str\">'…'</span>);"],
+  panels:[["call", "Вызов — что передали", "items", "wide"], ["this", "this внутри", "items"], ["args", "Аргументы", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>call</code>, <code>apply</code> и <code>bind</code> — методы функций, которые позволяют <b>явно задать <code>this</code></b>.</li><li><b>Как работает:</b> <code>call</code> вызывает функцию <b>сразу</b>, аргументы <b>через запятую</b>; <code>apply</code> — сразу, аргументы <b>массивом</b>; <code>bind</code> <b>не вызывает</b>, а возвращает <b>новую функцию</b> с закреплённым <code>this</code>.</li><li><b>Пример:</b> <code>setTimeout(user.greet.bind(user), 0)</code> — чиним потерю контекста.</li><li><b>Подвох:</b> <code>this</code> у функции после <code>bind</code> <b>нельзя переопределить</b> ни <code>call</code>, ни повторным <code>bind</code>; у стрелочных функций <code>this</code> они не меняют.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:"Функция и объект", x:"Объявили обычную функцию <code>greet</code> и объект <code>user</code>. Своего <code>this</code> у функции нет — он появится в момент вызова.", p:{call:[it("<span class=\"chip cmut\">вызовов ещё не было</span>")],this:[it("—")],args:[it("—")],out:[]}},
+   {line:[6, 2], t:"call — вызвать сразу", x:"<code>call</code> вызывает функцию <b>сразу</b>. Первый аргумент становится <code>this</code>, остальные передаются <b>через запятую</b>.", hl:"this", p:{call:[it("<code>greet.call(user, 'Привет', '!')</code> <span class=\"chip cok\">сразу</span>",'new')],this:[it("user",'new')],args:[it("greeting = 'Привет'",'new'),it("mark = '!'",'new')],out:[it("Привет, Саша!",'new')]}},
+   {line:[7, 2], t:"apply — то же, аргументы массивом", x:"<code>apply</code> тоже вызывает сразу. Разница одна: аргументы передаются <b>одним массивом</b>.", hl:"args", p:{call:[it("<code>greet.apply(user, ['Хай', '?'])</code> <span class=\"chip cok\">сразу, массив</span>",'new')],this:[it("user")],args:[it("greeting = 'Хай'",'new'),it("mark = '?'",'new')],out:[it("Привет, Саша!"),it("Хай, Саша?",'new')]}},
+   {line:[8], t:"bind — не вызывает", x:"<code>bind</code> <b>ничего не вызывает</b>. Он возвращает <b>новую функцию</b>: <code>this</code> закреплён за <code>user</code>, первый аргумент <code>'Йо'</code> — тоже. Консоль не изменилась.", hl:"call", p:{call:[it("<code>bound = greet.bind(user, 'Йо')</code> <span class=\"chip cmut\">новая функция</span>",'new')],this:[it("закреплён: user")],args:[it("закреплён: greeting = 'Йо'")],out:[it("Привет, Саша!"),it("Хай, Саша?")]}},
+   {line:[9, 2], t:"Вызов bound", x:"Вызываем <code>bound('.')</code> без точки — но <code>this</code> уже закреплён. Закреплённый <code>'Йо'</code> идёт первым, <code>'.'</code> — вторым.", hl:"out", p:{call:[it("<code>bound('.')</code>",'new')],this:[it("user (закреплён)",'new')],args:[it("greeting = 'Йо' (закреплён)"),it("mark = '.'",'new')],out:[it("Привет, Саша!"),it("Хай, Саша?"),it("Йо, Саша.",'new')]}},
+   {line:[10, 2], t:"call не перебивает bind", x:"Пытаемся подставить гостя через <code>call</code>. Не выйдет: <code>this</code> после <code>bind</code> <b>переопределить нельзя</b> — снова Саша.", hl:"this", p:{call:[it("<code>bound.call(гость, '…')</code> <span class=\"chip cbad\">bind сильнее</span>",'new')],this:[it("user (call проигнорирован)",'new')],args:[it("greeting = 'Йо'"),it("mark = '…'",'new')],out:[it("Привет, Саша!"),it("Хай, Саша?"),it("Йо, Саша."),it("Йо, Саша…",'new')]}},
+   {line:[], t:"Итог", x:"<code>call</code> и <code>apply</code> — вызвать сейчас с нужным <code>this</code> (через запятую / массивом). <code>bind</code> — получить новую функцию с закреплённым <code>this</code> на потом.", fin:true, p:{call:[it("call → сразу, аргументы через запятую"),it("apply → сразу, аргументы массивом"),it("bind → новая функция, this закреплён навсегда")],this:[it("user (call проигнорирован)")],args:[it("greeting = 'Йо'"),it("mark = '…'")],out:[it("Привет, Саша!"),it("Хай, Саша?"),it("Йо, Саша."),it("Йо, Саша…")]}},
+  ]
+},
+
+/* ===== VAR, LET, CONST ===== */
+varletconst: {
+  name:"var, let, const",
+  code:[
+  "console.<span class=\"fn\">log</span>(a);",
+  "<span class=\"cm\">// console.log(b);</span>",
+  "<span class=\"kw\">var</span> a = <span class=\"num\">1</span>;",
+  "<span class=\"kw\">let</span> b = <span class=\"num\">2</span>;",
+  "<span class=\"kw\">const</span> c = { n: <span class=\"num\">1</span> };",
+  "c.n = <span class=\"num\">2</span>;",
+  "",
+  "<span class=\"kw\">if</span> (<span class=\"kw\">true</span>) {",
+  "  <span class=\"kw\">var</span> x = <span class=\"str\">'var'</span>;",
+  "  <span class=\"kw\">let</span> y = <span class=\"str\">'let'</span>;",
+  "}",
+  "console.<span class=\"fn\">log</span>(x);",
+  "<span class=\"cm\">// console.log(y);</span>"],
+  panels:[["glob", "Глобальная область", "items", "wide"], ["blk", "Блок if { }", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>var</code>, <code>let</code> и <code>const</code> — способы объявить переменную; различаются <b>областью видимости</b>, <b>хойстингом</b> и возможностью <b>переприсвоить</b>.</li><li><b>Как работает:</b> <code>var</code> — <b>функциональная</b> область, поднимается со значением <code>undefined</code>; <code>let</code> и <code>const</code> — <b>блочная</b> область и <b>TDZ</b> до строки объявления.</li><li><b>Пример:</b> <code>console.log(a); var a = 1</code> выведет <code>undefined</code>, а с <code>let</code> будет <code>ReferenceError</code>.</li><li><b>Подвох:</b> <code>const</code> запрещает <b>переприсваивание</b>, но объект внутри можно менять; <code>var</code> в цикле с <code>setTimeout</code> даёт <code>3 3 3</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[], t:"До выполнения: hoisting", x:"Прежде чем выполнить первую строку, движок проходит код и регистрирует объявления. <code>var</code> поднимается <b>со значением <code>undefined</code></b> — даже <code>x</code> из блока <code>if</code>. <code>let</code> и <code>const</code> тоже известны, но до своей строки они в <b>TDZ</b>.", hl:"glob", p:{glob:[it("a = undefined <span class=\"chip c1\">var поднята</span>",'new'),it("b <span class=\"chip cbad\">TDZ</span>",'new'),it("c <span class=\"chip cbad\">TDZ</span>",'new'),it("x = undefined <span class=\"chip c1\">var из блока — тоже сюда</span>",'new')],blk:[it("блока ещё нет")],out:[]}},
+   {line:[1], t:"Обращение к var до объявления", x:"<code>a</code> уже существует и равна <code>undefined</code> — ошибки нет.", hl:"out", p:{glob:[it("a = undefined <span class=\"chip c1\">var поднята</span>"),it("b <span class=\"chip cbad\">TDZ</span>"),it("c <span class=\"chip cbad\">TDZ</span>"),it("x = undefined <span class=\"chip c1\">var из блока — тоже сюда</span>")],blk:[it("блока ещё нет")],out:[it("undefined",'new')]}},
+   {line:[2], t:"Обращение к let до объявления", x:"Если раскомментировать: <code>ReferenceError</code>. <code>b</code> существует, но находится в <b>временной мёртвой зоне</b> до строки <code>let b</code>.", hl:"glob", p:{glob:[it("a = undefined"),it("b <span class=\"chip cbad\">TDZ → ReferenceError</span>",'new'),it("c <span class=\"chip cbad\">TDZ</span>"),it("x = undefined")],blk:[it("блока ещё нет")],out:[it("undefined")]}},
+   {line:[3, 4], t:"Присваивание", x:"<code>a</code> получает 1. На строке <code>let b = 2</code> TDZ для <code>b</code> заканчивается.", hl:"glob", p:{glob:[it("a = 1",'new'),it("b = 2",'new'),it("c <span class=\"chip cbad\">TDZ</span>"),it("x = undefined")],blk:[it("блока ещё нет")],out:[it("undefined")]}},
+   {line:[5], t:"const и объект", x:"В <code>c</code> записывается <b>ссылка</b> на объект. <code>const</code> запрещает менять именно её.", hl:"glob", p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 1 }",'new'),it("x = undefined")],blk:[it("блока ещё нет")],out:[it("undefined")]}},
+   {line:[6], t:"Изменяем объект внутри const", x:"Можно: ссылка в <code>c</code> та же, меняется только содержимое объекта. А <code>c = {}</code> дало бы <code>TypeError</code>.", hl:"glob", p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 2 } <span class=\"chip cok\">ссылка та же</span>",'new'),it("x = undefined")],blk:[it("блока ещё нет")],out:[it("undefined")]}},
+   {line:[8, 9, 10], t:"Блок if", x:"<code>var x</code> пишется в <b>глобальную</b> область — <code>var</code> не видит фигурных скобок. <code>let y</code> живёт <b>только в блоке</b>.", hl:"blk", p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 2 }"),it("x = 'var'",'new')],blk:[it("y = 'let' <span class=\"chip c2\">только здесь</span>",'new')],out:[it("undefined")]}},
+   {line:[11, 12], t:"После блока", x:"Блок закончился и исчез вместе с <code>y</code>. <code>x</code> доступна — выводится <code>var</code>.", hl:"out", p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 2 }"),it("x = 'var'")],blk:[it("блок закончился — y удалена")],out:[it("undefined"),it("var",'new')]}},
+   {line:[13], t:"y снаружи", x:"Если раскомментировать: <code>ReferenceError: y is not defined</code>. <code>let</code> — блочная область видимости.", hl:"blk", p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 2 }"),it("x = 'var'")],blk:[it("y снаружи → ReferenceError <span class=\"chip cbad\">блочная</span>",'new')],out:[it("undefined"),it("var")]}},
+   {line:[], t:"Итог", x:"<code>var</code> — функциональная область, поднимается с <code>undefined</code>. <code>let</code>/<code>const</code> — блочная область и TDZ. <code>const</code> защищает ссылку, а не содержимое.", fin:true, p:{glob:[it("a = 1"),it("b = 2"),it("c → { n: 2 }"),it("x = 'var'")],blk:[it("y снаружи → ReferenceError <span class=\"chip cbad\">блочная</span>")],out:[it("undefined"),it("var")]}},
+  ]
+},
+
+/* ===== ПРОТОТИПЫ ===== */
+proto: {
+  name:"Прототипы",
+  code:[
+  "<span class=\"kw\">const</span> animal = {",
+  "  eats: <span class=\"kw\">true</span>,",
+  "  <span class=\"fn\">walk</span>() { <span class=\"kw\">return</span> <span class=\"str\">'иду'</span>; },",
+  "};",
+  "<span class=\"kw\">const</span> cat = Object.<span class=\"fn\">create</span>(animal);",
+  "cat.name = <span class=\"str\">'Барсик'</span>;",
+  "",
+  "console.<span class=\"fn\">log</span>(cat.name);",
+  "console.<span class=\"fn\">log</span>(cat.eats);",
+  "console.<span class=\"fn\">log</span>(cat.<span class=\"fn\">walk</span>());",
+  "console.<span class=\"fn\">log</span>(cat.toString !== <span class=\"kw\">undefined</span>);",
+  "console.<span class=\"fn\">log</span>(cat.fly);"],
+  panels:[["chain", "Цепочка прототипов — где ищем", "items", "wide"], ["look", "Поиск свойства", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> прототипное наследование — у каждого объекта есть скрытая ссылка <b><code>[[Prototype]]</code></b> на другой объект, его <b>прототип</b>.</li><li><b>Как работает:</b> если свойства нет в объекте, движок ищет его по <b>цепочке прототипов</b> до <code>Object.prototype</code>, дальше <code>null</code> — и возвращает <code>undefined</code>.</li><li><b>Пример:</b> у массива нет своего <code>map</code> — он берётся из <code>Array.prototype</code>.</li><li><b>Зачем / подвох:</b> методы хранятся <b>один раз</b> в прототипе, а не копируются в каждый объект; <code>class</code> — <b>синтаксический сахар</b> над прототипами.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:"Объект animal", x:"Обычный объект с полем <code>eats</code> и методом <code>walk</code>. Его прототип — <code>Object.prototype</code>.", p:{chain:[it("animal { eats, walk }",'new'),it("Object.prototype { toString, hasOwnProperty… }"),it("null")],look:[it("—")],out:[]}},
+   {line:[5], t:"Object.create(animal)", x:"Создаём пустой <code>cat</code>, у которого скрытая ссылка <code>[[Prototype]]</code> ведёт на <code>animal</code>. Свойства не копируются.", hl:"chain", p:{chain:[it("cat { } <span class=\"chip c1\">[[Prototype]] → animal</span>",'new'),it("animal { eats, walk }"),it("Object.prototype { toString… }"),it("null")],look:[it("—")],out:[]}},
+   {line:[6], t:"Собственное свойство", x:"<code>name</code> записывается в сам <code>cat</code> — это его <b>собственное</b> свойство.", hl:"chain", p:{chain:[it("cat { name } <span class=\"chip c1\">[[Prototype]] → animal</span>",'new'),it("animal { eats, walk }"),it("Object.prototype { toString… }"),it("null")],look:[it("—")],out:[]}},
+   {line:[8], t:"cat.name", x:"Ищем в самом объекте — нашли сразу.", hl:"look", p:{chain:[it("cat { name } <span class=\"chip cok\">найдено здесь</span>"),it("animal { eats, walk }"),it("Object.prototype { toString… }"),it("null")],look:[it("name: cat ✓",'new')],out:[it("Барсик",'new')]}},
+   {line:[9], t:"cat.eats", x:"В <code>cat</code> нет <code>eats</code> → идём по ссылке в прототип <code>animal</code> → нашли <code>true</code>.", hl:"chain", p:{chain:[it("cat { name } <span class=\"chip cmut\">нет</span>"),it("animal { eats, walk } <span class=\"chip cok\">найдено здесь</span>"),it("Object.prototype { toString… }"),it("null")],look:[it("eats: cat ✗ → animal ✓",'new')],out:[it("Барсик"),it("true",'new')]}},
+   {line:[10], t:"cat.walk()", x:"Метод тоже берётся из <code>animal</code>. Вызов через точку, поэтому <code>this</code> внутри — <code>cat</code>.", hl:"chain", p:{chain:[it("cat { name } <span class=\"chip cmut\">нет</span>"),it("animal { eats, walk } <span class=\"chip cok\">найдено здесь</span>"),it("Object.prototype { toString… }"),it("null")],look:[it("walk: cat ✗ → animal ✓, this = cat",'new')],out:[it("Барсик"),it("true"),it("иду",'new')]}},
+   {line:[11], t:"cat.toString", x:"Нет ни в <code>cat</code>, ни в <code>animal</code> → следующее звено <code>Object.prototype</code> → есть. Поэтому у любого объекта есть <code>toString</code>.", hl:"chain", p:{chain:[it("cat { name } <span class=\"chip cmut\">нет</span>"),it("animal { eats, walk } <span class=\"chip cmut\">нет</span>"),it("Object.prototype { toString… } <span class=\"chip cok\">найдено здесь</span>"),it("null")],look:[it("toString: cat ✗ → animal ✗ → Object.prototype ✓",'new')],out:[it("Барсик"),it("true"),it("иду"),it("true",'new')]}},
+   {line:[12], t:"cat.fly", x:"Прошли всю цепочку и упёрлись в <code>null</code> — свойства нет. Результат <code>undefined</code>, не ошибка.", hl:"chain", p:{chain:[it("cat { name } <span class=\"chip cmut\">нет</span>"),it("animal { eats, walk } <span class=\"chip cmut\">нет</span>"),it("Object.prototype { toString… } <span class=\"chip cmut\">нет</span>"),it("null <span class=\"chip cbad\">конец цепочки</span>")],look:[it("fly: … → null → undefined",'new')],out:[it("Барсик"),it("true"),it("иду"),it("true"),it("undefined",'new')]}},
+   {line:[], t:"Итог", x:"Свойство ищется сначала в объекте, потом по цепочке прототипов до <code>null</code>. Методы лежат в прототипе один раз и доступны всем, кто на него ссылается.", fin:true, p:{chain:[it("cat { name } <span class=\"chip cmut\">нет</span>"),it("animal { eats, walk } <span class=\"chip cmut\">нет</span>"),it("Object.prototype { toString… } <span class=\"chip cmut\">нет</span>"),it("null <span class=\"chip cbad\">конец цепочки</span>")],look:[it("fly: … → null → undefined")],out:[it("Барсик"),it("true"),it("иду"),it("true"),it("undefined")]}},
+  ]
+},
+
+/* ===== КЛАССЫ ===== */
+classes: {
+  name:"Классы",
+  code:[
+  "<span class=\"kw\">class</span> User {",
+  "  #password = <span class=\"str\">'123'</span>;",
+  "  <span class=\"kw\">static</span> count = <span class=\"num\">0</span>;",
+  "  <span class=\"fn\">constructor</span>(name) {",
+  "    <span class=\"kw\">this</span>.name = name;",
+  "    User.count++;",
+  "  }",
+  "  <span class=\"fn\">hello</span>() { <span class=\"kw\">return</span> <span class=\"str\">'Я '</span> + <span class=\"kw\">this</span>.name; }",
+  "}",
+  "<span class=\"kw\">class</span> Admin <span class=\"kw\">extends</span> User {",
+  "  <span class=\"fn\">constructor</span>(name) {",
+  "    <span class=\"kw\">super</span>(name);",
+  "    <span class=\"kw\">this</span>.role = <span class=\"str\">'admin'</span>;",
+  "  }",
+  "}",
+  "<span class=\"kw\">const</span> a = <span class=\"kw\">new</span> <span class=\"fn\">Admin</span>(<span class=\"str\">'Саша'</span>);",
+  "console.<span class=\"fn\">log</span>(a.<span class=\"fn\">hello</span>());",
+  "console.<span class=\"fn\">log</span>(a.role, User.count);",
+  "console.<span class=\"fn\">log</span>(a.password);"],
+  panels:[["obj", "Объект a", "items"], ["chain", "Где лежат методы", "items"], ["stack", "Стек вызовов", "stack"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> класс — <b>шаблон</b> для создания объектов, <b>синтаксический сахар</b> над конструкторами и прототипами.</li><li><b>Как работает:</b> <code>constructor</code> задаёт поля, методы попадают в <b>прототип</b>, <code>extends</code> наследует, <code>super</code> вызывает родителя.</li><li><b>Пример:</b> <code>class Admin extends User { constructor(name) { super(name); } }</code>.</li><li><b>Подвох:</b> в наследнике <code>super()</code> надо вызвать <b>до <code>this</code></b>; есть <b>статические</b> методы и <b>приватные поля</b> через <code>#</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 5, 6, 7, 8, 9], t:"Класс User", x:"<code>hello</code> попадает в <code>User.prototype</code> — один раз на всех. <code>static count</code> лежит в самом классе <code>User</code>, а не в объектах. <code>#password</code> — приватное поле каждого объекта.", p:{obj:[it("объекта ещё нет")],chain:[it("User.prototype { hello }",'new'),it("User.count = 0 <span class=\"chip c2\">static</span>",'new')],stack:[it("global")],out:[]}},
+   {line:[10, 11, 12, 13, 14, 15], t:"Admin extends User", x:"<code>extends</code> строит цепочку: <code>Admin.prototype → User.prototype</code>. Так у админа будут методы пользователя.", hl:"chain", p:{obj:[it("объекта ещё нет")],chain:[it("Admin.prototype { } → User.prototype",'new'),it("User.prototype { hello }"),it("User.count = 0 <span class=\"chip c2\">static</span>")],stack:[it("global")],out:[]}},
+   {line:[16], t:"new Admin('Саша')", x:"<code>new</code> создаёт объект и вызывает конструктор <code>Admin</code>. В наследнике к <code>this</code> нельзя обращаться, пока не вызван <code>super()</code>.", hl:"stack", p:{obj:[it("{ } <span class=\"chip cbad\">this пока недоступен</span>",'new')],chain:[it("Admin.prototype { } → User.prototype"),it("User.prototype { hello }"),it("User.count = 0 <span class=\"chip c2\">static</span>")],stack:[it("global"),it("Admin constructor",'new')],out:[]}},
+   {line:[12, 4, 5, 6], t:"super(name)", x:"<code>super(name)</code> вызывает конструктор <code>User</code>: появляется приватное <code>#password</code>, <code>name = 'Саша'</code>, счётчик <code>User.count</code> становится 1.", hl:"obj", p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>",'new'),it("name = 'Саша'",'new')],chain:[it("Admin.prototype { } → User.prototype"),it("User.prototype { hello }"),it("User.count = 1 <span class=\"chip c2\">static</span>",'new')],stack:[it("global"),it("Admin constructor"),it("User constructor",'new')],out:[]}},
+   {line:[13], t:"this.role", x:"Вернулись в конструктор <code>Admin</code>, теперь <code>this</code> можно использовать.", hl:"obj", p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>"),it("name = 'Саша'"),it("role = 'admin'",'new')],chain:[it("Admin.prototype { } → User.prototype"),it("User.prototype { hello }"),it("User.count = 1 <span class=\"chip c2\">static</span>")],stack:[it("global"),it("Admin constructor")],out:[]}},
+   {line:[17, 8], t:"a.hello()", x:"В объекте нет <code>hello</code> → <code>Admin.prototype</code> → нет → <code>User.prototype</code> → есть. <code>this</code> — <code>a</code>.", hl:"chain", p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>"),it("name = 'Саша'"),it("role = 'admin'")],chain:[it("Admin.prototype { } <span class=\"chip cmut\">нет</span>"),it("User.prototype { hello } <span class=\"chip cok\">найдено</span>"),it("User.count = 1 <span class=\"chip c2\">static</span>")],stack:[it("global"),it("hello()",'new')],out:[it("Я Саша",'new')]}},
+   {line:[18], t:"Поле и static", x:"<code>role</code> — в объекте. <code>count</code> читаем через класс <code>User.count</code>; у объекта <code>a.count</code> было бы <code>undefined</code>.", hl:"out", p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>"),it("name = 'Саша'"),it("role = 'admin'")],chain:[it("Admin.prototype { } <span class=\"chip cmut\">нет</span>"),it("User.prototype { hello } <span class=\"chip cok\">найдено</span>"),it("User.count = 1 <span class=\"chip c2\">static</span>")],stack:[it("global")],out:[it("Я Саша"),it("admin 1",'new')]}},
+   {line:[19], t:"Приватное поле снаружи", x:"<code>a.password</code> — это другое, обычное свойство, его нет → <code>undefined</code>. <code>#password</code> снаружи не достать: <code>a.#password</code> — <code>SyntaxError</code>.", hl:"obj", p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>"),it("name = 'Саша'"),it("role = 'admin'")],chain:[it("Admin.prototype { } <span class=\"chip cmut\">нет</span>"),it("User.prototype { hello } <span class=\"chip cok\">найдено</span>"),it("User.count = 1 <span class=\"chip c2\">static</span>")],stack:[it("global")],out:[it("Я Саша"),it("admin 1"),it("undefined",'new')]}},
+   {line:[], t:"Итог", x:"Класс — удобная запись над прототипами: методы в <code>prototype</code>, <code>extends</code> строит цепочку, <code>super()</code> вызывает родителя до <code>this</code>, <code>static</code> — у класса, <code>#</code> — приватно.", fin:true, p:{obj:[it("#password = '123' <span class=\"chip cbad\">приватное</span>"),it("name = 'Саша'"),it("role = 'admin'")],chain:[it("Admin.prototype { } <span class=\"chip cmut\">нет</span>"),it("User.prototype { hello } <span class=\"chip cok\">найдено</span>"),it("User.count = 1 <span class=\"chip c2\">static</span>")],stack:[it("global")],out:[it("Я Саша"),it("admin 1"),it("undefined")]}},
+  ]
+},
+
+/* ===== ПРИМИТИВЫ И ОБЪЕКТЫ ===== */
+primitives: {
+  name:"Примитивы и объекты",
+  code:[
+  "<span class=\"kw\">let</span> a = <span class=\"num\">1</span>;",
+  "<span class=\"kw\">let</span> b = a;",
+  "b = <span class=\"num\">2</span>;",
+  "",
+  "<span class=\"kw\">const</span> x = { n: <span class=\"num\">1</span> };",
+  "<span class=\"kw\">const</span> y = x;",
+  "y.n = <span class=\"num\">2</span>;",
+  "",
+  "<span class=\"kw\">const</span> z = { ...x };",
+  "console.<span class=\"fn\">log</span>(a, x.n, z === x);"],
+  panels:[["vars", "Переменные", "items"], ["heap", "Объекты в памяти", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> в JS 7 <b>примитивов</b> — string, number, bigint, boolean, undefined, null, symbol — и <b>объекты</b> (массивы и функции тоже объекты).</li><li><b>Как работает:</b> примитивы копируются <b>по значению</b>, объекты — <b>по ссылке</b>: переменная хранит ссылку на объект.</li><li><b>Пример:</b> <code>const b = a; b.x = 2</code> — изменится и <code>a</code>, это один объект.</li><li><b>Подвох:</b> <code>typeof null</code> — <code>'object'</code> (историческая ошибка); объекты сравниваются <b>по ссылке</b>: <code>{} === {}</code> — <code>false</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Примитив", x:"Число — примитив. Значение лежит прямо в переменной.", hl:"vars", p:{vars:[it("a = 1",'new')],heap:[it("пусто")],out:[]}},
+   {line:[2], t:"Копия по значению", x:"<code>b = a</code> копирует <b>значение</b>. Теперь это две независимые единицы.", hl:"vars", p:{vars:[it("a = 1"),it("b = 1 <span class=\"chip c1\">копия значения</span>",'new')],heap:[it("пусто")],out:[]}},
+   {line:[3], t:"Меняем b", x:"<code>a</code> не изменилась — у неё своя единица.", hl:"vars", p:{vars:[it("a = 1"),it("b = 2",'new')],heap:[it("пусто")],out:[]}},
+   {line:[5], t:"Объект", x:"Объект создаётся в памяти отдельно (#1), а в <code>x</code> лежит <b>ссылка</b> на него.", hl:"heap", p:{vars:[it("a = 1"),it("b = 2"),it("x → #1",'new')],heap:[it("#1 { n: 1 }",'new')],out:[]}},
+   {line:[6], t:"Копия по ссылке", x:"<code>y = x</code> копирует <b>ссылку</b>, а не объект. Обе переменные указывают на #1.", hl:"vars", p:{vars:[it("a = 1"),it("b = 2"),it("x → #1"),it("y → #1 <span class=\"chip c1\">та же ссылка</span>",'new')],heap:[it("#1 { n: 1 }")],out:[]}},
+   {line:[7], t:"Меняем через y", x:"Меняется сам объект #1 — его видно и через <code>x</code>.", hl:"heap", p:{vars:[it("a = 1"),it("b = 2"),it("x → #1"),it("y → #1 <span class=\"chip c1\">та же ссылка</span>")],heap:[it("#1 { n: 2 }",'new')],out:[]}},
+   {line:[9], t:"Spread — новый объект", x:"<code>{ ...x }</code> создаёт <b>новый</b> объект #2 и копирует в него поля. Копия поверхностная: вложенные объекты остались бы общими.", hl:"heap", p:{vars:[it("a = 1"),it("b = 2"),it("x → #1"),it("y → #1"),it("z → #2",'new')],heap:[it("#1 { n: 2 }"),it("#2 { n: 2 }",'new')],out:[]}},
+   {line:[10], t:"Вывод", x:"<code>a</code> осталась 1, <code>x.n</code> стал 2, а <code>z === x</code> — <code>false</code>: объекты сравниваются по ссылке, а это разные объекты.", hl:"out", p:{vars:[it("a = 1"),it("b = 2"),it("x → #1"),it("y → #1"),it("z → #2")],heap:[it("#1 { n: 2 }"),it("#2 { n: 2 }")],out:[it("1 2 false",'new')]}},
+   {line:[], t:"Итог", x:"Примитивы копируются по значению, объекты — по ссылке. Сравнение объектов — тоже по ссылке.", fin:true, p:{vars:[it("a = 1"),it("b = 2"),it("x → #1"),it("y → #1"),it("z → #2")],heap:[it("#1 { n: 2 }"),it("#2 { n: 2 }")],out:[it("1 2 false")]}},
+  ]
+},
+
+/* ===== == И === ===== */
+equality: {
+  name:"== и ===",
+  code:[
+  "console.<span class=\"fn\">log</span>(<span class=\"str\">'5'</span> == <span class=\"num\">5</span>);",
+  "console.<span class=\"fn\">log</span>(<span class=\"str\">'5'</span> === <span class=\"num\">5</span>);",
+  "console.<span class=\"fn\">log</span>(<span class=\"num\">0</span> == <span class=\"str\">''</span>);",
+  "console.<span class=\"fn\">log</span>(<span class=\"kw\">null</span> == <span class=\"kw\">undefined</span>);",
+  "console.<span class=\"fn\">log</span>(<span class=\"kw\">null</span> === <span class=\"kw\">undefined</span>);",
+  "console.<span class=\"fn\">log</span>(NaN === NaN);",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">Boolean</span>([]), <span class=\"fn\">Boolean</span>(<span class=\"str\">''</span>));"],
+  panels:[["conv", "Что делает сравнение", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>===</code> — <b>строгое</b> сравнение без приведения типов; <code>==</code> — <b>нестрогое</b>, с <b>приведением типов</b>.</li><li><b>Как работает:</b> <code>==</code> сначала приводит значения к одному типу, потом сравнивает.</li><li><b>Пример:</b> <code>'5' == 5</code> — <code>true</code>, <code>'5' === 5</code> — <code>false</code>; <code>null == undefined</code> — <code>true</code>.</li><li><b>Подвох:</b> в коде всегда <code>===</code>; в условиях работают <b>truthy/falsy</b> — falsy всего 8 значений.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"'5' == 5", x:"Нестрогое сравнение: типы разные, поэтому строка приводится к числу.", hl:"conv", p:{conv:[it("'5' (строка) и 5 (число) — типы разные",'new'),it("'5' → 5",'new'),it("5 == 5 → true",'new')],out:[it("true",'new')]}},
+   {line:[2], t:"'5' === 5", x:"Строгое сравнение: типы разные — сразу <code>false</code>, никакого приведения.", hl:"conv", p:{conv:[it("строка ≠ число → false",'new')],out:[it("true"),it("false",'new')]}},
+   {line:[3], t:"0 == ''", x:"Пустая строка приводится к числу 0. Отсюда неожиданные <code>true</code> — поэтому в коде пишем <code>===</code>.", hl:"conv", p:{conv:[it("'' → 0",'new'),it("0 == 0 → true <span class=\"chip cbad\">неочевидно</span>",'new')],out:[it("true"),it("false"),it("true",'new')]}},
+   {line:[4], t:"null == undefined", x:"Особое правило: <code>null</code> и <code>undefined</code> нестрого равны только друг другу.", hl:"conv", p:{conv:[it("особое правило → true",'new')],out:[it("true"),it("false"),it("true"),it("true",'new')]}},
+   {line:[5], t:"null === undefined", x:"Разные типы → <code>false</code>.", hl:"conv", p:{conv:[it("null и undefined — разные типы → false",'new')],out:[it("true"),it("false"),it("true"),it("true"),it("false",'new')]}},
+   {line:[6], t:"NaN === NaN", x:"<code>NaN</code> не равен ничему, даже себе. Проверяют через <code>Number.isNaN(value)</code>.", hl:"conv", p:{conv:[it("NaN ни с чем не равен → false",'new'),it("проверка: Number.isNaN(x)",'new')],out:[it("true"),it("false"),it("true"),it("true"),it("false"),it("false",'new')]}},
+   {line:[7], t:"Truthy и falsy", x:"Пустой массив — truthy (это объект). Пустая строка — одно из 8 falsy-значений.", hl:"conv", p:{conv:[it("[] → true <span class=\"chip cok\">объект — всегда truthy</span>",'new'),it("'' → false <span class=\"chip cbad\">falsy</span>",'new'),it("falsy: false, 0, -0, 0n, '', null, undefined, NaN")],out:[it("true"),it("false"),it("true"),it("true"),it("false"),it("false"),it("true false",'new')]}},
+   {line:[], t:"Итог", x:"<code>==</code> приводит типы, <code>===</code> — нет. В коде всегда <code>===</code>. Исключение, которое иногда пишут осознанно: <code>x == null</code> ловит и <code>null</code>, и <code>undefined</code>.", fin:true, p:{conv:[it("[] → true <span class=\"chip cok\">объект — всегда truthy</span>"),it("'' → false <span class=\"chip cbad\">falsy</span>"),it("falsy: false, 0, -0, 0n, '', null, undefined, NaN")],out:[it("true"),it("false"),it("true"),it("true"),it("false"),it("false"),it("true false")]}},
+  ]
+},
+
+/* ===== ВИДЫ ФУНКЦИЙ ===== */
+functions: {
+  name:"Виды функций",
+  code:[
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">sum</span>(<span class=\"num\">1</span>, <span class=\"num\">2</span>));",
+  "<span class=\"cm\">// console.log(mul(2, 3));</span>",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">sum</span>(a, b) {",
+  "  <span class=\"kw\">return</span> a + b;",
+  "}",
+  "<span class=\"kw\">const</span> mul = <span class=\"kw\">function</span> (a, b) {",
+  "  <span class=\"kw\">return</span> a * b;",
+  "};",
+  "<span class=\"kw\">const</span> half = (n) =&gt; n / <span class=\"num\">2</span>;",
+  "",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">mul</span>(<span class=\"num\">2</span>, <span class=\"num\">3</span>), <span class=\"fn\">half</span>(<span class=\"num\">10</span>));"],
+  panels:[["mem", "Глобальная область", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> функцию можно создать тремя способами: <b>Function Declaration</b>, <b>Function Expression</b> и <b>стрелочная функция</b>.</li><li><b>Как работает:</b> Declaration <b>поднимается целиком</b> — её можно вызвать до объявления; Expression и стрелку — нельзя.</li><li><b>Пример:</b> <code>function f() {}</code> — declaration; <code>const f = function () {}</code> — expression; <code>const f = () =&gt; {}</code> — стрелка.</li><li><b>Подвох:</b> у стрелки <b>нет своего <code>this</code></b> и <code>arguments</code>, её нельзя вызвать через <code>new</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[], t:"До выполнения: hoisting", x:"Function Declaration <code>sum</code> поднимается <b>целиком</b> — сразу готовая функция. <code>mul</code> и <code>half</code> объявлены через <code>const</code> — до своей строки они в TDZ.", hl:"mem", p:{mem:[it("sum = function <span class=\"chip cok\">поднята целиком</span>",'new'),it("mul <span class=\"chip cbad\">TDZ</span>",'new'),it("half <span class=\"chip cbad\">TDZ</span>",'new')],out:[]}},
+   {line:[1], t:"Вызов до объявления", x:"<code>sum</code> работает, хотя написана ниже.", hl:"out", p:{mem:[it("sum = function <span class=\"chip cok\">поднята целиком</span>"),it("mul <span class=\"chip cbad\">TDZ</span>"),it("half <span class=\"chip cbad\">TDZ</span>")],out:[it("3",'new')]}},
+   {line:[2], t:"Expression до объявления", x:"Если раскомментировать: <code>ReferenceError</code> — <code>mul</code> ещё в TDZ.", hl:"mem", p:{mem:[it("sum = function"),it("mul <span class=\"chip cbad\">TDZ → ReferenceError</span>",'new'),it("half <span class=\"chip cbad\">TDZ</span>")],out:[it("3")]}},
+   {line:[4, 5, 6], t:"Function Declaration", x:"Здесь ничего не происходит — функция уже создана при подготовке.", hl:"mem", p:{mem:[it("sum = function"),it("mul <span class=\"chip cbad\">TDZ</span>"),it("half <span class=\"chip cbad\">TDZ</span>")],out:[it("3")]}},
+   {line:[7, 8, 9], t:"Function Expression", x:"Функция создаётся как <b>значение</b> и записывается в переменную только сейчас.", hl:"mem", p:{mem:[it("sum = function"),it("mul = function <span class=\"chip c1\">expression</span>",'new'),it("half <span class=\"chip cbad\">TDZ</span>")],out:[it("3")]}},
+   {line:[10], t:"Стрелочная функция", x:"Короткая запись. Без <code>{ }</code> результат возвращается сам. Своих <code>this</code> и <code>arguments</code> нет, через <code>new</code> вызвать нельзя.", hl:"mem", p:{mem:[it("sum = function"),it("mul = function"),it("half = arrow <span class=\"chip c2\">нет this, arguments, new</span>",'new')],out:[it("3")]}},
+   {line:[12], t:"Вызовы", x:"Обе функции уже созданы — работают.", hl:"out", p:{mem:[it("sum = function"),it("mul = function"),it("half = arrow <span class=\"chip c2\">нет this, arguments, new</span>")],out:[it("3"),it("6 5",'new')]}},
+   {line:[], t:"Итог", x:"Declaration можно вызвать до объявления, Expression и стрелку — нет. У стрелки нет своего <code>this</code>.", fin:true, p:{mem:[it("sum = function"),it("mul = function"),it("half = arrow <span class=\"chip c2\">нет this, arguments, new</span>")],out:[it("3"),it("6 5")]}},
+  ]
+},
+
+/* ===== МЕТОДЫ МАССИВОВ ===== */
+arrays: {
+  name:"Методы массивов",
+  code:[
+  "<span class=\"kw\">const</span> nums = [<span class=\"num\">1</span>, <span class=\"num\">2</span>, <span class=\"num\">3</span>, <span class=\"num\">4</span>];",
+  "",
+  "<span class=\"kw\">const</span> doubled = nums.<span class=\"fn\">map</span>((n) =&gt; n * <span class=\"num\">2</span>);",
+  "<span class=\"kw\">const</span> even = nums.<span class=\"fn\">filter</span>((n) =&gt; n % <span class=\"num\">2</span> === <span class=\"num\">0</span>);",
+  "<span class=\"kw\">const</span> sum = nums.<span class=\"fn\">reduce</span>((acc, n) =&gt; acc + n, <span class=\"num\">0</span>);",
+  "<span class=\"kw\">const</span> found = nums.<span class=\"fn\">find</span>((n) =&gt; n &gt; <span class=\"num\">2</span>);",
+  "<span class=\"kw\">const</span> res = nums.<span class=\"fn\">forEach</span>((n) =&gt; n * <span class=\"num\">2</span>);",
+  "",
+  "console.<span class=\"fn\">log</span>(nums, res);"],
+  panels:[["work", "Как работает метод", "items", "wide"], ["vars", "Переменные", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> методы перебора массива: <code>forEach</code>, <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>find</code>.</li><li><b>Как работает:</b> <code>map</code> — <b>новый массив</b> той же длины, <code>filter</code> — новый массив из подходящих, <code>reduce</code> — <b>сводит к одному значению</b>, <code>find</code> — <b>первый</b> подходящий элемент или <code>undefined</code>, <code>forEach</code> — <b>ничего не возвращает</b>.</li><li><b>Пример:</b> <code>users.filter(u =&gt; u.active).map(u =&gt; u.name)</code> — имена активных.</li><li><b>Подвох:</b> <b>мутируют</b> исходный массив <code>push</code>, <code>pop</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>; <code>map</code> и <code>filter</code> — нет.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Исходный массив", x:"Массив из четырёх чисел. Посмотрим, меняют ли его методы.", hl:"vars", p:{work:[it("—")],vars:[it("nums = [1, 2, 3, 4]",'new')],out:[]}},
+   {line:[3], t:"map", x:"Колбэк вызывается для <b>каждого</b> элемента, результаты собираются в <b>новый массив той же длины</b>.", hl:"work", p:{work:[it("1 → 2",'new'),it("2 → 4",'new'),it("3 → 6",'new'),it("4 → 8",'new')],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]",'new')],out:[]}},
+   {line:[4], t:"filter", x:"Остаются элементы, для которых колбэк вернул <code>true</code>.", hl:"work", p:{work:[it("1 → false <span class=\"chip cmut\">выкинули</span>",'new'),it("2 → true <span class=\"chip cok\">оставили</span>",'new'),it("3 → false <span class=\"chip cmut\">выкинули</span>",'new'),it("4 → true <span class=\"chip cok\">оставили</span>",'new')],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]",'new')],out:[]}},
+   {line:[5], t:"reduce", x:"Аккумулятор <code>acc</code> переходит от шага к шагу. Начальное значение — 0, второй аргумент <code>reduce</code>.", hl:"work", p:{work:[it("acc = 0 (начальное)",'new'),it("0 + 1 = 1",'new'),it("1 + 2 = 3",'new'),it("3 + 3 = 6",'new'),it("6 + 4 = 10 → результат",'new')],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]"),it("sum = 10",'new')],out:[]}},
+   {line:[6], t:"find", x:"Возвращает <b>первый</b> подходящий элемент и дальше не идёт. Не нашёл бы — <code>undefined</code>.", hl:"work", p:{work:[it("1 > 2? нет",'new'),it("2 > 2? нет",'new'),it("3 > 2? да → стоп <span class=\"chip cok\">найден</span>",'new')],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]"),it("sum = 10"),it("found = 3",'new')],out:[]}},
+   {line:[7], t:"forEach", x:"Просто перебирает. Что бы колбэк ни вернул, сам <code>forEach</code> возвращает <code>undefined</code>.", hl:"work", p:{work:[it("колбэк вызван 4 раза, результаты выброшены",'new')],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]"),it("sum = 10"),it("found = 3"),it("res = undefined",'new')],out:[]}},
+   {line:[9], t:"Исходный массив цел", x:"Ни один из этих методов не изменил <code>nums</code>. Мутируют другие: <code>push</code>, <code>pop</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>.", hl:"out", p:{work:[it("колбэк вызван 4 раза, результаты выброшены")],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]"),it("sum = 10"),it("found = 3"),it("res = undefined")],out:[it("[1, 2, 3, 4] undefined",'new')]}},
+   {line:[], t:"Итог", x:"<code>map</code> — новый массив той же длины, <code>filter</code> — подходящие, <code>reduce</code> — одно значение, <code>find</code> — первый элемент, <code>forEach</code> — ничего.", fin:true, p:{work:[it("колбэк вызван 4 раза, результаты выброшены")],vars:[it("nums = [1, 2, 3, 4]"),it("doubled = [2, 4, 6, 8]"),it("even = [2, 4]"),it("sum = 10"),it("found = 3"),it("res = undefined")],out:[it("[1, 2, 3, 4] undefined")]}},
+  ]
+},
+
+/* ===== ДЕСТРУКТУРИЗАЦИЯ И SPREAD ===== */
+destructuring: {
+  name:"Деструктуризация и spread",
+  code:[
+  "<span class=\"kw\">const</span> user = { name: <span class=\"str\">'Саша'</span>, age: <span class=\"num\">40</span>, address: { city: <span class=\"str\">'Москва'</span> } };",
+  "",
+  "<span class=\"kw\">const</span> { name, role = <span class=\"str\">'junior'</span>, ...rest } = user;",
+  "<span class=\"kw\">const</span> copy = { ...user, age: <span class=\"num\">41</span> };",
+  "copy.address.city = <span class=\"str\">'Казань'</span>;",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">count</span>(...nums) { <span class=\"kw\">return</span> nums.length; }",
+  "console.<span class=\"fn\">log</span>(name, role, <span class=\"fn\">count</span>(<span class=\"num\">1</span>, <span class=\"num\">2</span>, <span class=\"num\">3</span>));",
+  "console.<span class=\"fn\">log</span>(user.address.city);"],
+  panels:[["vars", "Переменные", "items"], ["heap", "Объекты в памяти", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>деструктуризация</b> — распаковка свойств объекта или элементов массива в переменные.</li><li><b>Как работает:</b> <b>spread</b> <code>...</code> раскладывает массив или объект на части, <b>rest</b> <code>...</code> собирает оставшееся в массив или объект.</li><li><b>Пример:</b> <code>const { name, ...rest } = user</code> — <code>name</code> отдельно, остальное в <code>rest</code>.</li><li><b>Подвох:</b> spread делает <b>поверхностную копию</b> — вложенные объекты остаются общими.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Исходный объект", x:"Объект #1, внутри — вложенный объект адреса #2. В <code>user</code> — ссылка.", hl:"heap", p:{vars:[it("user → #1",'new')],heap:[it("#1 { name: 'Саша', age: 40, address → #2 }",'new'),it("#2 { city: 'Москва' }",'new')],out:[]}},
+   {line:[3], t:"Деструктуризация + rest", x:"<code>name</code> достаём как есть. <code>role</code> в объекте нет — берётся значение по умолчанию. <code>...rest</code> собирает оставшиеся поля в <b>новый</b> объект.", hl:"vars", p:{vars:[it("user → #1"),it("name = 'Саша'",'new'),it("role = 'junior' <span class=\"chip c2\">по умолчанию</span>",'new'),it("rest → #3",'new')],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Москва' }"),it("#3 { age: 40, address → #2 } <span class=\"chip c1\">rest</span>",'new')],out:[]}},
+   {line:[4], t:"Spread — копия", x:"Новый объект #4: поля скопированы, <code>age</code> перезаписан. Но <code>address</code> — та же ссылка на #2: копия <b>поверхностная</b>.", hl:"heap", p:{vars:[it("user → #1"),it("name = 'Саша'"),it("role = 'junior'"),it("rest → #3"),it("copy → #4",'new')],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Москва' }"),it("#3 { age: 40, address → #2 }"),it("#4 { name, age: 41, address → #2 } <span class=\"chip cbad\">address общий!</span>",'new')],out:[]}},
+   {line:[5], t:"Меняем вложенный объект копии", x:"Меняется общий #2 — изменение видно и через <code>user</code>, и через <code>rest</code>.", hl:"heap", p:{vars:[it("user → #1"),it("name = 'Саша'"),it("role = 'junior'"),it("rest → #3"),it("copy → #4")],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Казань' }",'new'),it("#3 { age: 40, address → #2 }"),it("#4 { name, age: 41, address → #2 }")],out:[]}},
+   {line:[7, 8], t:"Rest в параметрах", x:"<code>...nums</code> в параметрах собирает все аргументы в массив <code>[1, 2, 3]</code>.", hl:"out", p:{vars:[it("user → #1"),it("name = 'Саша'"),it("role = 'junior'"),it("rest → #3"),it("copy → #4")],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Казань' }"),it("#3 { age: 40, address → #2 }"),it("#4 { name, age: 41, address → #2 }")],out:[it("Саша junior 3",'new')]}},
+   {line:[9], t:"Исходный тоже изменился", x:"Потому что spread скопировал только верхний уровень. Глубокая копия — <code>structuredClone(user)</code>.", hl:"out", p:{vars:[it("user → #1"),it("name = 'Саша'"),it("role = 'junior'"),it("rest → #3"),it("copy → #4")],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Казань' }"),it("#3 { age: 40, address → #2 }"),it("#4 { name, age: 41, address → #2 }")],out:[it("Саша junior 3"),it("Казань",'new')]}},
+   {line:[], t:"Итог", x:"Деструктуризация распаковывает, spread раскладывает, rest собирает. Spread — поверхностная копия: вложенные объекты общие.", fin:true, p:{vars:[it("user → #1"),it("name = 'Саша'"),it("role = 'junior'"),it("rest → #3"),it("copy → #4")],heap:[it("#1 { name, age: 40, address → #2 }"),it("#2 { city: 'Казань' }"),it("#3 { age: 40, address → #2 }"),it("#4 { name, age: 41, address → #2 }")],out:[it("Саша junior 3"),it("Казань")]}},
+  ]
+},
+
+/* ===== ?. И ?? ===== */
+syntax: {
+  name:"?. и ??",
+  code:[
+  "<span class=\"kw\">const</span> user = { name: <span class=\"str\">'Саша'</span>, settings: <span class=\"kw\">null</span>, likes: <span class=\"num\">0</span> };",
+  "",
+  "console.<span class=\"fn\">log</span>(<span class=\"str\">`Привет, </span>${user.name}<span class=\"str\">!`</span>);",
+  "console.<span class=\"fn\">log</span>(user.settings?.theme);",
+  "console.<span class=\"fn\">log</span>(user.address?.city);",
+  "console.<span class=\"fn\">log</span>(user.settings ?? <span class=\"str\">'по умолчанию'</span>);",
+  "console.<span class=\"fn\">log</span>(user.likes || <span class=\"num\">10</span>);",
+  "console.<span class=\"fn\">log</span>(user.likes ?? <span class=\"num\">10</span>);"],
+  panels:[["eval", "Как вычисляется", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>шаблонные строки</b> — строки в обратных кавычках с подстановкой <code>${}</code>; <code>?.</code> — <b>опциональная цепочка</b>; <code>??</code> — <b>оператор нулевого слияния</b>.</li><li><b>Как работает:</b> <code>?.</code> возвращает <code>undefined</code>, если слева <code>null</code> или <code>undefined</code>, вместо ошибки; <code>??</code> подставляет значение справа только для <code>null</code> и <code>undefined</code>.</li><li><b>Пример:</b> <code>user?.address?.city ?? 'не указан'</code>.</li><li><b>Подвох:</b> <code>||</code> заменяет <b>все falsy</b> (<code>0</code>, <code>''</code>), а <code>??</code> — только <code>null</code> и <code>undefined</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3], t:"Шаблонная строка", x:"В обратных кавычках выражение в <code>${}</code> вычисляется и подставляется в строку.", hl:"eval", p:{eval:[it("${user.name} → 'Саша'",'new')],out:[it("Привет, Саша!",'new')]}},
+   {line:[4], t:"?. на null", x:"<code>settings</code> равен <code>null</code>. Без <code>?.</code> была бы ошибка «Cannot read properties of null». С <code>?.</code> — просто <code>undefined</code>.", hl:"eval", p:{eval:[it("user.settings → null",'new'),it("?. видит null → стоп → undefined <span class=\"chip cok\">без ошибки</span>",'new')],out:[it("Привет, Саша!"),it("undefined",'new')]}},
+   {line:[5], t:"?. на отсутствующем поле", x:"<code>address</code> нет — то же самое, <code>undefined</code>.", hl:"eval", p:{eval:[it("user.address → undefined",'new'),it("?. → undefined",'new')],out:[it("Привет, Саша!"),it("undefined"),it("undefined",'new')]}},
+   {line:[6], t:"?? при null", x:"Слева <code>null</code> — подставляется правое значение.", hl:"eval", p:{eval:[it("null ?? '…' → правое",'new')],out:[it("Привет, Саша!"),it("undefined"),it("undefined"),it("по умолчанию",'new')]}},
+   {line:[7], t:"|| при 0", x:"<code>||</code> заменяет <b>любое falsy</b>. 0 — falsy, поэтому лайки «потерялись».", hl:"eval", p:{eval:[it("0 — falsy → || берёт правое <span class=\"chip cbad\">баг</span>",'new')],out:[it("Привет, Саша!"),it("undefined"),it("undefined"),it("по умолчанию"),it("10",'new')]}},
+   {line:[8], t:"?? при 0", x:"<code>??</code> заменяет только <code>null</code> и <code>undefined</code>. 0 — нормальное значение, остаётся.", hl:"eval", p:{eval:[it("0 — не null и не undefined → ?? берёт левое <span class=\"chip cok\">верно</span>",'new')],out:[it("Привет, Саша!"),it("undefined"),it("undefined"),it("по умолчанию"),it("10"),it("0",'new')]}},
+   {line:[], t:"Итог", x:"<code>?.</code> — безопасное чтение вглубь. <code>??</code> — значение по умолчанию только для <code>null</code>/<code>undefined</code>. Для чисел и строк, где 0 и <code>''</code> допустимы, — <code>??</code>, а не <code>||</code>.", fin:true, p:{eval:[it("0 — не null и не undefined → ?? берёт левое <span class=\"chip cok\">верно</span>")],out:[it("Привет, Саша!"),it("undefined"),it("undefined"),it("по умолчанию"),it("10"),it("0")]}},
+  ]
+},
+
+/* ===== ИММУТАБЕЛЬНОСТЬ ===== */
+immutability: {
+  name:"Иммутабельность",
+  code:[
+  "<span class=\"kw\">let</span> state = { todos: [<span class=\"str\">'хлеб'</span>] };",
+  "<span class=\"kw\">let</span> prev = state;",
+  "",
+  "state.todos.<span class=\"fn\">push</span>(<span class=\"str\">'молоко'</span>);",
+  "console.<span class=\"fn\">log</span>(prev === state);",
+  "",
+  "state = { ...state, todos: [...state.todos, <span class=\"str\">'учить JS'</span>] };",
+  "console.<span class=\"fn\">log</span>(prev === state);",
+  "console.<span class=\"fn\">log</span>(prev.todos === state.todos);"],
+  panels:[["vars", "Переменные", "items"], ["heap", "Объекты в памяти", "items"], ["cmp", "Как сравнивает React (по ссылке)", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>иммутабельность</b> — данные не изменяют, а создают <b>новую копию</b> с изменениями.</li><li><b>Как работает:</b> копируем через <b>spread</b>, <code>map</code>, <code>filter</code>, <code>toSorted</code> вместо <code>push</code> и прямого присваивания.</li><li><b>Пример:</b> <code>setTodos([...todos, newTodo])</code> вместо <code>todos.push(newTodo)</code>.</li><li><b>Зачем:</b> React и Redux сравнивают состояние <b>по ссылке</b> (<b>shallow compare</b>) — мутация не меняет ссылку, и <b>ре-рендера не будет</b>; в Redux Toolkit <b>Immer</b> даёт писать «мутирующий» код безопасно.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Состояние", x:"Объект состояния #1, внутри массив #2.", hl:"heap", p:{vars:[it("state → #1",'new')],heap:[it("#1 { todos → #2 }",'new'),it("#2 ['хлеб']",'new')],cmp:[it("—")],out:[]}},
+   {line:[2], t:"Старое состояние", x:"Запомним ссылку как «прошлое состояние» — так React хранит предыдущий рендер.", hl:"vars", p:{vars:[it("state → #1"),it("prev → #1",'new')],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб']")],cmp:[it("—")],out:[]}},
+   {line:[4], t:"Мутация", x:"<code>push</code> меняет массив #2 <b>на месте</b>. Ссылки в <code>state</code> и <code>prev</code> не изменились.", hl:"heap", p:{vars:[it("state → #1"),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко'] <span class=\"chip cbad\">изменён на месте</span>",'new')],cmp:[it("—")],out:[]}},
+   {line:[5], t:"Сравнение после мутации", x:"Ссылка та же → <code>true</code>. React решит, что ничего не изменилось, и <b>не перерисует</b> компонент.", hl:"cmp", p:{vars:[it("state → #1"),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко'] <span class=\"chip cbad\">изменён на месте</span>")],cmp:[it("prev === state → true → «ничего не изменилось» → ре-рендера нет <span class=\"chip cbad\">баг</span>",'new')],out:[it("true",'new')]}},
+   {line:[7], t:"Неизменяемое обновление", x:"Создаём <b>новый</b> объект #3 и <b>новый</b> массив #4 через spread. Старые не трогаем.", hl:"heap", p:{vars:[it("state → #3",'new'),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко']"),it("#3 { todos → #4 }",'new'),it("#4 ['хлеб', 'молоко', 'учить JS']",'new')],cmp:[it("prev === state → true → «ничего не изменилось» → ре-рендера нет <span class=\"chip cbad\">баг</span>")],out:[it("true")]}},
+   {line:[8], t:"Сравнение после копии", x:"Ссылки разные → <code>false</code> → React видит изменение и перерисовывает.", hl:"cmp", p:{vars:[it("state → #3"),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко']"),it("#3 { todos → #4 }"),it("#4 ['хлеб', 'молоко', 'учить JS']")],cmp:[it("prev === state → false → «изменилось» → ре-рендер <span class=\"chip cok\">верно</span>",'new')],out:[it("true"),it("false",'new')]}},
+   {line:[9], t:"Вложенный массив тоже новый", x:"Скопировали и массив, поэтому <code>todos</code> тоже сравниваются как разные — дочерние компоненты увидят изменение.", hl:"out", p:{vars:[it("state → #3"),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко']"),it("#3 { todos → #4 }"),it("#4 ['хлеб', 'молоко', 'учить JS']")],cmp:[it("prev === state → false → «изменилось» → ре-рендер <span class=\"chip cok\">верно</span>")],out:[it("true"),it("false"),it("false",'new')]}},
+   {line:[], t:"Итог", x:"Не меняем состояние на месте — создаём копию с изменениями. React и Redux сравнивают по ссылке. В Redux Toolkit «мутирующий» код безопасен благодаря Immer.", fin:true, p:{vars:[it("state → #3"),it("prev → #1")],heap:[it("#1 { todos → #2 }"),it("#2 ['хлеб', 'молоко']"),it("#3 { todos → #4 }"),it("#4 ['хлеб', 'молоко', 'учить JS']")],cmp:[it("prev === state → false → «изменилось» → ре-рендер <span class=\"chip cok\">верно</span>")],out:[it("true"),it("false"),it("false")]}},
+  ]
+},
+
+/* ===== DEBOUNCE И THROTTLE ===== */
+debounce: {
+  name:"Debounce и Throttle",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">debounce</span>(fn, ms) {",
+  "  <span class=\"kw\">let</span> timer;",
+  "  <span class=\"kw\">return</span> (...args) =&gt; {",
+  "    <span class=\"fn\">clearTimeout</span>(timer);",
+  "    timer = <span class=\"fn\">setTimeout</span>(() =&gt; <span class=\"fn\">fn</span>(...args), ms);",
+  "  };",
+  "}",
+  "<span class=\"kw\">const</span> search = <span class=\"fn\">debounce</span>((q) =&gt; console.<span class=\"fn\">log</span>(<span class=\"str\">'ищу'</span>, q), <span class=\"num\">300</span>);",
+  "",
+  "<span class=\"fn\">search</span>(<span class=\"str\">'j'</span>);    <span class=\"cm\">// 0 мс</span>",
+  "<span class=\"fn\">search</span>(<span class=\"str\">'js'</span>);   <span class=\"cm\">// 100 мс</span>",
+  "<span class=\"fn\">search</span>(<span class=\"str\">'js!'</span>);  <span class=\"cm\">// 200 мс</span>",
+  "<span class=\"cm\">// дальше тишина</span>"],
+  panels:[["env", "Замыкание debounce", "items"], ["time", "Таймер", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>debounce</b> и <b>throttle</b> — способы <b>ограничить частоту</b> вызова функции.</li><li><b>Как работает:</b> debounce вызывает функцию <b>после паузы</b> — каждый новый вызов <b>сбрасывает таймер</b>; throttle вызывает <b>не чаще раза в N мс</b>.</li><li><b>Пример:</b> поиск при вводе — debounce; <code>scroll</code> и <code>resize</code> — throttle.</li><li><b>Подвох:</b> id таймера хранится в <b>замыкании</b>: <code>let timer</code> объявляют снаружи возвращаемой функции.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 5, 6, 7], t:"Функция-обёртка", x:"<code>debounce</code> принимает функцию и задержку и возвращает новую функцию. Пока ничего не вызвано.", p:{env:[it("—")],time:[it("—")],out:[]}},
+   {line:[8, 2], t:"Создаём search", x:"Вызов <code>debounce</code> создаёт окружение с <code>timer</code>, <code>fn</code> и <code>ms</code>. Возвращённая стрелка запоминает его — это <b>замыкание</b>. Все вызовы <code>search</code> будут видеть один <code>timer</code>.", hl:"env", p:{env:[it("timer = undefined",'new'),it("fn = (q) => …",'new'),it("ms = 300",'new')],time:[it("—")],out:[]}},
+   {line:[10, 4, 5], t:"0 мс: search('j')", x:"Отменять нечего. Ставим таймер №1 — сработает на 300 мс.", hl:"time", p:{env:[it("timer = №1",'new'),it("fn = (q) => …"),it("ms = 300")],time:[it("№1 → 'j' на 300 мс",'new')],out:[]}},
+   {line:[11, 4, 5], t:"100 мс: search('js')", x:"Не прошло 300 мс — <code>clearTimeout</code> отменяет №1. Ставим №2 — на 400 мс.", hl:"time", p:{env:[it("timer = №2",'new'),it("fn = (q) => …"),it("ms = 300")],time:[it("№1 <span class=\"chip cbad\">отменён</span>"),it("№2 → 'js' на 400 мс",'new')],out:[]}},
+   {line:[12, 4, 5], t:"200 мс: search('js!')", x:"Снова отмена — №2. Новый №3 — на 500 мс.", hl:"time", p:{env:[it("timer = №3",'new'),it("fn = (q) => …"),it("ms = 300")],time:[it("№1 <span class=\"chip cbad\">отменён</span>"),it("№2 <span class=\"chip cbad\">отменён</span>"),it("№3 → 'js!' на 500 мс",'new')],out:[]}},
+   {line:[13, 5], t:"500 мс: тишина", x:"300 мс без новых вызовов — таймер №3 срабатывает. Три вызова → <b>один</b> запрос с последним значением.", hl:"out", p:{env:[it("timer = №3"),it("fn = (q) => …"),it("ms = 300")],time:[it("№1 <span class=\"chip cbad\">отменён</span>"),it("№2 <span class=\"chip cbad\">отменён</span>"),it("№3 <span class=\"chip cok\">сработал</span>",'new')],out:[it("ищу js!",'new')]}},
+   {line:[], t:"А throttle?", x:"Throttle с 300 мс выполнил бы <b>первый</b> вызов сразу (<code>'j'</code>), остальные в пределах 300 мс пропустил бы, а следующий разрешил бы не раньше чем через 300 мс. Debounce ждёт паузу, throttle — ограничивает частоту.", hl:"time", p:{env:[it("timer = №3"),it("fn = (q) => …"),it("ms = 300")],time:[it("throttle: 0 мс 'j' <span class=\"chip cok\">выполнен</span>"),it("100 мс 'js' <span class=\"chip cmut\">пропущен</span>"),it("200 мс 'js!' <span class=\"chip cmut\">пропущен</span>")],out:[it("ищу js!")]}},
+   {line:[], t:"Итог", x:"Debounce — вызвать после паузы (поиск, автосохранение). Throttle — не чаще раза в N мс (скролл, ресайз). <code>timer</code> живёт в замыкании, поэтому объявлен снаружи возвращаемой функции.", fin:true, p:{env:[it("timer = №3"),it("fn = (q) => …"),it("ms = 300")],time:[it("throttle: 0 мс 'j' <span class=\"chip cok\">выполнен</span>"),it("100 мс 'js' <span class=\"chip cmut\">пропущен</span>"),it("200 мс 'js!' <span class=\"chip cmut\">пропущен</span>")],out:[it("ищу js!")]}},
+  ]
+},
+
+/* ===== MAP И SET ===== */
+mapset: {
+  name:"Map и Set",
+  code:[
+  "<span class=\"kw\">const</span> map = <span class=\"kw\">new</span> <span class=\"fn\">Map</span>();",
+  "<span class=\"kw\">const</span> user = { id: <span class=\"num\">1</span> };",
+  "map.<span class=\"fn\">set</span>(user, <span class=\"str\">'Саша'</span>);",
+  "map.<span class=\"fn\">set</span>(<span class=\"str\">'1'</span>, <span class=\"str\">'строка'</span>);",
+  "console.<span class=\"fn\">log</span>(map.<span class=\"fn\">get</span>(user), map.size);",
+  "",
+  "<span class=\"kw\">const</span> obj = {};",
+  "obj[user] = <span class=\"str\">'Саша'</span>;",
+  "console.<span class=\"fn\">log</span>(Object.<span class=\"fn\">keys</span>(obj));",
+  "",
+  "<span class=\"kw\">const</span> set = <span class=\"kw\">new</span> <span class=\"fn\">Set</span>([<span class=\"num\">1</span>, <span class=\"num\">2</span>, <span class=\"num\">2</span>, <span class=\"num\">3</span>, <span class=\"num\">3</span>]);",
+  "console.<span class=\"fn\">log</span>(set.size, [...set]);"],
+  panels:[["m", "Map", "items"], ["o", "Обычный объект", "items"], ["s", "Set", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>Map</b> — коллекция «ключ — значение» с <b>ключами любого типа</b>; <b>Set</b> — коллекция <b>уникальных значений</b>.</li><li><b>Как работает:</b> методы <code>set/get/has/delete</code>, свойство <b><code>size</code></b>, порядок вставки сохраняется.</li><li><b>Пример:</b> <code>[...new Set(arr)]</code> — убрать дубли из массива.</li><li><b>Отличие от объекта:</b> ключи объекта — только <b>строки и символы</b>, у Map есть <code>size</code> и она удобнее для частых добавлений и удалений.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"Пустая Map", x:"Map — коллекция пар «ключ — значение».", hl:"m", p:{m:[it("пусто, size = 0",'new')],o:[it("—")],s:[it("—")],out:[]}},
+   {line:[3], t:"Ключ — объект", x:"Ключом в Map может быть <b>что угодно</b>, даже сам объект <code>user</code>.", hl:"m", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>",'new')],o:[it("—")],s:[it("—")],out:[]}},
+   {line:[4], t:"Ключ — строка", x:"Строка <code>'1'</code> — другой ключ. Порядок вставки сохраняется.", hl:"m", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'",'new')],o:[it("—")],s:[it("—")],out:[]}},
+   {line:[5], t:"get и size", x:"Достаём по тому же объекту. <code>size</code> — встроенное свойство.", hl:"out", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("—")],s:[it("—")],out:[it("Саша 2",'new')]}},
+   {line:[7, 8], t:"То же в объекте", x:"Ключи объекта — только строки и символы. Объект <code>user</code> превращается в строку <code>'[object Object]'</code>.", hl:"o", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("'[object Object]' → 'Саша' <span class=\"chip cbad\">ключ стал строкой</span>",'new')],s:[it("—")],out:[it("Саша 2")]}},
+   {line:[9], t:"Ключи объекта", x:"Любой другой объект-ключ превратится в ту же строку и перезапишет значение.", hl:"out", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("'[object Object]' → 'Саша' <span class=\"chip cbad\">ключ стал строкой</span>")],s:[it("—")],out:[it("Саша 2"),it("['[object Object]']",'new')]}},
+   {line:[11], t:"Set", x:"Set хранит только <b>уникальные</b> значения — повторы отбрасываются.", hl:"s", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("'[object Object]' → 'Саша' <span class=\"chip cbad\">ключ стал строкой</span>")],s:[it("1",'new'),it("2",'new'),it("2 <span class=\"chip cmut\">дубль — пропущен</span>"),it("3",'new'),it("3 <span class=\"chip cmut\">дубль — пропущен</span>")],out:[it("Саша 2"),it("['[object Object]']")]}},
+   {line:[12], t:"Убрать дубли из массива", x:"Классический приём: <code>[...new Set(arr)]</code>.", hl:"out", p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("'[object Object]' → 'Саша' <span class=\"chip cbad\">ключ стал строкой</span>")],s:[it("1"),it("2"),it("3")],out:[it("Саша 2"),it("['[object Object]']"),it("3 [1, 2, 3]",'new')]}},
+   {line:[], t:"Итог", x:"Map — ключи любого типа, есть <code>size</code>, порядок вставки. Set — уникальные значения.", fin:true, p:{m:[it("{ id: 1 } → 'Саша' <span class=\"chip c1\">ключ — объект</span>"),it("'1' → 'строка'")],o:[it("'[object Object]' → 'Саша' <span class=\"chip cbad\">ключ стал строкой</span>")],s:[it("1"),it("2"),it("3")],out:[it("Саша 2"),it("['[object Object]']"),it("3 [1, 2, 3]")]}},
+  ]
+},
+
+/* ===== DOM СОБЫТИЯ ===== */
+dom: {
+  name:"DOM события",
+  code:[
+  "&lt;ul id=<span class=\"str\">\"list\"</span>&gt;",
+  "  &lt;li&gt;&lt;button id=<span class=\"str\">\"btn\"</span>&gt;Купить&lt;/button&gt;&lt;/li&gt;",
+  "&lt;/ul&gt;",
+  "",
+  "list.<span class=\"fn\">addEventListener</span>(<span class=\"str\">'click'</span>, (e) =&gt; {",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'ul'</span>, e.target.id, e.currentTarget.id);",
+  "});",
+  "document.<span class=\"fn\">addEventListener</span>(<span class=\"str\">'click'</span>, () =&gt; console.<span class=\"fn\">log</span>(<span class=\"str\">'document'</span>), { capture: <span class=\"kw\">true</span> });",
+  "btn.<span class=\"fn\">addEventListener</span>(<span class=\"str\">'click'</span>, () =&gt; console.<span class=\"fn\">log</span>(<span class=\"str\">'button'</span>));",
+  "<span class=\"cm\">// клик по кнопке</span>"],
+  panels:[["path", "Путь события", "items", "wide"], ["phase", "Фаза", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> событие в DOM проходит <b>три фазы</b>: <b>погружение</b> (capturing), <b>цель</b>, <b>всплытие</b> (bubbling).</li><li><b>Как работает:</b> по умолчанию обработчики срабатывают на <b>всплытии</b> — от элемента вверх к родителям.</li><li><b>Пример:</b> <b>делегирование</b> — один обработчик на списке вместо обработчика на каждом пункте, элемент узнаём через <code>event.target</code>.</li><li><b>Подвох:</b> <code>target</code> — где произошло событие, <code>currentTarget</code> — где висит обработчик; <code>preventDefault</code> отменяет действие браузера, <code>stopPropagation</code> — всплытие.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"DOM-дерево", x:"Кнопка внутри <code>li</code>, тот — внутри <code>ul</code>, всё — внутри <code>document</code>.", p:{path:[it("document",'new'),it("ul#list",'new'),it("li",'new'),it("button#btn",'new')],phase:[it("—")],out:[]}},
+   {line:[5, 6, 7, 8, 9], t:"Три обработчика", x:"На <code>ul</code> и кнопке — обычные (фаза всплытия). На <code>document</code> — с <code>capture: true</code>, сработает на погружении.", hl:"path", p:{path:[it("document <span class=\"chip c2\">capture</span>"),it("ul#list <span class=\"chip c1\">всплытие</span>"),it("li"),it("button#btn <span class=\"chip c1\">всплытие</span>")],phase:[it("—")],out:[]}},
+   {line:[10, 8], t:"Фаза 1: погружение", x:"Клик. Событие идёт <b>сверху вниз</b> от <code>document</code> к кнопке. На <code>document</code> висит capture-обработчик — он срабатывает первым.", hl:"phase", p:{path:[it("document ↓ <span class=\"chip cok\">сработал</span>",'new'),it("ul#list ↓"),it("li ↓"),it("button#btn")],phase:[it("погружение (capturing)",'new')],out:[it("document",'new')]}},
+   {line:[9], t:"Фаза 2: цель", x:"Событие дошло до элемента, по которому кликнули, — срабатывает обработчик кнопки.", hl:"out", p:{path:[it("document"),it("ul#list"),it("li"),it("button#btn ● <span class=\"chip cok\">сработал</span>",'new')],phase:[it("цель (target)",'new')],out:[it("document"),it("button",'new')]}},
+   {line:[5, 6], t:"Фаза 3: всплытие", x:"Событие поднимается <b>вверх</b>: <code>li</code> — обработчика нет, <code>ul</code> — есть. Это <b>делегирование</b>: <code>target</code> — кнопка, где кликнули; <code>currentTarget</code> — <code>ul</code>, где висит обработчик.", hl:"out", p:{path:[it("document"),it("ul#list ↑ <span class=\"chip cok\">сработал</span>",'new'),it("li ↑"),it("button#btn")],phase:[it("всплытие (bubbling)",'new')],out:[it("document"),it("button"),it("ul btn list",'new')]}},
+   {line:[9], t:"Если остановить всплытие", x:"Вызови в обработчике кнопки <code>e.stopPropagation()</code> — до <code>ul</code> событие не дойдёт. А <code>e.preventDefault()</code> всплытие не трогает: он отменяет действие браузера, например отправку формы.", hl:"path", p:{path:[it("document"),it("ul#list <span class=\"chip cbad\">не узнает</span>"),it("li"),it("button#btn ● stopPropagation()")],phase:[it("всплытие (bubbling)")],out:[it("document"),it("button"),it("ul btn list")]}},
+   {line:[], t:"Итог", x:"Погружение → цель → всплытие. Обработчики по умолчанию — на всплытии, поэтому работает делегирование: один обработчик на родителе и <code>e.target</code>.", fin:true, p:{path:[it("document"),it("ul#list <span class=\"chip cbad\">не узнает</span>"),it("li"),it("button#btn ● stopPropagation()")],phase:[it("всплытие (bubbling)")],out:[it("document"),it("button"),it("ul btn list")]}},
+  ]
+},
+
+/* ===== ES-МОДУЛИ ===== */
+modules: {
+  name:"ES-модули",
+  code:[
+  "<span class=\"cm\">// math.js</span>",
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> sum = (a, b) =&gt; a + b;",
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> PI = <span class=\"num\">3.14</span>;",
+  "<span class=\"kw\">export</span> <span class=\"kw\">default</span> <span class=\"kw\">function</span> <span class=\"fn\">mul</span>(a, b) { <span class=\"kw\">return</span> a * b; }",
+  "",
+  "<span class=\"cm\">// app.js</span>",
+  "<span class=\"kw\">import</span> multiply, { sum } <span class=\"kw\">from</span> <span class=\"str\">'./math.js'</span>;",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">sum</span>(<span class=\"num\">1</span>, <span class=\"num\">2</span>), <span class=\"fn\">multiply</span>(<span class=\"num\">2</span>, <span class=\"num\">3</span>));",
+  "<span class=\"kw\">const</span> { Chart } = <span class=\"kw\">await</span> <span class=\"kw\">import</span>(<span class=\"str\">'./chart.js'</span>);"],
+  panels:[["mod", "math.js — экспортирует", "items"], ["app", "app.js — получил", "items"], ["build", "Сборка", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>модуль</b> — файл со <b>своей областью видимости</b>, который обменивается кодом через <code>import</code> и <code>export</code>.</li><li><b>Как работает:</b> <b>именованных</b> экспортов может быть сколько угодно, импортируются в <code>{ }</code> по имени; <b>default</b> — один, имя при импорте любое.</li><li><b>Пример:</b> <code>import Button, { Icon } from './ui'</code>.</li><li><b>Отличие от CommonJS:</b> CommonJS — <code>require/module.exports</code>, загружается синхронно, исторически в Node; ES-модули статические, это даёт <b>tree shaking</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:"Модуль math.js", x:"У файла-модуля <b>своя область видимости</b>: наружу видно только то, что помечено <code>export</code>. Именованных экспортов может быть сколько угодно, <code>default</code> — один.", hl:"mod", p:{mod:[it("sum <span class=\"chip c1\">named</span>",'new'),it("PI <span class=\"chip c1\">named</span>",'new'),it("mul <span class=\"chip c2\">default</span>",'new')],app:[it("—")],build:[it("—")],out:[]}},
+   {line:[7], t:"import", x:"<code>default</code> импортируется <b>без скобок под любым именем</b> — здесь <code>multiply</code>. Именованный — <b>в фигурных скобках по имени</b>.", hl:"app", p:{mod:[it("sum <span class=\"chip c1\">named</span>"),it("PI <span class=\"chip c1\">named</span>"),it("mul <span class=\"chip c2\">default</span>")],app:[it("multiply ← default (mul)",'new'),it("sum ← { sum }",'new')],build:[it("—")],out:[]}},
+   {line:[8], t:"Используем", x:"Обычные вызовы.", hl:"out", p:{mod:[it("sum <span class=\"chip c1\">named</span>"),it("PI <span class=\"chip c1\">named</span>"),it("mul <span class=\"chip c2\">default</span>")],app:[it("multiply ← default (mul)"),it("sum ← { sum }")],build:[it("—")],out:[it("3 6",'new')]}},
+   {line:[3], t:"Tree shaking", x:"<code>PI</code> никто не импортировал. Импорты статические, сборщик видит это заранее и <b>выкидывает</b> неиспользуемый код.", hl:"build", p:{mod:[it("sum <span class=\"chip c1\">named</span>"),it("PI <span class=\"chip c1\">named</span>"),it("mul <span class=\"chip c2\">default</span>")],app:[it("multiply ← default (mul)"),it("sum ← { sum }")],build:[it("PI не импортирован → удалён из бандла <span class=\"chip cok\">tree shaking</span>",'new')],out:[it("3 6")]}},
+   {line:[9], t:"Динамический import()", x:"<code>import()</code> загружает модуль во время работы и возвращает <b>промис</b>. Сборщик вынесет его в отдельный файл (чанк) — загрузится только когда нужен.", hl:"build", p:{mod:[it("sum <span class=\"chip c1\">named</span>"),it("PI <span class=\"chip c1\">named</span>"),it("mul <span class=\"chip c2\">default</span>")],app:[it("multiply ← default (mul)"),it("sum ← { sum }")],build:[it("PI не импортирован → удалён из бандла"),it("chart.js → отдельный чанк, загрузка по требованию",'new')],out:[it("3 6")]}},
+   {line:[], t:"Итог", x:"Named — много, в <code>{ }</code> по имени. Default — один, любое имя. CommonJS (<code>require</code>) — старый формат Node, ES-модули статические и дают tree shaking.", fin:true, p:{mod:[it("sum <span class=\"chip c1\">named</span>"),it("PI <span class=\"chip c1\">named</span>"),it("mul <span class=\"chip c2\">default</span>")],app:[it("multiply ← default (mul)"),it("sum ← { sum }")],build:[it("PI не импортирован → удалён из бандла"),it("chart.js → отдельный чанк, загрузка по требованию")],out:[it("3 6")]}},
+  ]
+},
+
+/* ===== СБОРКА МУСОРА ===== */
+gc: {
+  name:"Сборка мусора",
+  code:[
+  "<span class=\"kw\">let</span> user = { name: <span class=\"str\">'Саша'</span> };",
+  "<span class=\"kw\">let</span> admin = user;",
+  "",
+  "user = <span class=\"kw\">null</span>;",
+  "<span class=\"cm\">// объект ещё жив?</span>",
+  "admin = <span class=\"kw\">null</span>;",
+  "<span class=\"cm\">// а теперь?</span>",
+  "",
+  "<span class=\"kw\">const</span> bigData = <span class=\"kw\">new</span> <span class=\"fn\">Array</span>(<span class=\"num\">1e6</span>);",
+  "<span class=\"fn\">setInterval</span>(() =&gt; console.<span class=\"fn\">log</span>(bigData.length), <span class=\"num\">1000</span>);",
+  "<span class=\"cm\">// clearInterval не вызвали</span>"],
+  panels:[["roots", "Корни: глобальные переменные", "items"], ["heap", "Объекты в памяти", "items"], ["gc", "Сборщик мусора", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>сборщик мусора</b> автоматически освобождает память от объектов, которые стали <b>недостижимы</b>.</li><li><b>Как работает:</b> алгоритм <b>mark-and-sweep</b>: от <b>корней</b> (глобальный объект, стек вызовов) помечаем всё достижимое, остальное удаляем.</li><li><b>Пример утечки:</b> забытые <code>setInterval</code> и обработчики событий, глобальные переменные, <b>замыкания</b> с большими данными.</li><li><b>В React:</b> утечки убирают <b>функцией очистки</b> в <code>useEffect</code> — <code>clearInterval</code>, <code>removeEventListener</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Объект и ссылка", x:"Объект #1 в памяти, на него ссылается <code>user</code>. От корня до объекта есть путь — он <b>достижим</b>.", hl:"heap", p:{roots:[it("user → #1",'new')],heap:[it("#1 { name: 'Саша' } <span class=\"chip cok\">достижим</span>",'new')],gc:[it("—")]}},
+   {line:[2], t:"Вторая ссылка", x:"Теперь на #1 ведут две ссылки.", hl:"roots", p:{roots:[it("user → #1"),it("admin → #1",'new')],heap:[it("#1 { name: 'Саша' } <span class=\"chip cok\">достижим</span>")],gc:[it("—")]}},
+   {line:[4, 5], t:"user = null", x:"Одну ссылку убрали, но <code>admin</code> всё ещё ведёт к #1 — объект <b>жив</b>.", hl:"heap", p:{roots:[it("user = null",'new'),it("admin → #1")],heap:[it("#1 { name: 'Саша' } <span class=\"chip cok\">достижим через admin</span>")],gc:[it("—")]}},
+   {line:[6, 7], t:"admin = null", x:"Ссылок больше нет. До #1 не дойти ни от одного корня — он <b>недостижим</b>.", hl:"heap", p:{roots:[it("user = null"),it("admin = null",'new')],heap:[it("#1 { name: 'Саша' } <span class=\"chip cbad\">недостижим</span>",'new')],gc:[it("—")]}},
+   {line:[], t:"Mark-and-sweep", x:"Сборщик проходит от корней и <b>помечает</b> всё достижимое (mark). #1 не помечен → <b>удаляется</b> (sweep). Вызывать это вручную не нужно.", hl:"gc", p:{roots:[it("user = null"),it("admin = null")],heap:[it("#1 удалён")],gc:[it("mark: от корней — ничего не нашли",'new'),it("sweep: #1 удалён <span class=\"chip cok\">память свободна</span>",'new')]}},
+   {line:[9, 10, 11], t:"Утечка", x:"Колбэк <code>setInterval</code> живёт вечно и через замыкание держит <code>bigData</code>. Массив достижим — сборщик его <b>никогда не удалит</b>, хотя он может быть уже не нужен.", hl:"heap", p:{roots:[it("user = null"),it("admin = null"),it("активный setInterval → колбэк",'new')],heap:[it("bigData (1 000 000) <span class=\"chip cbad\">держит колбэк — утечка</span>",'new')],gc:[it("bigData достижим → не удаляется",'new')]}},
+   {line:[11], t:"Как починить", x:"<code>const id = setInterval(…)</code> и <code>clearInterval(id)</code>, когда не нужно. В React — в функции очистки <code>useEffect</code>. То же с <code>addEventListener</code> → <code>removeEventListener</code>.", hl:"gc", p:{roots:[it("user = null"),it("admin = null"),it("активный setInterval → колбэк")],heap:[it("bigData (1 000 000) <span class=\"chip cbad\">держит колбэк — утечка</span>")],gc:[it("clearInterval(id) → колбэк удалён → bigData недостижим → удалится",'new')]}},
+   {line:[], t:"Итог", x:"Сборщик удаляет недостижимое. Утечка — когда ненужное остаётся достижимым: забытые таймеры и слушатели, глобальные переменные, замыкания с большими данными.", fin:true, p:{roots:[it("user = null"),it("admin = null"),it("активный setInterval → колбэк")],heap:[it("bigData (1 000 000) <span class=\"chip cbad\">держит колбэк — утечка</span>")],gc:[it("clearInterval(id) → колбэк удалён → bigData недостижим → удалится")]}},
+  ]
+},
+
+/* ===== ФВП И КАРРИРОВАНИЕ ===== */
+hof: {
+  name:"ФВП и каррирование",
+  code:[
+  "<span class=\"kw\">const</span> add = (a) =&gt; (b) =&gt; a + b;",
+  "<span class=\"kw\">const</span> add5 = <span class=\"fn\">add</span>(<span class=\"num\">5</span>);",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">add5</span>(<span class=\"num\">3</span>));",
+  "",
+  "<span class=\"kw\">const</span> twice = (fn) =&gt; (x) =&gt; <span class=\"fn\">fn</span>(<span class=\"fn\">fn</span>(x));",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">twice</span>(add5)(<span class=\"num\">0</span>));",
+  "",
+  "<span class=\"kw\">let</span> total = <span class=\"num\">0</span>;",
+  "<span class=\"kw\">const</span> pure = (a, b) =&gt; a + b;",
+  "<span class=\"kw\">const</span> impure = (n) =&gt; { total += n; <span class=\"kw\">return</span> total; };",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">pure</span>(<span class=\"num\">1</span>, <span class=\"num\">2</span>), <span class=\"fn\">pure</span>(<span class=\"num\">1</span>, <span class=\"num\">2</span>));",
+  "console.<span class=\"fn\">log</span>(<span class=\"fn\">impure</span>(<span class=\"num\">1</span>), <span class=\"fn\">impure</span>(<span class=\"num\">1</span>));"],
+  panels:[["kind", "Что это за функция", "items", "wide"], ["env", "Память", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>функция высшего порядка</b> принимает функцию аргументом или <b>возвращает функцию</b>.</li><li><b>Чистая функция:</b> при одних и тех же аргументах всегда <b>тот же результат</b> и <b>нет побочных эффектов</b>.</li><li><b>Каррирование:</b> превращение <code>f(a, b)</code> в <code>f(a)(b)</code> — функция принимает аргументы <b>по одному</b>.</li><li><b>Зачем:</b> <code>map</code> и <code>filter</code> — функции высшего порядка; редьюсеры в Redux и компоненты React должны быть <b>чистыми</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Каррированная функция", x:"<code>add</code> принимает <code>a</code> и <b>возвращает функцию</b>, которая ждёт <code>b</code>. Это и каррирование, и функция высшего порядка.", hl:"kind", p:{kind:[it("add: f(a)(b) <span class=\"chip c1\">каррирование</span> <span class=\"chip c2\">возвращает функцию → ФВП</span>",'new')],env:[it("—")],out:[]}},
+   {line:[2], t:"add(5)", x:"Получили новую функцию, которая через замыкание помнит <code>a = 5</code>.", hl:"env", p:{kind:[it("add: f(a)(b) <span class=\"chip c1\">каррирование</span> <span class=\"chip c2\">возвращает функцию → ФВП</span>")],env:[it("add5 → помнит a = 5",'new')],out:[]}},
+   {line:[3], t:"add5(3)", x:"5 + 3.", hl:"out", p:{kind:[it("add: f(a)(b) <span class=\"chip c1\">каррирование</span> <span class=\"chip c2\">возвращает функцию → ФВП</span>")],env:[it("add5 → помнит a = 5")],out:[it("8",'new')]}},
+   {line:[5], t:"twice", x:"<b>Принимает</b> функцию и <b>возвращает</b> функцию — классическая функция высшего порядка. Как <code>debounce</code> или <code>map</code> с колбэком.", hl:"kind", p:{kind:[it("add: f(a)(b) <span class=\"chip c1\">каррирование</span>"),it("twice(fn) → (x) => fn(fn(x)) <span class=\"chip c2\">ФВП</span>",'new')],env:[it("add5 → помнит a = 5")],out:[it("8")]}},
+   {line:[6], t:"twice(add5)(0)", x:"<code>add5(add5(0))</code> → <code>add5(5)</code> → 10.", hl:"out", p:{kind:[it("add: f(a)(b) <span class=\"chip c1\">каррирование</span>"),it("twice(fn) → (x) => fn(fn(x)) <span class=\"chip c2\">ФВП</span>")],env:[it("add5 → помнит a = 5")],out:[it("8"),it("10",'new')]}},
+   {line:[9, 11], t:"Чистая функция", x:"Одинаковые аргументы → одинаковый результат, внешнее ничего не трогает.", hl:"kind", p:{kind:[it("pure(1, 2) → 3, pure(1, 2) → 3 <span class=\"chip cok\">чистая</span>",'new')],env:[it("add5 → помнит a = 5"),it("total = 0",'new')],out:[it("8"),it("10"),it("3 3",'new')]}},
+   {line:[8, 10, 12], t:"Нечистая функция", x:"Меняет внешнюю <code>total</code> — <b>побочный эффект</b>. Те же аргументы дают разный результат.", hl:"env", p:{kind:[it("pure(1, 2) → 3, pure(1, 2) → 3 <span class=\"chip cok\">чистая</span>"),it("impure(1) → 1, impure(1) → 2 <span class=\"chip cbad\">побочный эффект</span>",'new')],env:[it("add5 → помнит a = 5"),it("total = 2",'new')],out:[it("8"),it("10"),it("3 3"),it("1 2",'new')]}},
+   {line:[], t:"Итог", x:"ФВП принимает или возвращает функцию. Каррирование: <code>f(a, b)</code> → <code>f(a)(b)</code>. Чистая функция: тот же вход — тот же выход и никаких побочных эффектов; такими должны быть редьюсеры и компоненты.", fin:true, p:{kind:[it("pure(1, 2) → 3, pure(1, 2) → 3 <span class=\"chip cok\">чистая</span>"),it("impure(1) → 1, impure(1) → 2 <span class=\"chip cbad\">побочный эффект</span>")],env:[it("add5 → помнит a = 5"),it("total = 2")],out:[it("8"),it("10"),it("3 3"),it("1 2")]}},
+  ]
+},
+
+/* ===== ПОЛИФИЛЛЫ ===== */
+polyfills: {
+  name:"Полифиллы",
+  code:[
+  "<span class=\"kw\">if</span> (!Array.prototype.myMap) {",
+  "  Array.prototype.myMap = <span class=\"kw\">function</span> (cb) {",
+  "    <span class=\"kw\">const</span> result = [];",
+  "    <span class=\"kw\">for</span> (<span class=\"kw\">let</span> i = <span class=\"num\">0</span>; i &lt; <span class=\"kw\">this</span>.length; i++) {",
+  "      result.<span class=\"fn\">push</span>(<span class=\"fn\">cb</span>(<span class=\"kw\">this</span>[i], i, <span class=\"kw\">this</span>));",
+  "    }",
+  "    <span class=\"kw\">return</span> result;",
+  "  };",
+  "}",
+  "console.<span class=\"fn\">log</span>([<span class=\"num\">1</span>, <span class=\"num\">2</span>, <span class=\"num\">3</span>].<span class=\"fn\">myMap</span>((n) =&gt; n * <span class=\"num\">10</span>));"],
+  panels:[["proto", "Array.prototype", "items"], ["vars", "Внутри myMap", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>полифилл</b> — код, который реализует встроенный метод, если его <b>нет в старой среде</b>.</li><li><b>Как работает:</b> проверяем, есть ли метод, и если нет — добавляем его в <b>прототип</b>, например <code>Array.prototype</code>.</li><li><b>Пример:</b> свой <code>map</code>: новый массив, в цикле вызываем колбэк с <code>(элемент, индекс, массив)</code>, массив берём из <code>this</code>.</li><li><b>Подвох:</b> полифилл добавляет <b>методы</b>, а новый <b>синтаксис</b> переводит <b>транспилятор</b> (Babel); на собесе просят написать с нуля <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>bind</code>, <code>debounce</code>, <code>Promise.all</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Проверка", x:"Полифилл сначала проверяет, есть ли метод. Если среда его уже поддерживает — не трогаем.", hl:"proto", p:{proto:[it("map, filter, reduce…"),it("myMap? <span class=\"chip cbad\">нет</span>",'new')],vars:[it("—")],out:[]}},
+   {line:[2, 3, 4, 5, 6, 7, 8], t:"Добавляем в прототип", x:"Кладём функцию в <code>Array.prototype</code> — теперь она есть у <b>всех</b> массивов через цепочку прототипов. Именно <code>function</code>, не стрелка: нужен <code>this</code> — массив, на котором вызвали.", hl:"proto", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>",'new')],vars:[it("—")],out:[]}},
+   {line:[10, 2], t:"Вызов", x:"Вызов через точку: <code>this</code> — массив <code>[1, 2, 3]</code>, <code>cb</code> — наш колбэк.", hl:"vars", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]",'new'),it("cb = (n) => n * 10",'new')],out:[]}},
+   {line:[3], t:"Новый массив", x:"Результат собираем в <b>новый</b> массив — исходный не меняем.", hl:"vars", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]"),it("cb = (n) => n * 10"),it("result = []",'new')],out:[]}},
+   {line:[4, 5], t:"i = 0", x:"Колбэк получает <b>три</b> аргумента, как у настоящего <code>map</code>: элемент, индекс, массив.", hl:"vars", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]"),it("cb = (n) => n * 10"),it("cb(1, 0, arr) → 10",'new'),it("result = [10]",'new')],out:[]}},
+   {line:[4, 5], t:"i = 1 и i = 2", x:"Цикл доходит до <code>this.length</code>.", hl:"vars", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]"),it("cb = (n) => n * 10"),it("cb(2, 1, arr) → 20",'new'),it("cb(3, 2, arr) → 30",'new'),it("result = [10, 20, 30]",'new')],out:[]}},
+   {line:[7, 10], t:"return", x:"Возвращаем новый массив.", hl:"out", p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]"),it("cb = (n) => n * 10"),it("cb(2, 1, arr) → 20"),it("cb(3, 2, arr) → 30"),it("result = [10, 20, 30]")],out:[it("[10, 20, 30]",'new')]}},
+   {line:[], t:"Итог", x:"Полифилл добавляет недостающий метод в прототип. На собесе важны: <code>this</code> (поэтому <code>function</code>), три аргумента колбэка, новый массив. Синтаксис (<code>?.</code>, стрелки) полифиллом не добавить — это делает транспилятор.", fin:true, p:{proto:[it("map, filter, reduce…"),it("myMap <span class=\"chip cok\">добавлен</span>")],vars:[it("this = [1, 2, 3]"),it("cb = (n) => n * 10"),it("cb(2, 1, arr) → 20"),it("cb(3, 2, arr) → 30"),it("result = [10, 20, 30]")],out:[it("[10, 20, 30]")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ closure:[
+  {"t": "★ Замыкание", "d": "Замыкание — это функция вместе с её лексическим окружением, то есть с переменными из того места, где она была создана. Она может читать и менять их, даже когда внешняя функция уже завершилась.", "c": "function outer() {\n  const name = 'Alex';\n  return function inner() {\n    console.log(name);\n  };\n}\nconst fn = outer();\nfn(); // 'Alex'", "open": true},
+  {"t": "★ Лексическое окружение", "d": "Это внутренний объект, где хранятся переменные функции и ссылка на внешнее окружение — то место, где функция объявлена в коде. Создаётся при каждом вызове функции и для каждого блока."},
+  {"t": "★ Область видимости", "d": "Область видимости — часть кода, где переменная доступна. Бывает глобальная, функциональная и блочная (<code>let</code>/<code>const</code> внутри <code>{ }</code>). <code>var</code> блок не видит — только функцию.", "c": "const a = 1;          // глобальная\nfunction f() {\n  const b = 2;        // функциональная\n  if (true) {\n    const c = 3;      // блочная\n  }\n}"},
+  {"t": "★ Цепочка областей видимости", "d": "Это порядок поиска переменной: сначала в своём окружении, потом во внешнем, и так до глобального. Не нашли нигде — <code>ReferenceError</code>. Поиск идёт только изнутри наружу.", "c": "const x = 'global';\nfunction outer() {\n  function inner() {\n    console.log(x); // ищет: inner → outer → global\n  }\n  inner();\n}"},
+  {"t": "★ Сборщик мусора", "d": "Сборщик мусора (garbage collector) удаляет только то, на что больше нет ссылок. Возвращённая функция хранит ссылку на окружение с <code>count</code>, поэтому оно живёт, пока жива сама функция.", "c": "function createCounter() {\n  let count = 0;\n  return () => ++count;\n}\nconst next = createCounter(); // createCounter завершилась"},
+  {"t": "★ Инкапсуляция", "d": "Инкапсуляция — приватная переменная через замыкание. До <code>balance</code> нельзя добраться напрямую, только через методы, которые мы разрешили. Так данные защищены от случайной порчи.", "c": "function createAccount() {\n  let balance = 100;\n  return {\n    getBalance: () => balance,\n    withdraw: (n) => (balance -= n),\n  };\n}\nconst acc = createAccount();\nacc.balance; // undefined"},
+  {"t": "★ Фабрика функций", "d": "Фабрика функций: функция, которая создаёт и возвращает новые функции. Каждая созданная функция замыкает своё значение <code>x</code>.", "c": "function makeAdder(x) {\n  return (y) => x + y;\n}\nconst add5 = makeAdder(5);\nadd5(3); // 8"},
+  {"t": "★ Применение замыканий", "d": "Приватные данные (инкапсуляция, модульный паттерн), фабрики функций, <code>debounce</code>/<code>throttle</code> — хранят id таймера, обработчики событий и колбэки, которые помнят данные. В React на замыканиях работают хуки."},
+    {t:'Debounce', d:'Обёртка, которая вызывает функцию только после паузы: каждый новый вызов сбрасывает таймер. Таймер хранится в замыкании. Пример: поиск, который отправляет запрос, когда пользователь перестал печатать.',
+   c:"function debounce(fn, ms) {\n  let timer; // живёт в замыкании\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), ms);\n  };\n}"},
+  CB,
+ ],
+ eventloop:[
+  {"t": "★ Event Loop", "d": "Event Loop — механизм, который позволяет однопоточному JS выполнять асинхронный код. Он ждёт, пока стек вызовов опустеет, и берёт задачи из очередей: сначала все микрозадачи, потом одну макрозадачу.", "open": true},
+  {"t": "★ Стек вызовов", "d": "Структура, где выполняется код прямо сейчас. Вызвали функцию — она кладётся наверх, завершилась — снимается. Работает по принципу LIFO: последним пришёл — первым вышел.", "c": "function a() { b(); }\nfunction b() { console.log('b'); }\na(); // стек: a → b"},
+  {"t": "★ Однопоточность", "d": "У JS один поток выполнения: в каждый момент выполняется одна операция. Поэтому тяжёлый синхронный цикл блокирует интерфейс, а асинхронность устроена через очереди и Event Loop."},
+  {"t": "★ Микрозадачи", "d": "Колбэки <code>then</code>, <code>catch</code>, <code>finally</code>, продолжение после <code>await</code>, <code>queueMicrotask</code>. Микрозадачи выполняются все подряд, как только стек пуст, — до любой макрозадачи."},
+  {"t": "★ Макрозадачи", "d": "<code>setTimeout</code>, <code>setInterval</code>, события DOM, загрузка скриптов, сообщения. Event Loop берёт их по одной, и после каждой выполняет все микрозадачи."},
+  {"t": "★ Порядок выполнения", "d": "<code>A D C B</code>. Сначала синхронный код (<code>A</code>, <code>D</code>), потом микрозадача (<code>C</code>), потом макрозадача (<code>B</code>).", "c": "console.log('A');\nsetTimeout(() => console.log('B'), 0);\nPromise.resolve().then(() => console.log('C'));\nconsole.log('D');"},
+  {"t": "★ Web API", "d": "Браузер, через Web API: таймеры, <code>fetch</code>, события. Это не часть самого JS. Когда операция готова, браузер кладёт колбэк в очередь, а Event Loop передаёт его в стек."},
+  {t:'setTimeout(fn, 0) — не «сразу»', d:'0 — это минимальная задержка, а не немедленный вызов. Колбэк всё равно ждёт, пока выполнится весь синхронный код и все микрозадачи.'},
+  CB,
+ ],
+ promise:[
+  {"t": "★ Промис", "d": "Промис — это объект, который представляет результат асинхронной операции, например ответ сервера. Результата пока может не быть, но промис закончится успехом или ошибкой.", "c": "const p = fetch('/api/user'); // Promise {<pending>}", "open": true},
+  {"t": "★ Состояния промиса", "d": "Три: pending — ожидание, fulfilled — выполнен успешно, rejected — отклонён с ошибкой. Состояние меняется один раз и навсегда. fulfilled или rejected вместе называют settled — завершён."},
+  {"t": "★ Executor", "d": "Это executor (функция-исполнитель). Выполняется сразу и синхронно, когда создаётся промис. Получает два аргумента — <code>resolve</code> и <code>reject</code>.", "c": "new Promise((resolve, reject) => {\n  console.log('сразу');\n});"},
+  {"t": "★ resolve / reject", "d": "<code>resolve(значение)</code> переводит промис в fulfilled и передаёт результат в <code>then</code>. <code>reject(ошибка)</code> переводит в rejected и передаёт ошибку в <code>catch</code>. Функцию они не останавливают — код после них выполнится.", "c": "if (ok) resolve(data);\nelse reject(new Error('fail'));"},
+  {"t": "★ then / catch / finally", "d": "<code>then</code> — обработчик успеха, <code>catch</code> — обработчик ошибки, <code>finally</code> — выполняется в любом случае, для уборки: скрыть лоадер, разблокировать кнопку. Каждый из них возвращает новый промис.", "c": "fetch(url)\n  .then((res) => res.json())\n  .catch((err) => console.error(err))\n  .finally(() => hideLoader());"},
+  {"t": "★ Цепочка промисов", "d": "Каждый <code>then</code> возвращает новый промис, поэтому их можно ставить друг за другом. Что вернул один <code>then</code>, то получит следующий. Ошибка в любом месте перескакивает до ближайшего <code>catch</code>.", "c": "Promise.resolve(1)\n  .then((x) => x + 1)\n  .then((x) => console.log(x)); // 2"},
+  {"t": "★ Микрозадача", "d": "Очередь микрозадач (microtask queue). Выведет <code>1 3 2</code>: колбэки <code>then</code>, <code>catch</code>, <code>finally</code> и код после <code>await</code> выполняются микрозадачами — после всего синхронного кода, но до <code>setTimeout</code>.", "c": "console.log(1);\nPromise.resolve().then(() => console.log(2));\nconsole.log(3);"},
+  {"t": "★ async / await", "d": "Синтаксис над промисами. <code>async</code> — функция всегда возвращает промис. <code>await</code> приостанавливает функцию до результата промиса, остальной код снаружи идёт дальше. Ошибки ловим через <code>try/catch</code>.", "c": "async function getUser() {\n  try {\n    const res = await fetch('/api/user');\n    return await res.json();\n  } catch (err) {\n    console.error(err);\n  }\n}"},
+  {"t": "★ Promise.all / allSettled", "d": "<code>Promise.all</code> ждёт все промисы и падает сразу при первой ошибке. <code>Promise.allSettled</code> ждёт все и возвращает статус каждого, не падает. Ещё есть <code>race</code> — первый завершившийся, и <code>any</code> — первый успешный."},
+  {t:'Callback hell', d:'Вложенные колбэки, когда следующий шаг зависит от предыдущего. Промисы и <code>async/await</code> выпрямляют такой код в цепочку.',
+   c:"getUser(id, (user) => {\n  getOrders(user, (orders) => {\n    getItems(orders, (items) => { /* ... */ });\n  });\n});"},
+  {t:'try / catch / finally', d:'<code>try</code> выполняется до первой ошибки, остаток пропускается и управление прыгает в <code>catch</code>. <code>finally</code> выполняется всегда.'},
+  {t:'Unhandled rejection', d:'Промис отклонён, а <code>catch</code> или <code>try/catch</code> нет. В консоли — ошибка «Uncaught (in promise)».'},
+  CB,
+ ],
+ this:[
+  {"t": "★ this", "d": "<code>this</code> — контекст вызова: объект, с которым функция работает в момент вызова. У обычной функции он определяется не местом объявления, а тем, как функцию вызвали.", "open": true},
+  {"t": "★ Вызов через точку", "d": "<code>this</code> — объект слева от точки, то есть <code>user</code>. Выведет <code>Саша</code>.", "c": "const user = {\n  name: 'Саша',\n  greet() { console.log(this.name); },\n};\nuser.greet();"},
+  {"t": "★ Потеря контекста", "d": "Метод передан как колбэк и вызывается без точки — контекст потерян, в strict mode <code>this</code> равен <code>undefined</code>. Чиним: <code>setTimeout(() =&gt; user.greet(), 0)</code> или <code>user.greet.bind(user)</code>.", "c": "const user = { name: 'Саша', greet() { console.log(this.name); } };\nsetTimeout(user.greet, 0);"},
+  {"t": "★ this в стрелочной функции", "d": "Своего <code>this</code> у стрелки нет: она берёт <code>this</code> из места, где создана, и способ вызова на него не влияет. <code>call</code>, <code>apply</code>, <code>bind</code> его тоже не меняют.", "c": "const user = {\n  name: 'Саша',\n  later() {\n    setTimeout(() => console.log(this.name), 0);\n  },\n};\nuser.later(); // 'Саша'"},
+  {"t": "★ this и new", "d": "Новому пустому объекту, который создаёт <code>new</code>. Функция заполняет его через <code>this</code> и возвращает.", "c": "function User(name) {\n  this.name = name;\n}\nconst u = new User('Саша');"},
+  {t:'Строгий режим (strict mode)', d:'Включается <code>\'use strict\'</code>, в модулях и классах — автоматически. Для <code>this</code> главное: при простом вызове <code>fn()</code> он <code>undefined</code>, а не <code>window</code>.'},
+  CB,
+ ],
+ callapplybind:[
+  {"t": "★ call", "d": "Вызывает функцию сразу с указанным <code>this</code>. Первый аргумент — <code>this</code>, остальные передаются через запятую.", "c": "function greet(greeting) {\n  console.log(greeting, this.name);\n}\ngreet.call({ name: 'Саша' }, 'Привет');", "open": true},
+  {"t": "★ apply", "d": "Тоже вызывает функцию сразу с указанным <code>this</code>, но аргументы передаются одним массивом.", "c": "greet.apply({ name: 'Саша' }, ['Привет']);"},
+  {"t": "★ bind", "d": "Не вызывает функцию, а возвращает новую функцию с закреплённым <code>this</code> (и, если передать, первыми аргументами). Используют, чтобы не терять контекст в колбэках.", "c": "const bound = greet.bind({ name: 'Саша' });\nbound('Привет');"},
+  {"t": "★ bind сильнее call", "d": "<code>A</code>. <code>this</code>, закреплённый через <code>bind</code>, переопределить нельзя — ни <code>call</code>, ни <code>apply</code>, ни повторным <code>bind</code>.", "c": "function show() { console.log(this.name); }\nconst bound = show.bind({ name: 'A' });\nbound.call({ name: 'B' });"},
+  {"t": "★ Частичное применение", "d": "<code>bind</code> может закрепить не только <code>this</code>, но и первые аргументы. Получается новая функция с частью аргументов «заранее».", "c": "function mul(a, b) { return a * b; }\nconst double = mul.bind(null, 2);\ndouble(5); // 10"},
+ ],
+ varletconst:[
+  {"t": "★ Hoisting", "d": "Объявления переменных и функций обрабатываются до выполнения кода, как будто «поднимаются» наверх. <code>var</code> поднимается со значением <code>undefined</code>, Function Declaration — целиком, <code>let</code>/<code>const</code> — без значения.", "c": "console.log(a); // undefined\nvar a = 1;\n\nsayHi(); // работает\nfunction sayHi() {}", "open": true},
+  {"t": "★ TDZ", "d": "Участок от начала блока до строки объявления <code>let</code>/<code>const</code>. Переменная уже существует, но обратиться к ней нельзя — будет <code>ReferenceError</code>.", "c": "console.log(b); // ReferenceError\nlet b = 2;"},
+  {"t": "★ Блочная и функциональная область", "d": "<code>var</code> видна во всей функции и игнорирует блоки <code>{ }</code>. <code>let</code> и <code>const</code> видны только внутри блока, где объявлены.", "c": "if (true) {\n  var a = 1;\n  let b = 2;\n}\nconsole.log(a); // 1\nconsole.log(b); // ReferenceError"},
+  {"t": "★ const и объект", "d": "Можно менять содержимое объекта, но нельзя присвоить переменной новое значение. <code>const</code> защищает ссылку, а не сам объект.", "c": "const user = { name: 'Саша' };\nuser.name = 'Алекс'; // можно\nuser = {};             // TypeError"},
+  {"t": "★ var в цикле", "d": "<code>3 3 3</code>. У <code>var</code> одна переменная на весь цикл, к моменту срабатывания таймеров она равна 3. С <code>let</code> у каждой итерации своя <code>i</code> — будет <code>0 1 2</code>.", "c": "for (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log(i), 0);\n}"},
+ ],
+ proto:[
+  {"t": "★ Прототип", "d": "Объект, на который ссылается скрытое свойство <code>[[Prototype]]</code> другого объекта. Если свойства нет в самом объекте, его ищут в прототипе.", "open": true},
+  {"t": "★ Цепочка прототипов", "d": "<code>false</code> и <code>'function'</code>. Своего <code>map</code> у массива нет: движок идёт по цепочке <code>arr → Array.prototype → Object.prototype → null</code> и находит <code>map</code> в <code>Array.prototype</code>.", "c": "const arr = [1, 2];\nconsole.log(arr.hasOwnProperty('map'));    // ?\nconsole.log(typeof arr.map);              // ?"},
+  {"t": "★ __proto__ и prototype", "d": "<code>prototype</code> — свойство функции-конструктора: объект, который станет прототипом созданных через <code>new</code> объектов. <code>__proto__</code> — ссылка конкретного объекта на его прототип. Сейчас вместо <code>__proto__</code> используют <code>Object.getPrototypeOf</code>.", "c": "function User() {}\nconst u = new User();\nu.__proto__ === User.prototype; // true"},
+  {"t": "★ Object.create", "d": "Через <code>Object.create(proto)</code> — создаёт пустой объект, у которого прототип — переданный объект.", "c": "const animal = { eat() { return 'ем'; } };\nconst cat = Object.create(animal);\ncat.eat(); // 'ем'"},
+  {"t": "★ class и прототипы", "d": "<code>class</code> — синтаксический сахар над функциями-конструкторами и прототипами. Методы класса попадают в <code>ClassName.prototype</code>, а <code>extends</code> строит цепочку прототипов."},
+ ],
+ classes:[
+  {"t": "★ constructor", "d": "Специальный метод, который вызывается при создании объекта через <code>new</code>. В нём задают начальные поля через <code>this</code>.", "c": "class User {\n  constructor(name) {\n    this.name = name;\n  }\n}\nconst u = new User('Саша');", "open": true},
+  {"t": "★ extends и super", "d": "<code>extends</code> наследует класс: методы родителя доступны через цепочку прототипов. <code>super(...)</code> вызывает конструктор родителя, <code>super.method()</code> — метод родителя. В наследнике <code>super()</code> вызывают до обращения к <code>this</code>, иначе ошибка.", "c": "class Admin extends User {\n  constructor(name) {\n    super(name);\n    this.role = 'admin';\n  }\n}"},
+  {"t": "★ static", "d": "Метод самого класса, а не его экземпляров. Вызывается через имя класса, у объекта его нет.", "c": "class MathUtil {\n  static sum(a, b) { return a + b; }\n}\nMathUtil.sum(1, 2); // 3"},
+  {"t": "★ Приватные поля", "d": "Через <code>#</code> перед именем. Такое поле доступно только внутри класса, снаружи — ошибка.", "c": "class Wallet {\n  #balance = 0;\n  add(n) { this.#balance += n; }\n}\nnew Wallet().#balance; // SyntaxError"},
+ ],
+ primitives:[
+  {"t": "★ Примитивы", "d": "7 примитивов: string, number, bigint, boolean, undefined, null, symbol. Всё остальное — объекты, включая массивы и функции.", "open": true},
+  {"t": "★ По значению и по ссылке", "d": "<code>1 2</code>. Примитив копируется по значению — <code>b</code> независима. Объект копируется по ссылке — <code>x</code> и <code>y</code> указывают на один объект.", "c": "let a = 1;\nlet b = a;\nb = 2;\n\nconst x = { n: 1 };\nconst y = x;\ny.n = 2;\n\nconsole.log(a, x.n);"},
+  {"t": "★ typeof", "d": "<code>'object'</code>, <code>'object'</code>, <code>'function'</code>. <code>typeof null</code> — историческая ошибка языка. Массив проверяют через <code>Array.isArray</code>.", "c": "typeof null;      // ?\ntypeof [];        // ?\ntypeof function(){}; // ?"},
+  {"t": "★ Сравнение объектов", "d": "<code>false</code>. Объекты сравниваются по ссылке, а это два разных объекта. <code>true</code> будет, только если обе переменные ссылаются на один объект."},
+  {"t": "★ Поверхностная копия", "d": "Копируется только верхний уровень, вложенные объекты остаются общими по ссылке. Так копируют spread и <code>Object.assign</code>. Глубокая копия — <code>structuredClone</code>.", "c": "const a = { user: { name: 'Саша' } };\nconst b = { ...a };\nb.user.name = 'Алекс';\nconsole.log(a.user.name); // 'Алекс'"},
+ ],
+ equality:[
+  {"t": "★ == и ===", "d": "<code>===</code> сравнивает без приведения типов: разные типы — сразу <code>false</code>. <code>==</code> сначала приводит к одному типу. В коде используют <code>===</code>.", "c": "'5' == 5;   // true\n'5' === 5;  // false\n0 == false; // true", "open": true},
+  {"t": "★ Falsy", "d": "Восемь: <code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code>, <code>''</code>, <code>null</code>, <code>undefined</code>, <code>NaN</code>. Все остальные — truthy, в том числе <code>'0'</code>, <code>[]</code> и <code>{}</code>."},
+  {"t": "★ NaN", "d": "<code>NaN</code> не равен даже самому себе. Проверяют через <code>Number.isNaN(value)</code>.", "c": "NaN === NaN;          // false\nNumber.isNaN(NaN);    // true"},
+  {"t": "★ null и undefined", "d": "<code>undefined</code> — значение не задано: переменная объявлена без значения, нет свойства. <code>null</code> — «пусто» специально, его присваивают сами. Нестрого равны друг другу, строго — нет.", "c": "let a;\nconsole.log(a);         // undefined\nnull == undefined;      // true\nnull === undefined;     // false"},
+ ],
+ functions:[
+  {"t": "★ Function Declaration", "d": "Объявление функции отдельной инструкцией через <code>function имя()</code>. Поднимается целиком, поэтому её можно вызвать до объявления.", "c": "sum(1, 2); // работает\nfunction sum(a, b) {\n  return a + b;\n}", "open": true},
+  {"t": "★ Function Expression", "d": "Функция, созданная как значение и записанная в переменную. До строки создания её вызвать нельзя.", "c": "sum(1, 2); // ReferenceError\nconst sum = function (a, b) {\n  return a + b;\n};"},
+  {"t": "★ Стрелочная функция", "d": "Короткая запись. Нет своего <code>this</code> и <code>arguments</code> — берёт их снаружи. Нельзя вызвать через <code>new</code>. С <code>{ }</code> нужен явный <code>return</code>.", "c": "const sum = (a, b) => a + b;"},
+  {"t": "★ IIFE", "d": "Immediately Invoked Function Expression — функция, которая вызывается сразу после создания. Раньше так создавали отдельную область видимости для переменных.", "c": "(function () {\n  const secret = 1;\n})();"},
+ ],
+ arrays:[
+  {"t": "★ map", "d": "Возвращает новый массив той же длины, где каждый элемент — результат колбэка. Исходный массив не меняет.", "c": "[1, 2, 3].map((n) => n * 2); // [2, 4, 6]", "open": true},
+  {"t": "★ filter", "d": "Возвращает новый массив только из элементов, для которых колбэк вернул <code>true</code>.", "c": "[1, 2, 3, 4].filter((n) => n % 2 === 0); // [2, 4]"},
+  {"t": "★ reduce", "d": "Сводит массив к одному значению. Аккумулятор — промежуточный результат, который передаётся от шага к шагу. Второй аргумент — начальное значение; без него берётся первый элемент.", "c": "[1, 2, 3].reduce((acc, n) => acc + n, 0); // 6"},
+  {"t": "★ find и filter", "d": "<code>find</code> возвращает первый подходящий элемент или <code>undefined</code>. <code>filter</code> возвращает массив всех подходящих, может быть пустым.", "c": "const users = [{ id: 1 }, { id: 2 }];\nusers.find((u) => u.id === 2);   // { id: 2 }\nusers.filter((u) => u.id === 2); // [{ id: 2 }]"},
+  {"t": "★ forEach", "d": "Ничего — <code>undefined</code>. Он только перебирает элементы. Если нужен новый массив — <code>map</code>. Прервать <code>forEach</code> через <code>break</code> нельзя.", "c": "const res = [1, 2].forEach((n) => n * 2);\nconsole.log(res); // undefined"},
+  {"t": "★ Мутирующие методы", "d": "<code>push</code>, <code>pop</code>, <code>shift</code>, <code>unshift</code>, <code>splice</code>, <code>sort</code>, <code>reverse</code>, <code>fill</code>. Не мутируют <code>map</code>, <code>filter</code>, <code>slice</code>, <code>concat</code>. Есть неизменяемые версии: <code>toSorted</code>, <code>toReversed</code>, <code>toSpliced</code>."},
+ ],
+ destructuring:[
+  {"t": "★ Деструктуризация объекта", "d": "Достаёт свойства объекта в переменные: <code>name</code> как есть, <code>age</code> со значением по умолчанию 18, <code>city</code> под новым именем <code>town</code>.", "c": "const { name, age = 18, city: town } = user;", "open": true},
+  {"t": "★ Деструктуризация массива", "d": "Через деструктуризацию массива: элементы достаются по позиции. Так можно обменять значения без временной переменной.", "c": "let a = 1, b = 2;\n[a, b] = [b, a];"},
+  {"t": "★ Spread", "d": "Оператор <code>...</code>, который раскладывает массив или объект на элементы. Используют для копирования и объединения.", "c": "const all = [...arr1, ...arr2];\nconst copy = { ...user, age: 30 };"},
+  {"t": "★ Rest", "d": "Тот же <code>...</code>, но собирает оставшиеся элементы в массив или объект: в параметрах функции или при деструктуризации. Стоит последним.", "c": "function sum(...nums) {\n  return nums.reduce((a, n) => a + n, 0);\n}\nconst [first, ...others] = [1, 2, 3];"},
+ ],
+ syntax:[
+  {"t": "★ Template literals", "d": "Строки в обратных кавычках. В них можно подставлять выражения через <code>${}</code> и писать в несколько строк.", "c": "const msg = `Привет, ${user.name}!`;", "open": true},
+  {"t": "★ Optional chaining", "d": "Если значение слева <code>null</code> или <code>undefined</code>, выражение возвращает <code>undefined</code> вместо ошибки «Cannot read properties of undefined».", "c": "const city = user?.address?.city;\nuser.getName?.();"},
+  {"t": "★ Nullish coalescing", "d": "Возвращает правое значение, только если левое <code>null</code> или <code>undefined</code>. Иначе — левое.", "c": "const count = data.count ?? 10;"},
+  {"t": "★ ?? и ||", "d": "<code>10 0</code>. <code>||</code> заменяет любое falsy-значение, включая <code>0</code> и <code>''</code>. <code>??</code> — только <code>null</code> и <code>undefined</code>, поэтому <code>0</code> остаётся.", "c": "const a = 0 || 10;\nconst b = 0 ?? 10;\nconsole.log(a, b);"},
+ ],
+ immutability:[
+  {"t": "★ Иммутабельность", "d": "Подход, при котором данные не изменяют на месте, а создают новую копию с изменениями. Старый объект остаётся прежним.", "open": true},
+  {"t": "★ Shallow compare", "d": "React сравнивает старое и новое состояние по ссылке (shallow compare). После <code>push</code> ссылка та же — React считает, что ничего не изменилось. Нужно <code>setTodos([...todos, item])</code>.", "c": "const [todos, setTodos] = useState([]);\ntodos.push(item);\nsetTodos(todos); // ре-рендера не будет"},
+  {"t": "★ Обновление вложенного объекта", "d": "Копировать каждый уровень, который меняется, через spread. Spread поверхностный, поэтому вложенный объект копируют отдельно.", "c": "const next = {\n  ...user,\n  address: { ...user.address, city: 'Москва' },\n};"},
+  {"t": "★ Immer", "d": "Библиотека, которая позволяет писать код как с мутацией, а сама создаёт новую неизменяемую копию. Встроена в Redux Toolkit.", "c": "const slice = createSlice({\n  reducers: {\n    add(state, action) {\n      state.items.push(action.payload); // можно\n    },\n  },\n});"},
+ ],
+ debounce:[
+  {"t": "★ Debounce", "d": "Обёртка, которая вызывает функцию только после паузы в N мс. Каждый новый вызов сбрасывает таймер, поэтому сработает только последний.", "c": "function debounce(fn, ms) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), ms);\n  };\n}", "open": true},
+  {"t": "★ Throttle", "d": "Обёртка, которая вызывает функцию не чаще одного раза в N мс. Остальные вызовы в этот промежуток пропускаются."},
+  {"t": "★ Когда что", "d": "Debounce — когда важен итог после остановки: поиск при вводе, автосохранение, ресайз с перерасчётом. Throttle — когда нужны регулярные обновления во время действия: скролл, движение мыши."},
+  {"t": "★ Почему timer снаружи", "d": "Чтобы все вызовы видели одну переменную через замыкание. Если объявить внутри, при каждом вызове будет новая <code>timer</code>, и <code>clearTimeout</code> ничего не отменит."},
+ ],
+ mapset:[
+  {"t": "★ Map", "d": "Коллекция пар «ключ — значение», где ключом может быть любое значение, даже объект. Сохраняет порядок вставки, есть <code>size</code>.", "c": "const m = new Map();\nm.set(user, 'данные');\nm.get(user);\nm.size; // 1", "open": true},
+  {"t": "★ Set", "d": "Коллекция уникальных значений: дубли не добавляются. Методы <code>add</code>, <code>has</code>, <code>delete</code>, свойство <code>size</code>.", "c": "const s = new Set([1, 2, 2, 3]);\ns.size;   // 3\ns.has(2); // true"},
+  {"t": "★ Убрать дубли", "d": "Создать <code>Set</code> из массива и разложить обратно spread-ом или через <code>Array.from</code>.", "c": "const unique = [...new Set([1, 1, 2, 3, 3])]; // [1, 2, 3]"},
+  {"t": "★ Map и объект", "d": "Ключи объекта — только строки и символы, у Map — любые. У Map есть <code>size</code>, она перебирается в порядке вставки и нет унаследованных ключей из прототипа."},
+ ],
+ dom:[
+  {"t": "★ Всплытие", "d": "После срабатывания на элементе событие поднимается вверх по родителям и запускает их обработчики. По умолчанию обработчики работают на этой фазе.", "c": "<div onclick=\"log('div')\">\n  <button onclick=\"log('button')\">OK</button>\n</div>\n<!-- клик: button, потом div -->", "open": true},
+  {"t": "★ Погружение", "d": "Первая фаза: событие идёт от <code>document</code> вниз к целевому элементу. Обработчик на этой фазе включают опцией <code>capture: true</code>.", "c": "el.addEventListener('click', handler, { capture: true });"},
+  {"t": "★ Делегирование", "d": "Один обработчик на общем родителе вместо обработчиков на каждом дочернем элементе. Работает за счёт всплытия, элемент определяем через <code>event.target</code>. Подходит и для элементов, добавленных позже.", "c": "list.addEventListener('click', (e) => {\n  const item = e.target.closest('li');\n  if (item) console.log(item.dataset.id);\n});"},
+  {"t": "★ target и currentTarget", "d": "<code>target</code> — элемент, где событие произошло, например кнопка. <code>currentTarget</code> — элемент, на котором висит обработчик, например список."},
+  {"t": "★ preventDefault и stopPropagation", "d": "<code>preventDefault</code> отменяет действие браузера по умолчанию: отправку формы, переход по ссылке. <code>stopPropagation</code> останавливает всплытие к родителям.", "c": "form.addEventListener('submit', (e) => {\n  e.preventDefault(); // страница не перезагрузится\n});"},
+ ],
+ modules:[
+  {"t": "★ Named export", "d": "Экспорт по имени. Их может быть много, импортируют в фигурных скобках с тем же именем (можно переименовать через <code>as</code>).", "c": "export const sum = (a, b) => a + b;\nimport { sum } from './math';", "open": true},
+  {"t": "★ Default export", "d": "Один основной экспорт файла. Импортируется без фигурных скобок под любым именем.", "c": "export default function Button() {}\nimport MyButton from './Button';"},
+  {"t": "★ CommonJS и ESM", "d": "CommonJS — <code>require</code> и <code>module.exports</code>, загрузка синхронная, исторически формат Node. ES-модули — <code>import/export</code>, статическая структура, стандарт браузеров и современной сборки."},
+  {"t": "★ Tree shaking", "d": "Удаление при сборке кода, который нигде не импортируется. Возможно благодаря статическим <code>import/export</code>."},
+  {"t": "★ Динамический импорт", "d": "Загрузка модуля во время выполнения, возвращает промис. Используют для ленивой загрузки и code splitting, в React — вместе с <code>lazy</code>.", "c": "const { Chart } = await import('./Chart');"},
+ ],
+ gc:[
+  {"t": "★ Сборщик мусора", "d": "Механизм движка, который автоматически освобождает память от объектов, до которых больше нельзя добраться из кода.", "open": true},
+  {"t": "★ Достижимость", "d": "Достижимые: до них можно дойти по ссылкам от корней — глобального объекта, переменных в стеке вызовов. Недостижимые удаляются."},
+  {"t": "★ Mark-and-sweep", "d": "Сборщик проходит от корней по всем ссылкам и помечает достижимые объекты (mark), а непомеченные удаляет (sweep)."},
+  {"t": "★ Утечка памяти", "d": "Память, которая больше не нужна, но не освобождается, потому что на неё осталась ссылка. Частые причины: забытые таймеры и обработчики, глобальные переменные, замыкания с большими данными, удалённые из DOM элементы, на которые ещё ссылаются.", "c": "useEffect(() => {\n  const id = setInterval(tick, 1000);\n  return () => clearInterval(id); // без этого — утечка\n}, []);"},
+ ],
+ hof:[
+  {"t": "★ Функция высшего порядка", "d": "Функция, которая принимает другую функцию как аргумент или возвращает функцию. Примеры: <code>map</code>, <code>filter</code>, <code>setTimeout</code>, <code>debounce</code>.", "c": "[1, 2].map((n) => n * 2);           // принимает функцию\nconst add = (a) => (b) => a + b;    // возвращает функцию", "open": true},
+  {"t": "★ Чистая функция", "d": "Функция, которая при одних и тех же аргументах всегда возвращает один результат и не имеет побочных эффектов: не меняет внешние переменные, не делает запросов.", "c": "const sum = (a, b) => a + b;              // чистая\nconst add = (n) => { total += n; };       // нечистая"},
+  {"t": "★ Побочный эффект", "d": "Любое влияние функции на внешний мир: изменение внешних переменных или аргументов, запрос к серверу, запись в DOM или <code>localStorage</code>, <code>console.log</code>. В React их выносят в <code>useEffect</code>."},
+  {"t": "★ Каррирование", "d": "Превращение функции от нескольких аргументов в цепочку функций, каждая принимает по одному аргументу. Работает за счёт замыканий.", "c": "const add = (a) => (b) => a + b;\nadd(2)(3); // 5\nconst add2 = add(2);"},
+ ],
+ polyfills:[
+  {"t": "★ Полифилл", "d": "Код, который добавляет встроенный метод, если среда его не поддерживает. Сначала проверяем, есть ли метод, и только потом добавляем.", "c": "if (!Array.prototype.myMap) {\n  Array.prototype.myMap = function (cb) { /* ... */ };\n}", "open": true},
+  {"t": "★ Полифилл и транспиляция", "d": "Полифилл добавляет недостающие функции и методы (<code>Promise</code>, <code>Array.prototype.includes</code>). Транспилятор (Babel) переписывает новый синтаксис в старый (стрелки, <code>?.</code>). Полифиллы обычно берут из core-js."},
+  {"t": "★ Свой map", "d": "Массив берём из <code>this</code>, поэтому метод — обычная функция, не стрелка. Колбэк получает три аргумента: элемент, индекс, массив. Возвращаем новый массив, исходный не меняем.", "c": "Array.prototype.myMap = function (cb) {\n  const result = [];\n  for (let i = 0; i < this.length; i++) {\n    result.push(cb(this[i], i, this));\n  }\n  return result;\n};"},
+  {"t": "★ Promise.all с нуля", "d": "Возвращаем новый промис. Результаты кладём по индексу, чтобы сохранить порядок, считаем выполненные и вызываем <code>resolve</code>, когда готовы все. На первую ошибку — <code>reject</code>.", "c": "function all(promises) {\n  return new Promise((resolve, reject) => {\n    const results = [];\n    let done = 0;\n    promises.forEach((p, i) => {\n      Promise.resolve(p).then((v) => {\n        results[i] = v;\n        if (++done === promises.length) resolve(results);\n      }, reject);\n    });\n  });\n}"},
+ ],
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"js",n:"JavaScript",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

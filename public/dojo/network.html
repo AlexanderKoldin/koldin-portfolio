@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Сеть по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Сеть и REST API</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Сеть <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== ЧТО ПРОИСХОДИТ ПРИ ВВОДЕ АДРЕСА ===== */
+net_url: {
+  name:"Что происходит при вводе адреса",
+  code:[
+  "https:<span class=\"cm\">//shop.ru/catalog</span>",
+  "",
+  "<span class=\"num\">1</span>. DNS:   shop.ru → <span class=\"num\">93.184.216.34</span>",
+  "<span class=\"num\">2</span>. TCP:   SYN → SYN-ACK → ACK",
+  "<span class=\"num\">3</span>. TLS:   сертификат, ключи шифрования",
+  "<span class=\"num\">4</span>. HTTP:  GET /catalog → <span class=\"num\">200</span> OK + HTML",
+  "<span class=\"num\">5</span>. Рендер: DOM → CSSOM → layout → paint"],
+  panels:[["net", "Сеть", "items"], ["browser", "Браузер", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>DNS:</b> браузер узнаёт <b>IP-адрес</b> домена (кэш браузера, ОС, затем DNS-сервер).</li><li><b>Соединение:</b> <b>TCP</b>-рукопожатие с сервером, для HTTPS — ещё <b>TLS</b>-рукопожатие (проверка сертификата, ключи шифрования).</li><li><b>HTTP:</b> браузер отправляет <b>GET-запрос</b>, сервер возвращает <b>HTML</b> с кодом ответа.</li><li><b>Отрисовка:</b> браузер парсит HTML в <b>DOM</b>, грузит CSS и JS, строит <b>CSSOM</b>, считает layout и <b>рисует</b> страницу.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3], t:"DNS", x:"Браузер узнаёт IP по имени: кэш браузера → ОС → DNS-сервер.", hl:"net", p:{net:[it("DNS: shop.ru → 93.184.216.34",'new')],browser:[it("—")]}},
+   {line:[4], t:"TCP", x:"Трёхстороннее рукопожатие — соединение с сервером установлено.", hl:"net", p:{net:[it("DNS ✓"),it("TCP: соединение ✓",'new')],browser:[it("—")]}},
+   {line:[5], t:"TLS", x:"Для HTTPS: сервер показывает сертификат, договариваемся о ключах — дальше всё зашифровано.", hl:"net", p:{net:[it("DNS ✓"),it("TCP ✓"),it("TLS: сертификат ✓, шифрование",'new')],browser:[it("—")]}},
+   {line:[6], t:"HTTP-запрос", x:"Отправляем GET, получаем HTML и код ответа.", hl:"net", p:{net:[it("DNS ✓"),it("TCP ✓"),it("TLS ✓"),it("GET /catalog → 200 + HTML",'new')],browser:[it("—")]}},
+   {line:[7], t:"Рендер", x:"HTML → DOM, CSS → CSSOM, по пути догружаются CSS, JS, картинки, затем layout и paint.", hl:"browser", p:{net:[it("DNS ✓"),it("TCP ✓"),it("TLS ✓"),it("GET /catalog → 200 + HTML")],browser:[it("DOM",'new'),it("CSSOM",'new'),it("layout → paint → страница",'new')]}},
+   {line:[], t:"Итог", x:"DNS → TCP → TLS → HTTP-запрос и ответ → построение DOM и CSSOM → layout → paint.", fin:true, p:{net:[it("DNS ✓"),it("TCP ✓"),it("TLS ✓"),it("GET /catalog → 200 + HTML")],browser:[it("DOM"),it("CSSOM"),it("layout → paint → страница")]}},
+  ]
+},
+
+/* ===== HTTP-МЕТОДЫ ===== */
+net_methods: {
+  name:"HTTP-методы",
+  code:[
+  "GET    /users/<span class=\"num\">5</span>                 → получить",
+  "POST   /users   { name }        → создать",
+  "PUT    /users/<span class=\"num\">5</span> { полный объект } → заменить",
+  "PATCH  /users/<span class=\"num\">5</span> { name }        → изменить часть",
+  "DELETE /users/<span class=\"num\">5</span>                 → удалить"],
+  panels:[["db", "Данные на сервере", "items"], ["idem", "Идемпотентность (повторили запрос)", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> метод говорит серверу, <b>что сделать</b> с ресурсом: <b>GET</b> — получить, <b>POST</b> — создать, <b>PUT</b> — заменить целиком, <b>PATCH</b> — изменить частично, <b>DELETE</b> — удалить.</li><li><b>Идемпотентность:</b> повтор запроса <b>даёт тот же результат</b>: GET, PUT, DELETE — идемпотентны; <b>POST — нет</b> (два раза — две записи).</li><li><b>Пример:</b> <code>PATCH /users/5 { name: 'Саша' }</code> меняет одно поле, <code>PUT /users/5</code> заменяет весь объект.</li><li><b>Безопасные методы:</b> GET и HEAD <b>не меняют</b> данные — поэтому их можно кэшировать и повторять.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"GET", x:"Только чтение. Повтор ничего не меняет.", hl:"db", p:{db:[it("users: [5: Саша, a@b.ru]",'new')],idem:[it("GET ×2 → то же <span class=\"chip cok\">идемпотентен</span>",'new')]}},
+   {line:[2], t:"POST ×2", x:"Каждый POST создаёт новую запись — повтор даёт дубль.", hl:"idem", p:{db:[it("users: [5]"),it("users: [5, 6, 7] <span class=\"chip cbad\">дубль</span>",'new')],idem:[it("GET ×2 → то же"),it("POST ×2 → две записи <span class=\"chip cbad\">не идемпотентен</span>",'new')]}},
+   {line:[3], t:"PUT", x:"Замена целиком: поле, которого нет в теле, пропадёт.", hl:"db", p:{db:[it("5: { name: 'Саша' } — email пропал <span class=\"chip c1\">целиком</span>",'new')],idem:[it("GET ×2 → то же"),it("POST ×2 → две записи"),it("PUT ×2 → тот же результат <span class=\"chip cok\">идемпотентен</span>",'new')]}},
+   {line:[4], t:"PATCH", x:"Меняет только переданные поля.", hl:"db", p:{db:[it("5: { name: 'Алекс', email: 'a@b.ru' } <span class=\"chip c2\">часть</span>",'new')],idem:[it("GET ×2 → то же"),it("POST ×2 → две записи"),it("PUT ×2 → тот же результат <span class=\"chip cok\">идемпотентен</span>")]}},
+   {line:[5], t:"DELETE", x:"Удалили. Повтор — записи уже нет, состояние то же.", hl:"idem", p:{db:[it("5 удалён",'new')],idem:[it("GET ×2 → то же"),it("POST ×2 → две записи"),it("PUT ×2 → тот же результат"),it("DELETE ×2 → удалён <span class=\"chip cok\">идемпотентен</span>",'new')]}},
+   {line:[], t:"Итог", x:"GET — получить, POST — создать, PUT — заменить, PATCH — изменить часть, DELETE — удалить. Идемпотентны все, кроме POST.", fin:true, p:{db:[it("5 удалён")],idem:[it("GET ×2 → то же"),it("POST ×2 → две записи"),it("PUT ×2 → тот же результат"),it("DELETE ×2 → удалён <span class=\"chip cok\">идемпотентен</span>")]}},
+  ]
+},
+
+/* ===== СТАТУС-КОДЫ ===== */
+net_codes: {
+  name:"Статус-коды",
+  code:[
+  "GET  /api/users/<span class=\"num\">5</span>     → <span class=\"num\">200</span>",
+  "POST /api/users       → <span class=\"num\">201</span>",
+  "DELETE /api/users/<span class=\"num\">5</span>   → <span class=\"num\">204</span>",
+  "GET  /old-page        → <span class=\"num\">301</span> → /<span class=\"kw\">new</span>-page",
+  "GET  /app.<span class=\"fn\">js</span> (ETag)   → <span class=\"num\">304</span>",
+  "POST /api/users {}    → <span class=\"num\">400</span>",
+  "GET  /api/profile     → <span class=\"num\">401</span>   (нет токена)",
+  "DELETE /api/users/<span class=\"num\">1</span>   → <span class=\"num\">403</span>   (не админ)",
+  "GET  /api/users/<span class=\"num\">999</span>   → <span class=\"num\">404</span>",
+  "GET  /api/report      → <span class=\"num\">500</span>"],
+  panels:[["ok", "2xx и 3xx", "items"], ["err", "4xx и 5xx", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Группы:</b> <b>2xx</b> — успех, <b>3xx</b> — перенаправление, <b>4xx</b> — ошибка клиента, <b>5xx</b> — ошибка сервера.</li><li><b>Успех:</b> <b>200</b> OK, <b>201</b> Created (создали), <b>204</b> No Content (успех без тела).</li><li><b>3xx и 4xx:</b> <b>301</b> — переехал навсегда, <b>304</b> — не изменился, бери из кэша; <b>400</b> — неверный запрос, <b>401</b> — не авторизован, <b>403</b> — нет прав, <b>404</b> — не найдено.</li><li><b>5xx:</b> <b>500</b> — ошибка на сервере. Подвох: <b>401 — «кто ты?»</b>, <b>403 — «знаю, кто ты, но нельзя»</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"2xx — успех", x:"200 — ок с телом, 201 — создано, 204 — успех без тела.", hl:"ok", p:{ok:[it("200 OK",'new'),it("201 Created",'new'),it("204 No Content",'new')],err:[it("—")]}},
+   {line:[4, 5], t:"3xx — перенаправление", x:"301 — переехал навсегда; 304 — не изменился, бери из кэша.", hl:"ok", p:{ok:[it("200 OK"),it("201 Created"),it("204 No Content"),it("301 Moved Permanently",'new'),it("304 Not Modified",'new')],err:[it("—")]}},
+   {line:[6], t:"400", x:"Клиент прислал неверные данные: невалидное тело, нет обязательного поля.", hl:"err", p:{ok:[it("200 OK"),it("201 Created"),it("204 No Content"),it("301 Moved Permanently"),it("304 Not Modified")],err:[it("400 Bad Request — неверный запрос",'new')]}},
+   {line:[7, 8], t:"401 и 403", x:"401 — «кто ты?» (нет или истёк токен, нужно войти). 403 — «знаю, кто ты, но нельзя».", hl:"err", p:{ok:[it("200 OK"),it("201 Created"),it("204 No Content"),it("301 Moved Permanently"),it("304 Not Modified")],err:[it("400 Bad Request"),it("401 Unauthorized — войди <span class=\"chip c1\">кто ты?</span>",'new'),it("403 Forbidden — нет прав <span class=\"chip c2\">нельзя</span>",'new')]}},
+   {line:[9, 10], t:"404 и 500", x:"404 — такого ресурса нет. 500 — сломалось на сервере.", hl:"err", p:{ok:[it("200 OK"),it("201 Created"),it("204 No Content"),it("301 Moved Permanently"),it("304 Not Modified")],err:[it("400"),it("401"),it("403"),it("404 Not Found",'new'),it("500 Internal Server Error <span class=\"chip cbad\">сервер</span>",'new')]}},
+   {line:[], t:"Итог", x:"2xx — успех, 3xx — перенаправление, 4xx — ошибка клиента, 5xx — ошибка сервера. Главный подвох — 401 против 403.", fin:true, p:{ok:[it("200 OK"),it("201 Created"),it("204 No Content"),it("301 Moved Permanently"),it("304 Not Modified")],err:[it("400"),it("401"),it("403"),it("404 Not Found"),it("500 Internal Server Error <span class=\"chip cbad\">сервер</span>")]}},
+  ]
+},
+
+/* ===== REST ===== */
+net_rest: {
+  name:"REST",
+  code:[
+  "<span class=\"cm\">// не REST</span>",
+  "GET  /getUsers",
+  "POST /deleteUser?id=<span class=\"num\">5</span>",
+  "",
+  "<span class=\"cm\">// REST</span>",
+  "GET    /users",
+  "GET    /users/<span class=\"num\">5</span>",
+  "POST   /users",
+  "PATCH  /users/<span class=\"num\">5</span>",
+  "DELETE /users/<span class=\"num\">5</span>",
+  "GET    /users/<span class=\"num\">5</span>/orders"],
+  panels:[["api", "API", "items", "wide"], ["rule", "Принципы", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> REST — <b>стиль построения API</b>, где всё — <b>ресурсы</b> с адресами, а действия — <b>HTTP-методы</b>.</li><li><b>Принципы:</b> понятные URL-существительные (<code>/users/5</code>), методы вместо глаголов в URL, <b>stateless</b> (каждый запрос самодостаточен), правильные <b>статус-коды</b>, единый формат (обычно JSON).</li><li><b>Пример:</b> <code>GET /users</code> — список, <code>POST /users</code> — создать, <code>GET /users/5</code> — один, <code>DELETE /users/5</code> — удалить.</li><li><b>Подвох:</b> <code>/getUsers</code> или <code>/deleteUser?id=5</code> — <b>не REST</b>: глагол в URL вместо метода.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Глаголы в URL", x:"Действие зашито в адрес — так делать не надо.", hl:"api", p:{api:[it("/getUsers, /deleteUser <span class=\"chip cbad\">не REST</span>",'new')],rule:[it("—")]}},
+   {line:[6, 7], t:"Ресурсы", x:"URL — существительные во множественном числе, id в пути.", hl:"rule", p:{api:[it("GET /users, GET /users/5",'new')],rule:[it("URL — ресурс, не действие",'new')]}},
+   {line:[8, 9, 10], t:"Действие — метод", x:"Что сделать, говорит HTTP-метод.", hl:"rule", p:{api:[it("GET /users, GET /users/5"),it("POST, PATCH, DELETE на тех же адресах",'new')],rule:[it("URL — ресурс, не действие"),it("действие — HTTP-метод",'new')]}},
+   {line:[11], t:"Вложенные ресурсы", x:"Заказы конкретного пользователя.", hl:"api", p:{api:[it("GET /users, GET /users/5"),it("POST, PATCH, DELETE"),it("GET /users/5/orders",'new')],rule:[it("URL — ресурс, не действие"),it("действие — HTTP-метод")]}},
+   {line:[], t:"Stateless и коды", x:"Каждый запрос самодостаточен (токен в заголовке), ответы — с правильными статус-кодами, формат — JSON.", hl:"rule", p:{api:[it("GET /users, GET /users/5"),it("POST, PATCH, DELETE"),it("GET /users/5/orders")],rule:[it("URL — ресурс, не действие"),it("действие — HTTP-метод"),it("stateless, статус-коды, JSON",'new')]}},
+   {line:[], t:"Итог", x:"REST: ресурсы с понятными URL, действия — методами, сервер не хранит состояние клиента, ответы с кодами.", fin:true, p:{api:[it("GET /users, GET /users/5"),it("POST, PATCH, DELETE"),it("GET /users/5/orders")],rule:[it("URL — ресурс, не действие"),it("действие — HTTP-метод"),it("stateless, статус-коды, JSON")]}},
+  ]
+},
+
+/* ===== HTTP И HTTPS ===== */
+net_https: {
+  name:"HTTP и HTTPS",
+  code:[
+  "<span class=\"cm\">// HTTP — открытым текстом</span>",
+  "POST /login  { <span class=\"str\">\"email\"</span>: <span class=\"str\">\"a@b.ru\"</span>, <span class=\"str\">\"password\"</span>: <span class=\"str\">\"qwerty\"</span> }",
+  "",
+  "<span class=\"cm\">// HTTPS = HTTP + TLS</span>",
+  "<span class=\"num\">1</span>. сервер показывает сертификат shop.ru",
+  "<span class=\"num\">2</span>. браузер проверяет: выдан доверенным центром на этот домен",
+  "<span class=\"num\">3</span>. договорились о ключе — дальше всё зашифровано"],
+  panels:[["wire", "Что видно в сети (Wi-Fi в кафе)", "items", "wide"], ["check", "Проверки", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> HTTPS — это <b>HTTP поверх TLS</b>: те же запросы, но <b>зашифрованные</b>.</li><li><b>Как работает:</b> при подключении сервер показывает <b>сертификат</b>, браузер проверяет, что он выдан доверенным центром на этот домен; дальше трафик шифруется.</li><li><b>Что даёт:</b> <b>конфиденциальность</b> (никто не прочитает), <b>целостность</b> (не подменят), <b>подлинность</b> сервера.</li><li><b>Практика:</b> без HTTPS браузеры помечают сайт небезопасным, не работают многие API (геолокация, Service Worker), куки с <code>Secure</code> не отправляются.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"HTTP", x:"Любой в той же сети видит пароль.", hl:"wire", p:{wire:[it("password: qwerty <span class=\"chip cbad\">видно всем</span>",'new')],check:[it("—")]}},
+   {line:[5], t:"Сертификат", x:"Сервер подтверждает, что он — именно shop.ru.", hl:"check", p:{wire:[it("password: qwerty <span class=\"chip cbad\">видно всем</span>")],check:[it("сертификат shop.ru",'new')]}},
+   {line:[6], t:"Проверка", x:"Браузер проверяет подпись центра сертификации и домен. Не совпало — предупреждение «Подключение не защищено».", hl:"check", p:{wire:[it("password: qwerty <span class=\"chip cbad\">видно всем</span>")],check:[it("сертификат shop.ru"),it("подпись доверенного центра ✓",'new'),it("домен совпадает ✓",'new')]}},
+   {line:[7], t:"Шифрование", x:"Дальше трафик зашифрован: подслушать и подменить нельзя.", hl:"wire", p:{wire:[it("8f3a…c9e1 <span class=\"chip cok\">зашифровано</span>",'new')],check:[it("сертификат shop.ru"),it("подпись доверенного центра ✓"),it("домен совпадает ✓")]}},
+   {line:[], t:"Итог", x:"HTTPS — HTTP поверх TLS: шифрование, целостность, подлинность сервера. Без него не работают многие браузерные API и Secure-куки.", fin:true, p:{wire:[it("8f3a…c9e1 <span class=\"chip cok\">зашифровано</span>")],check:[it("сертификат shop.ru"),it("подпись доверенного центра ✓"),it("домен совпадает ✓")]}},
+  ]
+},
+
+/* ===== CORS ===== */
+net_cors: {
+  name:"CORS",
+  code:[
+  "<span class=\"cm\">// страница: https://app.ru</span>",
+  "<span class=\"fn\">fetch</span>(<span class=\"str\">'https://api.ru/users'</span>, {",
+  "  method: <span class=\"str\">'DELETE'</span>,",
+  "  headers: { <span class=\"str\">'Content-Type'</span>: <span class=\"str\">'application/json'</span> },",
+  "});",
+  "",
+  "<span class=\"cm\">// сервер api.ru должен ответить:</span>",
+  "Access-Control-Allow-Origin: https:<span class=\"cm\">//app.ru</span>",
+  "Access-Control-Allow-Methods: GET, POST, DELETE"],
+  panels:[["req", "Запросы", "items"], ["browser", "Решение браузера", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> CORS — механизм, который <b>разрешает</b> странице делать запросы на <b>другой origin</b> (протокол + домен + порт).</li><li><b>Как работает:</b> по умолчанию действует <b>Same-Origin Policy</b>; браузер смотрит на заголовок ответа <b><code>Access-Control-Allow-Origin</code></b> — если нашего origin там нет, <b>ответ не отдаётся</b> JS.</li><li><b>Preflight:</b> для «непростых» запросов (PUT, DELETE, JSON, свои заголовки) браузер сначала шлёт <b>OPTIONS</b> — спрашивает разрешение.</li><li><b>Подвох:</b> ошибку CORS <b>исправляют на сервере</b> (заголовки) или через <b>прокси</b> в dev; это защита <b>браузера</b> — Postman её не видит.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"Разные origin", x:"<code>app.ru</code> и <code>api.ru</code> — разные домены, значит действует Same-Origin Policy.", hl:"browser", p:{req:[it("—")],browser:[it("app.ru ≠ api.ru → нужен CORS",'new')]}},
+   {line:[3, 4], t:"Preflight", x:"DELETE и JSON — «непростой» запрос. Браузер сначала спрашивает разрешение запросом OPTIONS.", hl:"req", p:{req:[it("OPTIONS /users (Origin: app.ru, Method: DELETE)",'new')],browser:[it("app.ru ≠ api.ru → нужен CORS")]}},
+   {line:[8, 9], t:"Сервер разрешил", x:"В ответе есть наш origin и метод — можно отправлять.", hl:"browser", p:{req:[it("OPTIONS /users"),it("← Allow-Origin: app.ru, Allow-Methods: DELETE",'new')],browser:[it("app.ru ≠ api.ru → нужен CORS"),it("разрешено ✓",'new')]}},
+   {line:[2], t:"Настоящий запрос", x:"Браузер отправляет DELETE и отдаёт ответ нашему JS.", hl:"req", p:{req:[it("OPTIONS /users"),it("← Allow-Origin"),it("DELETE /users ✓",'new')],browser:[it("app.ru ≠ api.ru → нужен CORS"),it("разрешено ✓")]}},
+   {line:[8], t:"А если заголовка нет", x:"Запрос до сервера дошёл, но браузер <b>не отдаст ответ</b> JS — «CORS error». Чинят на сервере или прокси в dev.", hl:"browser", p:{req:[it("OPTIONS /users"),it("← Allow-Origin"),it("DELETE /users ✓")],browser:[it("нет Allow-Origin → ответ заблокирован <span class=\"chip cbad\">CORS error</span>",'new')]}},
+   {line:[], t:"Итог", x:"CORS — разрешение сервера на запросы с другого origin. Для непростых запросов — preflight OPTIONS. Блокирует браузер, исправляет сервер.", fin:true, p:{req:[it("OPTIONS /users"),it("← Allow-Origin"),it("DELETE /users ✓")],browser:[it("нет Allow-Origin → ответ заблокирован <span class=\"chip cbad\">CORS error</span>")]}},
+  ]
+},
+
+/* ===== FETCH, ОШИБКИ, ОТМЕНА ===== */
+net_fetch: {
+  name:"fetch, ошибки, отмена",
+  code:[
+  "<span class=\"kw\">const</span> controller = <span class=\"kw\">new</span> <span class=\"fn\">AbortController</span>();",
+  "<span class=\"kw\">try</span> {",
+  "  <span class=\"kw\">const</span> res = <span class=\"kw\">await</span> <span class=\"fn\">fetch</span>(<span class=\"str\">'/api/user/999'</span>, { signal: controller.signal });",
+  "  <span class=\"kw\">if</span> (!res.ok) throw <span class=\"kw\">new</span> <span class=\"fn\">Error</span>(<span class=\"str\">`HTTP </span>${res.status}<span class=\"str\">`</span>);",
+  "  <span class=\"kw\">const</span> user = <span class=\"kw\">await</span> res.<span class=\"fn\">json</span>();",
+  "} <span class=\"kw\">catch</span> (e) {",
+  "  <span class=\"kw\">if</span> (e.name === <span class=\"str\">'AbortError'</span>) <span class=\"kw\">return</span>;",
+  "  <span class=\"fn\">showError</span>(e.message);",
+  "}",
+  "<span class=\"cm\">// в очистке useEffect:</span>",
+  "controller.<span class=\"fn\">abort</span>();"],
+  panels:[["res", "Ответ", "items"], ["flow", "Куда пошёл код", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>fetch:</b> встроен в браузер, возвращает промис; <b>не бросает ошибку на 4xx/5xx</b> — нужно проверять <b><code>res.ok</code></b>; тело читаем через <code>res.json()</code>.</li><li><b>axios:</b> библиотека: сам <b>парсит JSON</b>, <b>бросает ошибку</b> на 4xx/5xx, есть <b>интерсепторы</b> (добавить токен ко всем запросам) и таймауты.</li><li><b>Отмена:</b> <b><code>AbortController</code></b> — передаём <code>signal</code> в запрос и вызываем <code>abort()</code>, например в очистке <code>useEffect</code>.</li><li><b>Ошибки:</b> различаем <b>сетевую ошибку</b> (нет ответа), <b>HTTP-ошибку</b> (ответ с кодом 4xx/5xx) и <b>ошибку разбора</b> данных.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3], t:"Ответ 404", x:"Сервер ответил 404. Для <code>fetch</code> это <b>успешный</b> промис — сеть сработала.", hl:"res", p:{res:[it("status 404, ok = false",'new')],flow:[it("fetch выполнился без ошибки <span class=\"chip cbad\">не reject</span>",'new')]}},
+   {line:[4], t:"Проверка res.ok", x:"Ошибку HTTP бросаем сами — иначе дальше пошли бы с неправильными данными.", hl:"flow", p:{res:[it("status 404, ok = false")],flow:[it("fetch выполнился без ошибки"),it("!res.ok → throw 'HTTP 404'",'new')]}},
+   {line:[6, 8], t:"catch", x:"Показываем понятное сообщение.", hl:"flow", p:{res:[it("status 404, ok = false")],flow:[it("fetch выполнился без ошибки"),it("!res.ok → throw"),it("catch → showError('HTTP 404')",'new')]}},
+   {line:[11, 7], t:"Отмена", x:"Компонент ушёл — <code>abort()</code>. fetch отклоняется с <code>AbortError</code>, мы её тихо игнорируем.", hl:"res", p:{res:[it("AbortError",'new')],flow:[it("abort → AbortError → return <span class=\"chip cok\">тихо</span>",'new')]}},
+   {line:[], t:"Итог", x:"fetch не бросает ошибку на 4xx/5xx — проверяем <code>res.ok</code>. Отмена — <code>AbortController</code>. axios бросает ошибку сам и умеет интерсепторы.", fin:true, p:{res:[it("AbortError")],flow:[it("abort → AbortError → return <span class=\"chip cok\">тихо</span>")]}},
+  ]
+},
+
+/* ===== АУТЕНТИФИКАЦИЯ ===== */
+net_auth: {
+  name:"Аутентификация",
+  code:[
+  "<span class=\"cm\">// 1. логин</span>",
+  "POST /login { email, password }",
+  "← Set-Cookie: refresh=…; HttpOnly; Secure; SameSite=Strict",
+  "← { accessToken: <span class=\"str\">'eyJ…'</span> }   <span class=\"cm\">// живёт 15 минут</span>",
+  "",
+  "<span class=\"cm\">// 2. запросы</span>",
+  "GET /api/profile",
+  "Authorization: Bearer eyJ…",
+  "",
+  "<span class=\"cm\">// 3. access истёк → POST /refresh (cookie уйдёт сама) → новый accessToken</span>"],
+  panels:[["client", "Клиент", "items"], ["server", "Сервер", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Сессия в cookie:</b> сервер хранит сессию и отдаёт <b>id сессии в cookie</b>; браузер <b>сам</b> отправляет её с каждым запросом.</li><li><b>Токен (JWT):</b> сервер выдаёт <b>подписанный токен</b> с данными пользователя, клиент отправляет его в заголовке <b><code>Authorization: Bearer …</code></b>; сервер проверяет <b>подпись</b>, не храня сессию.</li><li><b>Где хранить:</b> <b><code>httpOnly</code>-cookie</b> — JS не может прочитать токен, это защита от <b>XSS</b>; нужен <b><code>SameSite</code></b> против <b>CSRF</b>. <code>localStorage</code> удобен, но токен украдёт любой внедрённый скрипт.</li><li><b>Практика:</b> короткий <b>access-токен</b> + долгий <b>refresh-токен</b> в httpOnly-cookie для обновления.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3, 4], t:"Логин", x:"Сервер проверил пароль и выдал два токена.", hl:"client", p:{client:[it("access — в памяти (переменная)",'new'),it("refresh — в httpOnly-cookie <span class=\"chip cok\">JS не видит</span>",'new')],server:[it("пароль ✓",'new')]}},
+   {line:[7, 8], t:"Запрос с токеном", x:"Access-токен — в заголовке. Сервер проверяет <b>подпись</b> JWT своим ключом, сессию не хранит.", hl:"server", p:{client:[it("access — в памяти (переменная)"),it("refresh — в httpOnly-cookie <span class=\"chip cok\">JS не видит</span>")],server:[it("пароль ✓"),it("подпись JWT ✓ → user 42",'new')]}},
+   {line:[10], t:"Access истёк", x:"Через 15 минут — 401. Клиент вызывает <code>/refresh</code>: браузер сам приложит cookie.", hl:"server", p:{client:[it("access — новый",'new'),it("refresh — в httpOnly-cookie")],server:[it("401 → /refresh → новый access",'new')]}},
+   {line:[3], t:"Почему так", x:"XSS не украдёт refresh из httpOnly-cookie. SameSite защищает от CSRF. Короткий access быстро теряет ценность при утечке.", hl:"client", p:{client:[it("access — новый"),it("refresh — в httpOnly-cookie"),it("XSS не видит cookie, SameSite против CSRF",'new')],server:[it("401 → /refresh → новый access")]}},
+   {line:[], t:"Итог", x:"JWT — подписанный токен, сервер проверяет подпись. Хранить безопаснее в httpOnly-cookie. Короткий access + refresh для обновления.", fin:true, p:{client:[it("access — новый"),it("refresh — в httpOnly-cookie"),it("XSS не видит cookie, SameSite против CSRF")],server:[it("401 → /refresh → новый access")]}},
+  ]
+},
+
+/* ===== ХРАНИЛИЩА БРАУЗЕРА ===== */
+net_storage: {
+  name:"Хранилища браузера",
+  code:[
+  "localStorage.<span class=\"fn\">setItem</span>(<span class=\"str\">'theme'</span>, <span class=\"str\">'dark'</span>);",
+  "sessionStorage.<span class=\"fn\">setItem</span>(<span class=\"str\">'draft'</span>, <span class=\"str\">'Привет'</span>);",
+  "document.cookie = <span class=\"str\">'lang=ru; Max-Age=31536000'</span>;",
+  "<span class=\"cm\">// + IndexedDB для больших данных</span>",
+  "",
+  "<span class=\"fn\">fetch</span>(<span class=\"str\">'/api/data'</span>);  <span class=\"cm\">// что уйдёт на сервер?</span>"],
+  panels:[["store", "Хранилище", "items", "wide"], ["life", "Закрыли вкладку и открыли снова", "items"], ["server", "Уходит на сервер", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>localStorage:</b> строки ключ–значение, около <b>5 МБ</b>, хранится <b>бессрочно</b>, доступен из JS, <b>не отправляется</b> на сервер.</li><li><b>sessionStorage:</b> то же, но живёт до <b>закрытия вкладки</b> и не делится между вкладками.</li><li><b>cookies:</b> маленькие (около <b>4 КБ</b>), <b>автоматически уходят на сервер</b> с каждым запросом, можно сделать <b><code>httpOnly</code></b> — недоступными из JS.</li><li><b>IndexedDB:</b> асинхронная <b>база данных</b> в браузере для больших объёмов и объектов — офлайн-режим, кэш данных.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"localStorage", x:"~5 МБ строк, бессрочно, общий для всех вкладок сайта.", hl:"store", p:{store:[it("localStorage: theme = dark",'new')],life:[it("—")],server:[it("—")]}},
+   {line:[2], t:"sessionStorage", x:"То же API, но живёт до закрытия вкладки и у каждой вкладки свой.", hl:"store", p:{store:[it("localStorage: theme = dark"),it("sessionStorage: draft = Привет",'new')],life:[it("—")],server:[it("—")]}},
+   {line:[3], t:"cookie", x:"~4 КБ, можно задать срок, <code>HttpOnly</code>, <code>Secure</code>, <code>SameSite</code>.", hl:"store", p:{store:[it("localStorage: theme = dark"),it("sessionStorage: draft = Привет"),it("cookie: lang = ru",'new')],life:[it("—")],server:[it("—")]}},
+   {line:[6], t:"Запрос", x:"С запросом автоматически уходят только cookie.", hl:"server", p:{store:[it("localStorage: theme = dark"),it("sessionStorage: draft = Привет"),it("cookie: lang = ru")],life:[it("—")],server:[it("Cookie: lang=ru",'new'),it("localStorage и sessionStorage — нет",'new')]}},
+   {line:[], t:"Закрыли вкладку", x:"sessionStorage очистился, остальное осталось.", hl:"life", p:{store:[it("localStorage: theme = dark"),it("sessionStorage: draft = Привет"),it("cookie: lang = ru")],life:[it("localStorage ✓",'new'),it("sessionStorage ✗",'new'),it("cookie ✓ (до Max-Age)",'new')],server:[it("Cookie: lang=ru"),it("localStorage и sessionStorage — нет")]}},
+   {line:[], t:"Итог", x:"localStorage — бессрочно, sessionStorage — до закрытия вкладки, cookie — маленькие и уходят на сервер, IndexedDB — большие данные и офлайн.", fin:true, p:{store:[it("localStorage: theme = dark"),it("sessionStorage: draft = Привет"),it("cookie: lang = ru")],life:[it("localStorage ✓"),it("sessionStorage ✗"),it("cookie ✓ (до Max-Age)")],server:[it("Cookie: lang=ru"),it("localStorage и sessionStorage — нет")]}},
+  ]
+},
+
+/* ===== HTTP-КЭШИРОВАНИЕ ===== */
+net_cache: {
+  name:"HTTP-кэширование",
+  code:[
+  "<span class=\"cm\">// index.html</span>",
+  "Cache-Control: no-cache",
+  "ETag: <span class=\"str\">\"v7\"</span>",
+  "",
+  "<span class=\"cm\">// app-8f3a1c.js</span>",
+  "Cache-Control: max-age=<span class=\"num\">31536000</span>, immutable"],
+  panels:[["visit", "Запросы при повторном визите", "items", "wide"], ["cache", "Кэш браузера", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> сервер заголовками говорит браузеру, <b>можно ли</b> и <b>как долго</b> хранить ответ.</li><li><b>Cache-Control:</b> <code>max-age=31536000</code> — год без запросов (файлы с хэшем в имени), <b><code>no-cache</code></b> — хранить, но <b>каждый раз проверять</b>, <b><code>no-store</code></b> — не хранить совсем.</li><li><b>Проверка:</b> сервер отдаёт <b><code>ETag</code></b> (отпечаток версии); браузер шлёт <code>If-None-Match</code>; если не изменилось — <b>304 Not Modified</b> без тела.</li><li><b>Практика:</b> <b><code>index.html</code></b> — <code>no-cache</code> (всегда свежий), <b>JS и CSS с хэшем</b> в имени — кэш на год.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Первый визит: HTML", x:"HTML можно хранить, но перед использованием — проверять. ETag — отпечаток версии.", hl:"cache", p:{visit:[it("GET index.html → 200, ETag v7",'new')],cache:[it("index.html (v7, проверять)",'new')]}},
+   {line:[5, 6], t:"Первый визит: JS", x:"Файл с хэшем в имени — кэш на год без проверок.", hl:"cache", p:{visit:[it("GET index.html → 200"),it("GET app-8f3a1c.js → 200",'new')],cache:[it("index.html (v7, проверять)"),it("app-8f3a1c.js (год)",'new')]}},
+   {line:[2, 3], t:"Повторный визит: HTML", x:"Браузер спрашивает «не изменилось?» с <code>If-None-Match: v7</code>. Не изменилось — 304 без тела.", hl:"visit", p:{visit:[it("GET index.html If-None-Match: v7 → 304 <span class=\"chip cok\">без тела</span>",'new')],cache:[it("index.html (v7, проверять)"),it("app-8f3a1c.js (год)")]}},
+   {line:[6], t:"Повторный визит: JS", x:"Запроса нет вообще — берём из кэша.", hl:"visit", p:{visit:[it("GET index.html → 304"),it("app-8f3a1c.js — из кэша, без запроса <span class=\"chip cok\">0 запросов</span>",'new')],cache:[it("index.html (v7, проверять)"),it("app-8f3a1c.js (год)")]}},
+   {line:[], t:"Деплой новой версии", x:"Новый код → новое имя файла <code>app-91bd2e.js</code>. HTML (проверяемый) ссылается на него — пользователь сразу получит свежий JS.", hl:"visit", p:{visit:[it("index.html → 200, ETag v8",'new'),it("GET app-91bd2e.js → 200 (новый файл)",'new')],cache:[it("index.html (v7, проверять)"),it("app-8f3a1c.js (год)")]}},
+   {line:[], t:"Итог", x:"<code>max-age</code> — хранить N секунд без запросов, <code>no-cache</code> — проверять каждый раз, <code>ETag</code> + 304 — дешёвая проверка. HTML — no-cache, файлы с хэшем — на год.", fin:true, p:{visit:[it("index.html → 200, ETag v8"),it("GET app-91bd2e.js → 200 (новый файл)")],cache:[it("index.html (v7, проверять)"),it("app-8f3a1c.js (год)")]}},
+  ]
+},
+
+/* ===== WEBSOCKET, POLLING, SSE ===== */
+net_ws: {
+  name:"WebSocket, polling, SSE",
+  code:[
+  "<span class=\"cm\">// polling</span>",
+  "<span class=\"fn\">setInterval</span>(() =&gt; <span class=\"fn\">fetch</span>(<span class=\"str\">'/api/messages'</span>), <span class=\"num\">5000</span>);",
+  "",
+  "<span class=\"cm\">// SSE</span>",
+  "<span class=\"kw\">const</span> es = <span class=\"kw\">new</span> <span class=\"fn\">EventSource</span>(<span class=\"str\">'/api/events'</span>);",
+  "es.onmessage = (e) =&gt; <span class=\"fn\">show</span>(e.data);",
+  "",
+  "<span class=\"cm\">// WebSocket</span>",
+  "<span class=\"kw\">const</span> ws = <span class=\"kw\">new</span> <span class=\"fn\">WebSocket</span>(<span class=\"str\">'wss://chat.ru'</span>);",
+  "ws.onmessage = (e) =&gt; <span class=\"fn\">show</span>(e.data);",
+  "ws.<span class=\"fn\">send</span>(<span class=\"str\">'Привет'</span>);"],
+  panels:[["timeline", "За 15 секунд, новое сообщение на 7-й", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Polling:</b> клиент <b>периодически спрашивает</b> сервер («есть новое?») — просто, но лишние запросы и задержка.</li><li><b>Long polling:</b> запрос <b>висит</b>, пока у сервера не появятся данные, потом клиент сразу шлёт новый.</li><li><b>SSE (Server-Sent Events):</b> <b>однонаправленный поток</b> от сервера к клиенту поверх HTTP с автоматическим переподключением — уведомления, ленты.</li><li><b>WebSocket:</b> <b>постоянное двустороннее</b> соединение — чаты, совместное редактирование, игры.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"Polling", x:"Спрашиваем каждые 5 секунд. Сообщение пришло на 7-й секунде — увидим на 10-й. Два запроса из трёх — пустые.", hl:"timeline", p:{timeline:[it("polling: 0с пусто · 5с пусто · 10с есть ✓ (задержка 3с) <span class=\"chip cbad\">лишние запросы</span>",'new')]}},
+   {line:[5, 6], t:"SSE", x:"Одно соединение, сервер сам присылает событие сразу. Только от сервера к клиенту.", hl:"timeline", p:{timeline:[it("polling: задержка и пустые запросы"),it("SSE: одно соединение, 7с → событие сразу <span class=\"chip c1\">сервер → клиент</span>",'new')]}},
+   {line:[9, 10, 11], t:"WebSocket", x:"Постоянное соединение в обе стороны: и получать, и отправлять без новых HTTP-запросов.", hl:"timeline", p:{timeline:[it("polling: задержка и пустые запросы"),it("SSE: только от сервера"),it("WebSocket: 7с → сразу, и можно отправлять <span class=\"chip cok\">двусторонний</span>",'new')]}},
+   {line:[], t:"Итог", x:"Polling — просто, но задержка и лишние запросы. SSE — поток от сервера (уведомления). WebSocket — двусторонняя связь (чаты, совместное редактирование).", fin:true, p:{timeline:[it("polling: задержка и пустые запросы"),it("SSE: только от сервера"),it("WebSocket: 7с → сразу, и можно отправлять <span class=\"chip cok\">двусторонний</span>")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ net_url:[
+  {"t": "★ DNS", "d": "Переводит доменное имя в IP-адрес сервера. Сначала ищет в кэше браузера и системы, потом спрашивает DNS-серверы.", "open": true},
+  {"t": "★ TCP и TLS", "d": "Устанавливается TCP-соединение (рукопожатие), затем TLS-рукопожатие: сервер показывает сертификат, стороны договариваются о ключах шифрования."},
+  {"t": "★ Порядок шагов", "d": "DNS → TCP → TLS → HTTP-запрос → ответ с HTML → парсинг HTML в DOM, загрузка CSS и JS → CSSOM → layout → paint."},
+ ],
+ net_methods:[
+  {"t": "★ Основные методы", "d": "GET — получить данные, POST — создать, PUT — заменить ресурс целиком, PATCH — изменить часть полей, DELETE — удалить.", "open": true},
+  {"t": "★ Идемпотентность", "d": "Свойство запроса: повторный вызов даёт тот же результат на сервере. GET, PUT, DELETE идемпотентны, POST — нет: два одинаковых POST создадут две записи."},
+  {"t": "★ PUT и PATCH", "d": "PUT заменяет ресурс целиком — неуказанные поля пропадут. PATCH меняет только переданные поля.", "c": "PUT   /users/5  { id: 5, name: 'Саша', email: 'a@b.ru' }\nPATCH /users/5  { name: 'Саша' }"},
+ ],
+ net_codes:[
+  {"t": "★ Группы кодов", "d": "1xx — информационные, 2xx — успех, 3xx — перенаправление, 4xx — ошибка клиента (неверный запрос), 5xx — ошибка сервера.", "open": true},
+  {"t": "★ 200, 201, 204", "d": "200 — успех с телом ответа. 201 — ресурс создан (обычно после POST). 204 — успех без тела (часто после DELETE)."},
+  {"t": "★ 401 и 403", "d": "401 Unauthorized — пользователь не аутентифицирован: нет токена или он истёк, нужно войти. 403 Forbidden — пользователь известен, но прав на действие нет."},
+  {"t": "★ 301 и 304", "d": "301 — ресурс навсегда переехал на другой адрес, браузер перейдёт туда. 304 Not Modified — ресурс не изменился, браузер берёт копию из кэша."},
+ ],
+ net_rest:[
+  {"t": "★ REST", "d": "Стиль API: данные — это ресурсы с URL, действия над ними — HTTP-методы, сервер не хранит состояние клиента между запросами, ответы — со статус-кодами.", "open": true},
+  {"t": "★ REST URL", "d": "Существительные во множественном числе, id в пути. Действие задаёт метод, а не слово в URL.", "c": "GET    /users\nPOST   /users\nGET    /users/5\nPATCH  /users/5\nDELETE /users/5"},
+  {"t": "★ Stateless", "d": "Сервер не хранит состояние клиента между запросами. Каждый запрос содержит всё нужное, например токен авторизации. Так проще масштабировать сервер."},
+ ],
+ net_https:[
+  {"t": "★ HTTPS", "d": "HTTPS — HTTP поверх TLS: данные шифруются, сервер подтверждает свою подлинность сертификатом. По HTTP всё идёт открытым текстом.", "open": true},
+  {"t": "★ Сертификат", "d": "Подтверждает, что сервер действительно владеет доменом. Сертификат выдаёт доверенный центр, браузер проверяет его при подключении."},
+  {"t": "★ Что защищает HTTPS", "d": "От чтения трафика посторонними (пароли, токены), от подмены данных по пути и от поддельного сервера."},
+ ],
+ net_cors:[
+  {"t": "★ Origin", "d": "Сочетание протокола, домена и порта: <code>https://site.ru:443</code>. Отличие хотя бы в одном — уже другой origin.", "open": true},
+  {"t": "★ CORS", "d": "Браузер по Same-Origin Policy не отдаёт странице ответ с чужого origin, если сервер не разрешил это заголовком <code>Access-Control-Allow-Origin</code>. Запрос до сервера доходит, блокирует браузер."},
+  {"t": "★ Preflight", "d": "Предварительный OPTIONS-запрос, которым браузер спрашивает сервер, можно ли отправить «непростой» запрос: метод не GET/POST, JSON, свои заголовки.", "c": "OPTIONS /api/users\nOrigin: https://app.ru\nAccess-Control-Request-Method: DELETE"},
+  {"t": "★ Как исправить CORS", "d": "Настроить сервер: вернуть <code>Access-Control-Allow-Origin</code> с нашим origin и нужные методы и заголовки. В разработке — прокси в Vite (<code>server.proxy</code>). С фронтенда «выключить» CORS нельзя."},
+ ],
+ net_fetch:[
+  {"t": "★ fetch и ошибки", "d": "Нет. <code>fetch</code> отклоняется только при сетевой ошибке. На 404 и 500 промис выполнится успешно, поэтому проверяем <code>res.ok</code> или <code>res.status</code>.", "c": "const res = await fetch('/api/user');\nif (!res.ok) throw new Error(`HTTP ${res.status}`);\nconst data = await res.json();", "open": true},
+  {"t": "★ axios", "d": "Сам разбирает JSON, бросает ошибку на 4xx/5xx, умеет интерсепторы (например, добавлять токен ко всем запросам), таймауты и единый <code>baseURL</code>."},
+  {"t": "★ AbortController", "d": "Через <code>AbortController</code>: передаём его <code>signal</code> в запрос и вызываем <code>abort()</code>. В React — в функции очистки <code>useEffect</code>, чтобы старый ответ не перезаписал новые данные.", "c": "const controller = new AbortController();\nfetch(url, { signal: controller.signal });\ncontroller.abort();"},
+ ],
+ net_auth:[
+  {"t": "★ Аутентификация и авторизация", "d": "Аутентификация — проверка, кто ты (логин, пароль, токен). Авторизация — проверка, что тебе можно делать (права). Ошибки: 401 и 403.", "open": true},
+  {"t": "★ JWT", "d": "JSON Web Token: три части через точку — заголовок, данные и подпись. Сервер проверяет подпись своим ключом и доверяет данным, не храня сессию. Данные не зашифрованы — только закодированы, секреты туда не кладут.", "c": "header.payload.signature\n// payload: { \"sub\": 42, \"role\": \"user\", \"exp\": 1730000000 }"},
+  {"t": "★ Где хранить токен", "d": "В <code>httpOnly</code>-cookie с флагами <code>Secure</code> и <code>SameSite</code>: JavaScript не может его прочитать, поэтому XSS не украдёт токен. В <code>localStorage</code> токен доступен любому скрипту на странице."},
+  {"t": "★ Refresh-токен", "d": "Access-токен живёт недолго (минуты), чтобы утёкший токен быстро стал бесполезен. Refresh-токен живёт дольше, хранится в httpOnly-cookie и нужен, чтобы получать новые access-токены без повторного входа."},
+ ],
+ net_storage:[
+  {"t": "★ localStorage и sessionStorage", "d": "localStorage хранится бессрочно и общий для всех вкладок сайта. sessionStorage живёт до закрытия вкладки и у каждой вкладки свой.", "open": true},
+  {"t": "★ Cookies", "d": "Cookies маленькие (около 4 КБ) и автоматически отправляются на сервер с каждым запросом; их можно сделать httpOnly. localStorage больше (около 5 МБ), на сервер сам не уходит и всегда доступен из JS."},
+  {"t": "★ IndexedDB", "d": "Когда данных много или это сложные объекты: офлайн-режим, кэш, файлы. Это асинхронная база данных в браузере с индексами и транзакциями."},
+ ],
+ net_cache:[
+  {"t": "★ Cache-Control", "d": "<code>max-age=N</code> — использовать копию N секунд без запроса. <code>no-cache</code> — хранить, но перед использованием проверять у сервера. <code>no-store</code> — не сохранять вообще.", "open": true},
+  {"t": "★ ETag и 304", "d": "Сервер отдаёт ETag — отпечаток версии файла. При повторном запросе браузер присылает его, и если файл не изменился, сервер отвечает 304 без тела — браузер берёт копию из кэша.", "c": "→ GET /app.js\n← 200, ETag: \"abc123\"\n→ GET /app.js, If-None-Match: \"abc123\"\n← 304 Not Modified"},
+  {"t": "★ Хэш в имени файла", "d": "Чтобы кэшировать файл надолго (<code>max-age</code> на год): при изменении кода меняется имя, и браузер скачает новый файл. А <code>index.html</code> отдают с <code>no-cache</code>, чтобы он всегда ссылался на свежие файлы.", "c": "index-8f3a1c.js"},
+ ],
+ net_ws:[
+  {"t": "★ Polling", "d": "Клиент запрашивает сервер по таймеру, например раз в 5 секунд. Просто реализовать, но много пустых запросов и задержка до следующего опроса.", "open": true},
+  {"t": "★ SSE", "d": "Поток событий от сервера к клиенту по обычному HTTP. Только в одну сторону, с автоматическим переподключением. Подходит для уведомлений и обновлений ленты.", "c": "const es = new EventSource('/api/events');\nes.onmessage = (e) => console.log(e.data);"},
+  {"t": "★ WebSocket", "d": "Когда нужна постоянная двусторонняя связь с малой задержкой: чаты, совместное редактирование, игры, биржевые котировки.", "c": "const ws = new WebSocket('wss://chat.ru');\nws.onmessage = (e) => show(e.data);\nws.send('Привет');"},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"network",n:"Сеть и REST API",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Router по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>React Router</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Router <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== РОУТИНГ В SPA ===== */
+rr_spa: {
+  name:"Роутинг в SPA",
+  code:[
+  "&lt;a href=<span class=\"str\">\"/about\"</span>&gt;О нас&lt;/a&gt;       <span class=\"cm\">// обычная ссылка</span>",
+  "&lt;Link to=<span class=\"str\">\"/about\"</span>&gt;О нас&lt;/Link&gt;   <span class=\"cm\">// ссылка роутера</span>",
+  "",
+  "<span class=\"cm\">// при клике по Link:</span>",
+  "history.<span class=\"fn\">pushState</span>({}, <span class=\"str\">''</span>, <span class=\"str\">'/about'</span>);",
+  "<span class=\"cm\">// роутер видит новый путь и рендерит &lt;About /&gt;</span>"],
+  panels:[["net", "Запросы к серверу", "items"], ["page", "Страница", "items"], ["url", "Адрес", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> в SPA <b>одна HTML-страница</b>, а смена «страниц» — это смена компонентов <b>без перезагрузки</b>; роутер синхронизирует URL и интерфейс.</li><li><b>Как работает:</b> роутер использует <b>History API</b> (<code>pushState</code>) — меняет адрес без запроса к серверу и рендерит компонент под этот путь.</li><li><b>Режимы React Router v7:</b> <b>декларативный</b> (<code>&lt;BrowserRouter&gt;</code> + <code>&lt;Routes&gt;</code>), <b>data</b> (<code>createBrowserRouter</code> с <code>loader</code>/<code>action</code>), <b>framework</b> (бывший Remix: файловые маршруты, SSR).</li><li><b>Подвох:</b> при обновлении страницы на <code>/profile</code> запрос идёт на сервер — сервер должен отдавать <code>index.html</code> на <b>все пути</b> (fallback).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Обычная ссылка", x:"Браузер запрашивает новый HTML у сервера — страница загружается заново, состояние приложения теряется.", hl:"net", p:{net:[it("GET /about → новый HTML <span class=\"chip cbad\">перезагрузка</span>",'new')],page:[it("всё с нуля",'new')],url:[it("/about",'new')]}},
+   {line:[2], t:"Link", x:"Роутер перехватывает клик.", hl:"url", p:{net:[it("—")],page:[it("Главная")],url:[it("/")]}},
+   {line:[5], t:"pushState", x:"History API меняет адрес <b>без запроса</b> к серверу.", hl:"url", p:{net:[it("—")],page:[it("Главная")],url:[it("/about <span class=\"chip cok\">без запроса</span>",'new')]}},
+   {line:[6], t:"Рендер нужного компонента", x:"Роутер сопоставил путь с маршрутом и показал <code>About</code>. Шапка и состояние остались.", hl:"page", p:{net:[it("—")],page:[it("About (шапка на месте)",'new')],url:[it("/about <span class=\"chip cok\">без запроса</span>")]}},
+   {line:[], t:"Обновление страницы (F5)", x:"Теперь браузер сам запросит <code>/about</code> у сервера. Сервер должен отдать <code>index.html</code>, иначе 404.", hl:"net", p:{net:[it("GET /about → сервер отдаёт index.html <span class=\"chip c1\">fallback</span>",'new')],page:[it("About (шапка на месте)")],url:[it("/about <span class=\"chip cok\">без запроса</span>")]}},
+   {line:[], t:"Итог", x:"SPA: один HTML, роутер меняет URL через History API и показывает компонент. Сервер настраивают отдавать index.html на любые пути.", fin:true, p:{net:[it("GET /about → сервер отдаёт index.html <span class=\"chip c1\">fallback</span>")],page:[it("About (шапка на месте)")],url:[it("/about <span class=\"chip cok\">без запроса</span>")]}},
+  ]
+},
+
+/* ===== ROUTES И OUTLET ===== */
+rr_routes: {
+  name:"Routes и Outlet",
+  code:[
+  "&lt;Routes&gt;",
+  "  &lt;Route path=<span class=\"str\">\"/\"</span> element={&lt;Layout /&gt;}&gt;",
+  "    &lt;Route index element={&lt;Home /&gt;} /&gt;",
+  "    &lt;Route path=<span class=\"str\">\"users\"</span> element={&lt;Users /&gt;} /&gt;",
+  "    &lt;Route path=<span class=\"str\">\"users/:id\"</span> element={&lt;User /&gt;} /&gt;",
+  "  &lt;/Route&gt;",
+  "  &lt;Route path=<span class=\"str\">\"*\"</span> element={&lt;NotFound /&gt;} /&gt;",
+  "&lt;/Routes&gt;",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Layout</span>() {",
+  "  <span class=\"kw\">return</span> &lt;&gt;&lt;Header /&gt;&lt;Outlet /&gt;&lt;/&gt;;",
+  "}"],
+  panels:[["url", "Адрес", "items"], ["match", "Совпавшие маршруты", "items"], ["screen", "Экран", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>Routes</code> выбирает <b>один подходящий</b> <code>Route</code> по текущему URL; <code>Route</code> связывает <b>путь</b> и <b>элемент</b>.</li><li><b>Вложенные маршруты:</b> дочерние <code>Route</code> рендерятся <b>внутри родителя</b> на месте <b><code>&lt;Outlet /&gt;</code></b> — так делают общий layout (шапка, меню).</li><li><b>Пример:</b> <code>&lt;Route path=\"/\" element={&lt;Layout /&gt;}&gt;&lt;Route index element={&lt;Home /&gt;} /&gt;&lt;Route path=\"users/:id\" element={&lt;User /&gt;} /&gt;&lt;/Route&gt;</code>.</li><li><b>404:</b> маршрут <b><code>path=\"*\"</code></b> ловит все несовпавшие пути — обычно последним.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3], t:"/", x:"Совпал родитель <code>/</code> и его <code>index</code>-маршрут.", hl:"match", p:{url:[it("/",'new')],match:[it("Layout",'new'),it("  index → Home",'new')],screen:[it("Header",'new'),it("Home (в Outlet)",'new')]}},
+   {line:[4], t:"/users", x:"Layout тот же, в <code>Outlet</code> подставился <code>Users</code>.", hl:"screen", p:{url:[it("/users",'new')],match:[it("Layout"),it("  users → Users",'new')],screen:[it("Header"),it("Users (в Outlet)",'new')]}},
+   {line:[5], t:"/users/42", x:"Совпал маршрут с параметром. <code>useParams()</code> вернёт <code>{ id: '42' }</code>.", hl:"match", p:{url:[it("/users/42",'new')],match:[it("Layout"),it("  users/:id → User (id = '42')",'new')],screen:[it("Header"),it("User 42",'new')]}},
+   {line:[7], t:"/blabla", x:"Ни один маршрут не подошёл — сработал <code>*</code>. Он вне Layout, поэтому без шапки.", hl:"screen", p:{url:[it("/blabla",'new')],match:[it("* → NotFound",'new')],screen:[it("NotFound",'new')]}},
+   {line:[], t:"Итог", x:"<code>Routes</code> выбирает маршрут по URL. Вложенные маршруты рендерятся в <code>Outlet</code> родителя — так делают общий layout. <code>index</code> — по умолчанию, <code>*</code> — 404.", fin:true, p:{url:[it("/blabla")],match:[it("* → NotFound")],screen:[it("NotFound")]}},
+  ]
+},
+
+/* ===== LINK И NAVLINK ===== */
+rr_link: {
+  name:"Link и NavLink",
+  code:[
+  "&lt;nav&gt;",
+  "  &lt;NavLink to=<span class=\"str\">\"/\"</span> end&gt;Главная&lt;/NavLink&gt;",
+  "  &lt;NavLink to=<span class=\"str\">\"/users\"</span>&gt;Пользователи&lt;/NavLink&gt;",
+  "  &lt;a href=<span class=\"str\">\"https://github.com\"</span>&gt;GitHub&lt;/a&gt;",
+  "&lt;/nav&gt;",
+  "<span class=\"cm\">// NavLink: className={({ isActive }) =&gt; isActive ? 'active' : ''}</span>"],
+  panels:[["menu", "Меню", "items"], ["note", "Что происходит", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>Link</code> — ссылка <b>без перезагрузки</b>: меняет URL через роутер; <code>NavLink</code> — то же, но знает, <b>активна</b> ли она.</li><li><b>Как работает:</b> <code>Link</code> рендерит обычный <code>&lt;a&gt;</code>, но перехватывает клик и вызывает навигацию роутера.</li><li><b>Пример:</b> меню на <code>NavLink</code> — через <code>className={({ isActive }) =&gt; isActive ? 'active' : ''}</code> подсвечиваем текущий раздел.</li><li><b>Подвох:</b> обычный <code>&lt;a href=\"/about\"&gt;</code> внутри SPA <b>перезагрузит страницу</b> и сбросит всё состояние; <code>&lt;a&gt;</code> нужен для внешних ссылок.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3], t:"Адрес /users", x:"NavLink сравнивает свой путь с текущим и даёт <code>isActive</code>.", hl:"menu", p:{menu:[it("Главная"),it("Пользователи <span class=\"chip c1\">active</span>",'new')],note:[it("—")]}},
+   {line:[2], t:"end у Главной", x:"Без <code>end</code> путь <code>/</code> совпадал бы с любым адресом — Главная была бы «активна» всегда.", hl:"note", p:{menu:[it("Главная"),it("Пользователи <span class=\"chip c1\">active</span>")],note:[it("end → активна только на точном /",'new')]}},
+   {line:[3], t:"Клик по NavLink", x:"Переход без перезагрузки — как <code>Link</code>.", hl:"note", p:{menu:[it("Главная"),it("Пользователи <span class=\"chip c1\">active</span>")],note:[it("end → активна только на точном /"),it("переход через роутер, состояние сохранено <span class=\"chip cok\">Link</span>",'new')]}},
+   {line:[4], t:"Внешняя ссылка", x:"На чужой сайт — обычный <code>&lt;a&gt;</code>. Внутри приложения <code>&lt;a&gt;</code> перезагрузил бы страницу.", hl:"note", p:{menu:[it("Главная"),it("Пользователи <span class=\"chip c1\">active</span>")],note:[it("end → активна только на точном /"),it("переход через роутер, состояние сохранено"),it("внешний адрес → обычный a",'new')]}},
+   {line:[], t:"Итог", x:"<code>Link</code> — переход без перезагрузки. <code>NavLink</code> — плюс <code>isActive</code> для меню. <code>&lt;a&gt;</code> — только для внешних ссылок.", fin:true, p:{menu:[it("Главная"),it("Пользователи <span class=\"chip c1\">active</span>")],note:[it("end → активна только на точном /"),it("переход через роутер, состояние сохранено"),it("внешний адрес → обычный a")]}},
+  ]
+},
+
+/* ===== ХУКИ РОУТЕРА ===== */
+rr_hooks: {
+  name:"Хуки роутера",
+  code:[
+  "<span class=\"cm\">// адрес: /users/42?tab=posts&amp;page=2</span>",
+  "<span class=\"kw\">function</span> <span class=\"fn\">UserPage</span>() {",
+  "  <span class=\"kw\">const</span> { id } = <span class=\"fn\">useParams</span>();",
+  "  <span class=\"kw\">const</span> [params, setParams] = <span class=\"fn\">useSearchParams</span>();",
+  "  <span class=\"kw\">const</span> location = <span class=\"fn\">useLocation</span>();",
+  "  <span class=\"kw\">const</span> navigate = <span class=\"fn\">useNavigate</span>();",
+  "  …",
+  "  <span class=\"fn\">setParams</span>({ tab: <span class=\"str\">'posts'</span>, page: <span class=\"str\">'3'</span> });",
+  "  <span class=\"fn\">navigate</span>(<span class=\"str\">'/users'</span>);",
+  "}"],
+  panels:[["vals", "Значения", "items", "wide"], ["url", "Адрес", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>useNavigate:</b> переход <b>из кода</b> — после отправки формы или по таймеру: <code>navigate('/profile')</code>, <code>navigate(-1)</code> — назад.</li><li><b>useParams:</b> <b>параметры пути</b> из <code>:id</code> — <code>/users/42</code> → <code>{ id: '42' }</code>.</li><li><b>useSearchParams:</b> <b>query-параметры</b> после <code>?</code> — фильтры, поиск, пагинация; можно читать и менять.</li><li><b>useLocation:</b> текущий <b>объект адреса</b> (<code>pathname</code>, <code>search</code>, <code>state</code>) — например, чтобы вернуть пользователя туда, откуда он пришёл.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 3], t:"useParams", x:"Параметр пути из <code>:id</code> — всегда <b>строка</b>.", hl:"vals", p:{vals:[it("id = '42'",'new')],url:[it("/users/42?tab=posts&page=2",'new')]}},
+   {line:[4], t:"useSearchParams", x:"Query-параметры после <code>?</code>.", hl:"vals", p:{vals:[it("id = '42'"),it("params.get('tab') = 'posts'",'new'),it("params.get('page') = '2'",'new')],url:[it("/users/42?tab=posts&page=2")]}},
+   {line:[5], t:"useLocation", x:"Объект адреса целиком.", hl:"vals", p:{vals:[it("id = '42'"),it("tab = 'posts', page = '2'"),it("location.pathname = '/users/42'",'new'),it("location.search = '?tab=posts&page=2'",'new')],url:[it("/users/42?tab=posts&page=2")]}},
+   {line:[8], t:"setParams", x:"Меняем query — адрес обновился, компонент перерендерился. Фильтры живут в URL — можно поделиться ссылкой.", hl:"url", p:{vals:[it("id = '42'"),it("tab = 'posts', page = '2'"),it("location.pathname = '/users/42'"),it("location.search = '?tab=posts&page=2'")],url:[it("/users/42?tab=posts&page=3",'new')]}},
+   {line:[9], t:"navigate", x:"Переход из кода — после сохранения, логина. <code>navigate(-1)</code> — назад.", hl:"url", p:{vals:[it("id = '42'"),it("tab = 'posts', page = '2'"),it("location.pathname = '/users/42'"),it("location.search = '?tab=posts&page=2'")],url:[it("/users",'new')]}},
+   {line:[], t:"Итог", x:"<code>useParams</code> — параметры пути, <code>useSearchParams</code> — query, <code>useLocation</code> — весь адрес, <code>useNavigate</code> — переход из кода.", fin:true, p:{vals:[it("id = '42'"),it("tab = 'posts', page = '2'"),it("location.pathname = '/users/42'"),it("location.search = '?tab=posts&page=2'")],url:[it("/users")]}},
+  ]
+},
+
+/* ===== ЗАЩИЩЁННЫЙ МАРШРУТ ===== */
+rr_protected: {
+  name:"Защищённый маршрут",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">RequireAuth</span>() {",
+  "  <span class=\"kw\">const</span> { user } = <span class=\"fn\">useAuth</span>();",
+  "  <span class=\"kw\">const</span> location = <span class=\"fn\">useLocation</span>();",
+  "  <span class=\"kw\">if</span> (!user) {",
+  "    <span class=\"kw\">return</span> &lt;Navigate to=<span class=\"str\">\"/login\"</span> replace state={{ <span class=\"kw\">from</span>: location }} /&gt;;",
+  "  }",
+  "  <span class=\"kw\">return</span> &lt;Outlet /&gt;;",
+  "}",
+  "",
+  "&lt;Route element={&lt;RequireAuth /&gt;}&gt;",
+  "  &lt;Route path=<span class=\"str\">\"/profile\"</span> element={&lt;Profile /&gt;} /&gt;",
+  "&lt;/Route&gt;"],
+  panels:[["user", "Пользователь", "items"], ["url", "Адрес и история", "items"], ["screen", "Экран", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> защищённый маршрут пускает на страницу только <b>авторизованного</b> пользователя.</li><li><b>Как работает:</b> компонент-обёртка проверяет авторизацию: есть доступ — рендерит <b><code>&lt;Outlet /&gt;</code></b> (или <code>children</code>), нет — <b><code>&lt;Navigate to=\"/login\" replace /&gt;</code></b>.</li><li><b>Пример:</b> в <code>state</code> навигации передают <b>откуда пришли</b>, чтобы после логина вернуть пользователя обратно.</li><li><b>Подвох:</b> это защита <b>интерфейса</b>, а не данных — настоящую проверку прав делает <b>сервер</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[10, 11, 1, 2], t:"Гость открыл /profile", x:"Маршрут обёрнут в <code>RequireAuth</code>, она проверяет авторизацию.", hl:"user", p:{user:[it("user = null",'new')],url:[it("/profile",'new')],screen:[it("—")]}},
+   {line:[4, 5], t:"Редирект", x:"<code>Navigate</code> отправляет на логин. <code>replace</code> — «назад» не вернёт на закрытую страницу. В <code>state</code> запомнили, откуда пришли.", hl:"url", p:{user:[it("user = null")],url:[it("/login (replace) state.from = /profile",'new')],screen:[it("Login",'new')]}},
+   {line:[5], t:"Вошёл", x:"После логина берём <code>location.state.from</code> и возвращаем пользователя туда.", hl:"url", p:{user:[it("user = Саша",'new')],url:[it("/profile",'new')],screen:[it("Login")]}},
+   {line:[7], t:"Доступ есть", x:"Пользователь есть — <code>Outlet</code> рендерит вложенный маршрут.", hl:"screen", p:{user:[it("user = Саша")],url:[it("/profile")],screen:[it("Profile",'new')]}},
+   {line:[], t:"Итог", x:"Обёртка: нет пользователя — <code>Navigate</code> на логин, есть — <code>Outlet</code>. Это защита интерфейса; данные защищает сервер.", fin:true, p:{user:[it("user = Саша")],url:[it("/profile")],screen:[it("Profile")]}},
+  ]
+},
+
+/* ===== LOADER И ACTION ===== */
+rr_loader: {
+  name:"loader и action",
+  code:[
+  "<span class=\"kw\">const</span> router = <span class=\"fn\">createBrowserRouter</span>([{",
+  "  path: <span class=\"str\">'users/:id'</span>,",
+  "  loader: ({ params }) =&gt; <span class=\"fn\">fetchUser</span>(params.id),",
+  "  action: <span class=\"kw\">async</span> ({ request, params }) =&gt; {",
+  "    <span class=\"kw\">await</span> <span class=\"fn\">updateUser</span>(params.id, <span class=\"kw\">await</span> request.<span class=\"fn\">formData</span>());",
+  "    <span class=\"kw\">return</span> <span class=\"kw\">null</span>;",
+  "  },",
+  "  Component: User,",
+  "}]);",
+  "<span class=\"kw\">function</span> <span class=\"fn\">User</span>() {",
+  "  <span class=\"kw\">const</span> user = <span class=\"fn\">useLoaderData</span>();",
+  "  <span class=\"kw\">return</span> &lt;Form method=<span class=\"str\">\"post\"</span>&gt;&lt;input name=<span class=\"str\">\"name\"</span> defaultValue={user.name} /&gt;&lt;/Form&gt;;",
+  "}"],
+  panels:[["router", "Роутер", "items"], ["net", "Запросы", "items"], ["screen", "Экран", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> в data-режиме у маршрута есть <b><code>loader</code></b> — функция загрузки данных <b>до рендера</b> страницы, и <b><code>action</code></b> — обработчик <b>отправки формы</b>.</li><li><b>Как работает:</b> при переходе роутер вызывает <code>loader</code>, ждёт данные и рендерит компонент; внутри данные берут через <b><code>useLoaderData</code></b>. <code>&lt;Form method=\"post\"&gt;</code> вызывает <code>action</code>, после него <code>loader</code> перезапускается.</li><li><b>Пример:</b> страница пользователя грузит профиль в <code>loader({ params })</code> — нет «мигания» загрузки после рендера.</li><li><b>Зачем:</b> загрузка <b>параллельно</b> с загрузкой кода страницы, нет водопада запросов из <code>useEffect</code>, данные и мутации описаны рядом с маршрутом.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3], t:"Переход на /users/5", x:"До рендера страницы роутер вызывает <code>loader</code>.", hl:"router", p:{router:[it("loader(id = 5)…",'new')],net:[it("GET user 5",'new')],screen:[it("предыдущая страница")]}},
+   {line:[10, 11], t:"Данные готовы", x:"Компонент рендерится сразу с данными — без <code>useEffect</code> и спиннера внутри.", hl:"screen", p:{router:[it("loader ✓",'new')],net:[it("GET user 5")],screen:[it("User: Саша",'new')]}},
+   {line:[12, 4, 5], t:"Отправка Form", x:"<code>&lt;Form method=\"post\"&gt;</code> вызывает <code>action</code> маршрута с данными формы.", hl:"router", p:{router:[it("loader ✓"),it("action(formData)…",'new')],net:[it("GET user 5"),it("PATCH user 5",'new')],screen:[it("User: Саша")]}},
+   {line:[3], t:"Перезагрузка данных", x:"После action роутер сам перезапускает loader-ы — экран показывает свежие данные.", hl:"net", p:{router:[it("loader ✓"),it("action(formData)…")],net:[it("GET user 5"),it("PATCH user 5"),it("GET user 5 <span class=\"chip cok\">revalidate</span>",'new')],screen:[it("User: Александр",'new')]}},
+   {line:[], t:"Итог", x:"<code>loader</code> — данные до рендера, <code>action</code> — обработка формы, потом автоматическая перезагрузка данных. Нет водопада запросов из эффектов.", fin:true, p:{router:[it("loader ✓"),it("action(formData)…")],net:[it("GET user 5"),it("PATCH user 5"),it("GET user 5 <span class=\"chip cok\">revalidate</span>")],screen:[it("User: Александр")]}},
+  ]
+},
+
+/* ===== ЛЕНИВЫЕ СТРАНИЦЫ ===== */
+rr_lazy: {
+  name:"Ленивые страницы",
+  code:[
+  "<span class=\"kw\">const</span> Admin = <span class=\"fn\">lazy</span>(() =&gt; <span class=\"kw\">import</span>(<span class=\"str\">'./pages/Admin'</span>));",
+  "",
+  "&lt;Route path=<span class=\"str\">\"/admin\"</span> element={",
+  "  &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;",
+  "    &lt;Admin /&gt;",
+  "  &lt;/Suspense&gt;",
+  "} /&gt;"],
+  panels:[["files", "Файлы", "items"], ["screen", "Экран", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>code splitting</b> по маршрутам — код страницы грузится, только когда пользователь на неё переходит.</li><li><b>Как работает:</b> в декларативном режиме — <code>React.lazy</code> + <code>Suspense</code> вокруг элемента маршрута; в data-режиме — свойство маршрута <b><code>lazy</code></b>, которое возвращает компонент и <code>loader</code>.</li><li><b>Пример:</b> <code>const Admin = lazy(() =&gt; import('./pages/Admin'))</code> — админка не попадает в основной бандл.</li><li><b>Зачем:</b> <b>меньше первый бандл</b> — быстрее первый показ; маршрут — естественная граница для разделения.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Сборка", x:"Динамический <code>import()</code> — граница: сборщик вынес админку в отдельный файл.", hl:"files", p:{files:[it("main.js (без админки) <span class=\"chip cok\">меньше</span>",'new'),it("Admin-[hash].js",'new')],screen:[it("—")]}},
+   {line:[], t:"Открыли главную", x:"Грузится только основной бандл.", hl:"files", p:{files:[it("main.js ✓"),it("Admin-[hash].js — не нужен")],screen:[it("Главная",'new')]}},
+   {line:[3, 4, 5], t:"Перешли на /admin", x:"Код страницы ещё не загружен — Suspense показывает спиннер.", hl:"screen", p:{files:[it("main.js ✓"),it("Admin-[hash].js загрузка…",'new')],screen:[it("Spinner",'new')]}},
+   {line:[5], t:"Загрузилось", x:"Чанк пришёл — показываем страницу. Повторные переходы — без загрузки.", hl:"screen", p:{files:[it("main.js ✓"),it("Admin-[hash].js ✓",'new')],screen:[it("Admin",'new')]}},
+   {line:[], t:"Итог", x:"Маршрут — естественная граница code splitting: <code>lazy</code> + <code>Suspense</code> (или <code>lazy</code> маршрута в data-режиме). Первый экран грузится быстрее.", fin:true, p:{files:[it("main.js ✓"),it("Admin-[hash].js ✓")],screen:[it("Admin")]}},
+  ]
+},
+
+/* ===== REACT ROUTER V7+ ===== */
+rr_new: {
+  name:"React Router v7+",
+  code:[
+  "<span class=\"cm\">// v6 (было)</span>",
+  "<span class=\"kw\">import</span> { BrowserRouter, Routes, Route } <span class=\"kw\">from</span> <span class=\"str\">'react-router-dom'</span>;",
+  "",
+  "<span class=\"cm\">// v7 (стало) — один пакет</span>",
+  "<span class=\"kw\">import</span> { BrowserRouter, Routes, Route } <span class=\"kw\">from</span> <span class=\"str\">'react-router'</span>;",
+  "",
+  "<span class=\"cm\">// три режима:</span>",
+  "<span class=\"cm\">// 1. декларативный: &lt;BrowserRouter&gt;&lt;Routes&gt;…</span>",
+  "<span class=\"cm\">// 2. data: createBrowserRouter([{ path, loader, action }])</span>",
+  "<span class=\"cm\">// 3. framework: routes.ts + файлы маршрутов, SSR (бывший Remix)</span>"],
+  panels:[["modes", "Режимы", "items", "wide"], ["note", "Что говорить", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> React Router v7 <b>объединился с Remix</b>: один пакет <code>react-router</code> и три режима — <b>декларативный</b>, <b>data</b> и <b>framework</b>.</li><li><b>Как работает:</b> в framework-режиме маршруты описываются файлами, есть <b>SSR</b>, загрузка данных на сервере, <b>типизация</b> параметров и данных маршрутов.</li><li><b>Пример:</b> приложение на v6 переводится на v7 почти без изменений — декларативный режим остался прежним.</li><li><b>Что говорить:</b> «знаю декларативный и data-режим, понимаю, что framework-режим — это бывший Remix с SSR»; про самые свежие изменения версий — смотрю <b>changelog</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 4, 5], t:"Один пакет", x:"<code>react-router-dom</code> больше не нужен — всё из <code>react-router</code>.", hl:"note", p:{modes:[it("—")],note:[it("v7: один пакет react-router",'new')]}},
+   {line:[8], t:"Декларативный", x:"Как в v6: роуты в JSX. Миграция почти без изменений.", hl:"modes", p:{modes:[it("декларативный — BrowserRouter + Routes",'new')],note:[it("v7: один пакет react-router")]}},
+   {line:[9], t:"Data", x:"Маршруты объектами, данные через loader и action.", hl:"modes", p:{modes:[it("декларативный — BrowserRouter + Routes"),it("data — createBrowserRouter, loader, action",'new')],note:[it("v7: один пакет react-router")]}},
+   {line:[10], t:"Framework", x:"Бывший Remix: файловые маршруты, SSR, типизация параметров и данных.", hl:"modes", p:{modes:[it("декларативный — BrowserRouter + Routes"),it("data — createBrowserRouter, loader, action"),it("framework — файлы, SSR, типы (бывший Remix)",'new')],note:[it("v7: один пакет react-router")]}},
+   {line:[], t:"Итог", x:"v7 слился с Remix: один пакет и три режима. На собесе: «работал с декларативным и data-режимом, понимаю framework-режим; свежие изменения версий смотрю в changelog».", fin:true, p:{modes:[it("декларативный — BrowserRouter + Routes"),it("data — createBrowserRouter, loader, action"),it("framework — файлы, SSR, типы (бывший Remix)")],note:[it("v7: один пакет react-router"),it("v8 — развитие того же; детали — в changelog",'new')]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ rr_spa:[
+  {"t": "★ SPA-роутинг", "d": "Сайт загружается один раз. При переходе роутер меняет URL через History API без запроса к серверу и показывает компонент, соответствующий новому пути.", "open": true},
+  {"t": "★ Fallback на сервере", "d": "Браузер запрашивает <code>/profile</code> у сервера, а там такого файла нет. Сервер нужно настроить так, чтобы на все пути отдавался <code>index.html</code>, а дальше разберётся роутер."},
+  {"t": "★ Режимы роутера", "d": "Декларативный — <code>BrowserRouter</code> и <code>Routes</code> в JSX. Data — <code>createBrowserRouter</code> с загрузкой данных через <code>loader</code> и <code>action</code>. Framework — полноценный фреймворк с файловыми маршрутами и SSR (бывший Remix)."},
+ ],
+ rr_routes:[
+  {"t": "★ Route", "d": "<code>Routes</code> выбирает подходящий по URL <code>Route</code>, <code>Route</code> связывает путь с элементом, который нужно показать.", "c": "<Routes>\n  <Route path=\"/\" element={<Home />} />\n  <Route path=\"/about\" element={<About />} />\n</Routes>", "open": true},
+  {"t": "★ Outlet", "d": "Место в родительском маршруте, куда рендерится совпавший дочерний маршрут. Так делают общий layout для группы страниц.", "c": "function Layout() {\n  return <><Header /><Outlet /><Footer /></>;\n}"},
+  {"t": "★ index route", "d": "Дочерний маршрут без своего пути — показывается в <code>Outlet</code>, когда URL совпадает ровно с путём родителя.", "c": "<Route path=\"/\" element={<Layout />}>\n  <Route index element={<Home />} />\n</Route>"},
+  {"t": "★ 404", "d": "Маршрут с <code>path=\"*\"</code> совпадает с любым путём, для которого не нашлось другого маршрута.", "c": "<Route path=\"*\" element={<NotFound />} />"},
+ ],
+ rr_link:[
+  {"t": "★ Link", "d": "<code>Link</code> меняет URL через роутер без перезагрузки, состояние приложения сохраняется. Обычный <code>&lt;a&gt;</code> загружает страницу заново — для внутренних переходов в SPA это ошибка.", "c": "<Link to=\"/about\">О нас</Link>", "open": true},
+  {"t": "★ NavLink", "d": "То же, что <code>Link</code>, но знает, совпадает ли её путь с текущим, и даёт <code>isActive</code> для стилей активного пункта меню.", "c": "<NavLink to=\"/users\" className={({ isActive }) => (isActive ? 'active' : '')}>\n  Пользователи\n</NavLink>"},
+ ],
+ rr_hooks:[
+  {"t": "★ useNavigate", "d": "Для перехода из кода, а не по клику на ссылку: после отправки формы, логина. <code>navigate(-1)</code> — назад, <code>replace: true</code> — без новой записи в истории.", "c": "const navigate = useNavigate();\nasync function onSubmit() {\n  await save();\n  navigate('/profile', { replace: true });\n}", "open": true},
+  {"t": "★ useParams", "d": "Объект параметров пути, описанных через <code>:имя</code>. Значения всегда строки.", "c": "// маршрут: /users/:id\n// адрес:   /users/42\nconst { id } = useParams(); // '42'"},
+  {"t": "★ useSearchParams", "d": "Читает и меняет query-параметры после <code>?</code>: фильтры, поиск, страницу. Состояние в URL сохраняется при обновлении и им можно поделиться ссылкой.", "c": "const [params, setParams] = useSearchParams();\nconst page = params.get('page') ?? '1';\nsetParams({ page: '2' });"},
+  {"t": "★ useLocation", "d": "Текущий адрес: <code>pathname</code>, <code>search</code>, <code>hash</code> и <code>state</code>, переданный при навигации. Используют, например, чтобы после логина вернуть пользователя на страницу, с которой он пришёл."},
+ ],
+ rr_protected:[
+  {"t": "★ Protected Route", "d": "Обёртка проверяет авторизацию: если пользователя нет — перенаправляет на логин через <code>Navigate</code>, если есть — рендерит вложенные маршруты через <code>Outlet</code>.", "c": "function RequireAuth() {\n  const { user } = useAuth();\n  const location = useLocation();\n  if (!user) return <Navigate to=\"/login\" replace state={{ from: location }} />;\n  return <Outlet />;\n}", "open": true},
+  {"t": "★ Navigate", "d": "При рендере сразу перенаправляет на указанный путь. <code>replace</code> заменяет запись в истории, чтобы кнопка «назад» не возвращала на закрытую страницу."},
+  {"t": "★ Защита на клиенте", "d": "Нет. Он только скрывает интерфейс. Код на клиенте можно обойти, поэтому сервер обязан проверять токен и права на каждый запрос."},
+ ],
+ rr_loader:[
+  {"t": "★ loader", "d": "Функция маршрута, которая загружает данные до рендера страницы. Компонент получает их через <code>useLoaderData</code>, без <code>useEffect</code> и состояния загрузки.", "c": "{\n  path: 'users/:id',\n  loader: ({ params }) => fetch(`/api/users/${params.id}`),\n  element: <User />,\n}\n// в компоненте:\nconst user = useLoaderData();", "open": true},
+  {"t": "★ action", "d": "Обработчик отправки <code>&lt;Form&gt;</code> этого маршрута: получает данные формы, выполняет изменение, может сделать <code>redirect</code>. После него роутер перезапускает <code>loader</code>-ы.", "c": "action: async ({ request }) => {\n  const form = await request.formData();\n  await createUser(form);\n  return redirect('/users');\n}"},
+ ],
+ rr_lazy:[
+  {"t": "★ lazy в маршрутах", "d": "Через <code>React.lazy</code> и динамический <code>import()</code>, обёрнутый в <code>Suspense</code>. Сборщик вынесет страницу в отдельный файл, который загрузится при переходе.", "c": "const Admin = lazy(() => import('./pages/Admin'));\n<Route path=\"/admin\" element={\n  <Suspense fallback={<Spinner />}><Admin /></Suspense>\n} />", "open": true},
+  {"t": "★ lazy в data router", "d": "Свойством маршрута <code>lazy</code>: оно возвращает модуль с <code>Component</code>, <code>loader</code> и <code>action</code>. Роутер загрузит его при переходе, параллельно с данными.", "c": "{ path: 'admin', lazy: () => import('./pages/Admin') }"},
+ ],
+ rr_new:[
+  {"t": "★ v7 и Remix", "d": "Слияние с Remix: один пакет <code>react-router</code> и три режима — декларативный, data и framework. Framework-режим даёт файловые маршруты, SSR и типизацию маршрутов.", "open": true},
+  {"t": "★ Миграция", "d": "Нет: декларативный режим почти не изменился, импорты переходят в пакет <code>react-router</code>. Возможности data- и framework-режима подключаются по желанию."},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"router",n:"React Router",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HTML и CSS по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>HTML и CSS</span></nav>
+<div class="wrap">
+  <header>
+    <h1>HTML и CSS <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== СЕМАНТИЧЕСКИЕ ТЕГИ ===== */
+css_semantic: {
+  name:"Семантические теги",
+  code:[
+  "&lt;div <span class=\"kw\">class</span>=<span class=\"str\">\"header\"</span>&gt;…&lt;/div&gt;",
+  "&lt;div <span class=\"kw\">class</span>=<span class=\"str\">\"menu\"</span>&gt;…&lt;/div&gt;",
+  "&lt;div onclick=<span class=\"str\">\"buy()\"</span>&gt;Купить&lt;/div&gt;",
+  "",
+  "&lt;header&gt;…&lt;/header&gt;",
+  "&lt;nav&gt;…&lt;/nav&gt;",
+  "&lt;main&gt;",
+  "  &lt;article&gt;&lt;h2&gt;Чай&lt;/h2&gt;&lt;button type=<span class=\"str\">\"button\"</span>&gt;Купить&lt;/button&gt;&lt;/article&gt;",
+  "&lt;/main&gt;"],
+  panels:[["sr", "Что слышит скринридер", "items", "wide"], ["kb", "Клавиатура", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> семантические теги <b>описывают смысл</b> блока: <code>header</code>, <code>nav</code>, <code>main</code>, <code>article</code>, <code>section</code>, <code>aside</code>, <code>footer</code>, <code>button</code>.</li><li><b>Зачем:</b> <b>доступность</b> (скринридер понимает структуру и навигацию), <b>SEO</b>, читаемость кода.</li><li><b>Пример:</b> кнопка — это <code>&lt;button&gt;</code>, а не <code>&lt;div onClick&gt;</code>: у неё есть фокус, <code>Enter</code>/<code>Space</code> и роль из коробки.</li><li><b>Правило:</b> один <code>main</code> на странице, заголовки <code>h1–h6</code> по порядку уровней, <code>div</code> и <code>span</code> — когда смысла нет.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Всё на div", x:"Для скринридера это просто текст: нет областей, нет кнопки.", hl:"sr", p:{sr:[it("«…», «…», «Купить» — без ролей <span class=\"chip cbad\">непонятно</span>",'new')],kb:[it("Tab не попадает на «Купить»",'new')]}},
+   {line:[5, 6], t:"header и nav", x:"Появились ориентиры: можно прыгнуть к навигации.", hl:"sr", p:{sr:[it("баннер, навигация",'new')],kb:[it("—")]}},
+   {line:[7, 8, 9], t:"main и article", x:"Основной контент и самостоятельная карточка с заголовком.", hl:"sr", p:{sr:[it("баннер, навигация"),it("основное содержимое → статья «Чай»",'new')],kb:[it("—")]}},
+   {line:[8], t:"button", x:"Кнопка в порядке Tab, нажимается Enter и Space, скринридер говорит «кнопка».", hl:"kb", p:{sr:[it("баннер, навигация"),it("основное содержимое → статья «Чай»"),it("«Купить, кнопка»",'new')],kb:[it("Tab → Купить, Enter нажимает ✓",'new')]}},
+   {line:[], t:"Итог", x:"Семантические теги описывают смысл: помогают скринридерам, поиску и коду. Кнопка — <code>button</code>, ссылка — <code>a</code>.", fin:true, p:{sr:[it("баннер, навигация"),it("основное содержимое → статья «Чай»"),it("«Купить, кнопка»")],kb:[it("Tab → Купить, Enter нажимает ✓")]}},
+  ]
+},
+
+/* ===== ДОСТУПНОСТЬ ===== */
+css_a11y: {
+  name:"Доступность",
+  code:[
+  "&lt;img src=<span class=\"str\">\"logo.svg\"</span>&gt;",
+  "&lt;input placeholder=<span class=\"str\">\"Email\"</span>&gt;",
+  "&lt;button&gt;&lt;svg&gt;…&lt;/svg&gt;&lt;/button&gt;",
+  "button:focus { outline: none; }",
+  "",
+  "&lt;img src=<span class=\"str\">\"logo.svg\"</span> alt=<span class=\"str\">\"Tank Landing\"</span>&gt;",
+  "&lt;label <span class=\"kw\">for</span>=<span class=\"str\">\"email\"</span>&gt;Email&lt;/label&gt; &lt;input id=<span class=\"str\">\"email\"</span> type=<span class=\"str\">\"email\"</span>&gt;",
+  "&lt;button aria-label=<span class=\"str\">\"Закрыть\"</span>&gt;&lt;svg aria-hidden=<span class=\"str\">\"true\"</span>&gt;…&lt;/svg&gt;&lt;/button&gt;",
+  "button:focus-visible { outline: 2px solid <span class=\"kw\">var</span>(--accent); }"],
+  panels:[["bad", "Проблемы", "items"], ["good", "Исправлено", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> доступность — чтобы сайтом могли пользоваться все: с <b>клавиатуры</b>, <b>скринридером</b>, при плохом зрении.</li><li><b>На практике:</b> семантические теги, <b><code>alt</code></b> у картинок, <b><code>label</code></b> у полей, видимый <b>фокус</b>, достаточный <b>контраст</b>, работа без мыши.</li><li><b>ARIA:</b> атрибуты <code>aria-label</code>, <code>aria-expanded</code>, <code>role</code> — <b>когда семантики HTML не хватает</b>; первое правило ARIA — сначала нативный тег.</li><li><b>Проверка:</b> пройти страницу <b>Tab</b>-ом, Lighthouse, расширение axe.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Картинка без alt", x:"Скринридер прочитает имя файла или пропустит смысл.", hl:"bad", p:{bad:[it("img без alt",'new')],good:[it("—")]}},
+   {line:[2], t:"Поле без label", x:"Placeholder исчезает при вводе и не всегда читается как подпись.", hl:"bad", p:{bad:[it("img без alt"),it("input без подписи",'new')],good:[it("—")]}},
+   {line:[3, 4], t:"Иконка и фокус", x:"Кнопка-иконка без названия — «кнопка». А без outline пользователь клавиатуры не видит, где он.", hl:"bad", p:{bad:[it("img без alt"),it("input без подписи"),it("кнопка без названия",'new'),it("фокус не виден",'new')],good:[it("—")]}},
+   {line:[6, 7, 8, 9], t:"Исправляем", x:"alt, связанный label, aria-label для иконки, видимый фокус только для клавиатуры.", hl:"good", p:{bad:[it("img без alt"),it("input без подписи"),it("кнопка без названия"),it("фокус не виден")],good:[it("alt",'new'),it("label for = id",'new'),it("aria-label='Закрыть'",'new'),it(":focus-visible",'new')]}},
+   {line:[], t:"Итог", x:"На практике: семантика, alt, label, видимый фокус, контраст, всё работает с клавиатуры. ARIA — когда HTML не хватает. Проверка — Tab и Lighthouse.", fin:true, p:{bad:[it("img без alt"),it("input без подписи"),it("кнопка без названия"),it("фокус не виден")],good:[it("alt"),it("label for = id"),it("aria-label='Закрыть'"),it(":focus-visible")]}},
+  ]
+},
+
+/* ===== SCRIPT, ASYNC, DEFER ===== */
+css_script: {
+  name:"script, async, defer",
+  code:[
+  "&lt;head&gt;",
+  "  &lt;script src=<span class=\"str\">\"a.js\"</span>&gt;&lt;/script&gt;",
+  "  &lt;script <span class=\"kw\">async</span> src=<span class=\"str\">\"analytics.js\"</span>&gt;&lt;/script&gt;",
+  "  &lt;script defer src=<span class=\"str\">\"app.js\"</span>&gt;&lt;/script&gt;",
+  "  &lt;script defer src=<span class=\"str\">\"ui.js\"</span>&gt;&lt;/script&gt;",
+  "&lt;/head&gt;",
+  "&lt;body&gt; … много HTML … &lt;/body&gt;"],
+  panels:[["parse", "Разбор HTML", "items", "wide"], ["run", "Выполнение скриптов", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Обычный <code>&lt;script&gt;</code>:</b> <b>останавливает</b> разбор HTML, пока скрипт не загрузится и не выполнится.</li><li><b>async:</b> грузится <b>параллельно</b>, выполняется <b>сразу как загрузится</b> — может прервать разбор; <b>порядок не гарантирован</b>.</li><li><b>defer:</b> грузится параллельно, выполняется <b>после разбора всего HTML</b>, <b>по порядку</b>, до <code>DOMContentLoaded</code>.</li><li><b>Практика:</b> свои скрипты — <b><code>defer</code></b> (или <code>type=\"module\"</code>, он отложен по умолчанию); независимые счётчики и аналитика — <code>async</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"Обычный script", x:"Разбор HTML <b>останавливается</b>, пока a.js загружается и выполняется.", hl:"parse", p:{parse:[it("⏸ стоп, ждём a.js <span class=\"chip cbad\">блокирует</span>",'new')],run:[it("a.js",'new')]}},
+   {line:[3], t:"async", x:"Грузится параллельно, разбор идёт дальше. Выполнится, как только загрузится, — даже посреди разбора.", hl:"parse", p:{parse:[it("⏸ a.js"),it("▶ разбор идёт, analytics.js грузится параллельно",'new')],run:[it("a.js"),it("analytics.js — когда загрузится (порядок не гарантирован)",'new')]}},
+   {line:[4, 5], t:"defer", x:"Грузятся параллельно, но выполняются <b>после</b> разбора всего HTML и <b>по порядку</b>.", hl:"run", p:{parse:[it("⏸ a.js"),it("▶ разбор идёт, analytics.js грузится параллельно")],run:[it("a.js"),it("analytics.js — когда загрузится"),it("app.js → ui.js — после разбора, по порядку <span class=\"chip cok\">DOM готов</span>",'new')]}},
+   {line:[7], t:"DOMContentLoaded", x:"Разбор закончен → выполнились defer-скрипты → событие DOMContentLoaded.", hl:"parse", p:{parse:[it("⏸ a.js"),it("▶ разбор идёт"),it("✓ разбор закончен → defer → DOMContentLoaded",'new')],run:[it("a.js"),it("analytics.js — когда загрузится"),it("app.js → ui.js — после разбора, по порядку <span class=\"chip cok\">DOM готов</span>")]}},
+   {line:[], t:"Итог", x:"Обычный — блокирует разбор. async — сразу как загрузился, без порядка (аналитика). defer — после разбора, по порядку (свои скрипты). <code>type=\"module\"</code> — как defer.", fin:true, p:{parse:[it("⏸ a.js"),it("▶ разбор идёт"),it("✓ разбор закончен → defer → DOMContentLoaded")],run:[it("a.js"),it("analytics.js — когда загрузится"),it("app.js → ui.js — после разбора, по порядку <span class=\"chip cok\">DOM готов</span>")]}},
+  ]
+},
+
+/* ===== BOX MODEL ===== */
+css_box: {
+  name:"Box model",
+  code:[
+  ".box {",
+  "  width: 200px;",
+  "  padding: 20px;",
+  "  border: 5px solid;",
+  "  margin: 10px;",
+  "}",
+  ".box { box-sizing: border-box; }"],
+  panels:[["layers", "Слои", "items"], ["size", "Итоговая ширина", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> каждый элемент — прямоугольник из <b>content → padding → border → margin</b>.</li><li><b>box-sizing: content-box</b> (по умолчанию): <code>width</code> — это <b>только контент</b>; padding и border <b>добавляются сверху</b>.</li><li><b>box-sizing: border-box:</b> <code>width</code> включает <b>content + padding + border</b> — элемент не «распухает».</li><li><b>Пример:</b> <code>width: 200px; padding: 20px; border: 5px</code> → content-box — <b>250px</b>, border-box — <b>200px</b>. Поэтому почти везде ставят <code>*, *::before, *::after { box-sizing: border-box; }</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"content", x:"Ширина контента — 200px.", hl:"layers", p:{layers:[it("content: 200",'new')],size:[it("—")]}},
+   {line:[3], t:"padding", x:"Внутренний отступ с двух сторон — +40.", hl:"layers", p:{layers:[it("content: 200"),it("padding: 20 × 2 = 40",'new')],size:[it("—")]}},
+   {line:[4], t:"border", x:"Рамка с двух сторон — +10. При <code>content-box</code> (по умолчанию) всё складывается.", hl:"size", p:{layers:[it("content: 200"),it("padding: 40"),it("border: 5 × 2 = 10",'new')],size:[it("content-box: 200 + 40 + 10 = 250px <span class=\"chip cbad\">распух</span>",'new')]}},
+   {line:[5], t:"margin", x:"Внешний отступ в ширину блока не входит — он отодвигает соседей.", hl:"layers", p:{layers:[it("content: 200"),it("padding: 40"),it("border: 10"),it("margin: 10 — снаружи",'new')],size:[it("content-box: 200 + 40 + 10 = 250px <span class=\"chip cbad\">распух</span>")]}},
+   {line:[7], t:"border-box", x:"<code>width</code> включает padding и border: контент сжимается до 150, блок — ровно 200.", hl:"size", p:{layers:[it("content: 200"),it("padding: 40"),it("border: 10"),it("margin: 10 — снаружи")],size:[it("content-box: 250px"),it("border-box: 200px (content 150) <span class=\"chip cok\">как задали</span>",'new')]}},
+   {line:[], t:"Итог", x:"content → padding → border → margin. content-box: ширина только контента. border-box: ширина с padding и border — поэтому его ставят всем элементам.", fin:true, p:{layers:[it("content: 200"),it("padding: 40"),it("border: 10"),it("margin: 10 — снаружи")],size:[it("content-box: 250px"),it("border-box: 200px (content 150) <span class=\"chip cok\">как задали</span>")]}},
+  ]
+},
+
+/* ===== СПЕЦИФИЧНОСТЬ ===== */
+css_spec: {
+  name:"Специфичность",
+  code:[
+  "/* какой цвет у ссылки? */",
+  "&lt;nav id=<span class=\"str\">\"menu\"</span> <span class=\"kw\">class</span>=<span class=\"str\">\"nav\"</span>&gt;&lt;a <span class=\"kw\">class</span>=<span class=\"str\">\"link active\"</span>&gt;Чай&lt;/a&gt;&lt;/nav&gt;",
+  "",
+  "a                  { color: gray; }",
+  ".nav .link         { color: blue; }",
+  ".link.active:hover { color: green; }",
+  "#menu a            { color: red; }",
+  ".link              { color: orange !important; }"],
+  panels:[["score", "Специфичность", "items", "wide"], ["win", "Победитель", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> специфичность решает, <b>какое правило победит</b>, если несколько селекторов задают одно свойство.</li><li><b>Как считается:</b> тройка <b>(id, классы/атрибуты/псевдоклассы, теги/псевдоэлементы)</b>, сравнивается <b>слева направо</b>: <code>#nav .link</code> = (1,1,0) сильнее <code>.menu .link:hover</code> = (0,3,0).</li><li><b>Порядок каскада:</b> <code>!important</code> → <b>инлайн-стили</b> → специфичность → при равной — <b>последнее</b> правило в коде.</li><li><b>Подвох:</b> <code>:where()</code> даёт специфичность <b>0</b>, <code>:is()</code> и <code>:not()</code> — по самому сильному аргументу; <code>!important</code> — крайняя мера.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[4], t:"a", x:"Один тег.", hl:"score", p:{score:[it("a → (0, 0, 1)",'new')],win:[it("gray",'new')]}},
+   {line:[5], t:"Два класса", x:"Классы сильнее тегов.", hl:"score", p:{score:[it("a → (0, 0, 1)"),it(".nav .link → (0, 2, 0)",'new')],win:[it("blue",'new')]}},
+   {line:[6], t:"Три в средней позиции", x:"Два класса и псевдокласс — (0, 3, 0), при наведении сильнее.", hl:"score", p:{score:[it("a → (0, 0, 1)"),it(".nav .link → (0, 2, 0)"),it(".link.active:hover → (0, 3, 0)",'new')],win:[it("green (при hover)",'new')]}},
+   {line:[7], t:"id", x:"Один id сильнее любого количества классов — сравниваем слева направо.", hl:"win", p:{score:[it("a → (0, 0, 1)"),it(".nav .link → (0, 2, 0)"),it(".link.active:hover → (0, 3, 0)"),it("#menu a → (1, 0, 1)",'new')],win:[it("red <span class=\"chip c1\">id</span>",'new')]}},
+   {line:[8], t:"!important", x:"<code>!important</code> выше специфичности — побеждает даже слабый селектор. Поэтому его избегают.", hl:"win", p:{score:[it("a → (0, 0, 1)"),it(".nav .link → (0, 2, 0)"),it(".link.active:hover → (0, 3, 0)"),it("#menu a → (1, 0, 1)")],win:[it("orange <span class=\"chip cbad\">!important</span>",'new')]}},
+   {line:[], t:"Итог", x:"Тройка (id, классы, теги), сравнение слева направо. Порядок каскада: !important → inline → специфичность → позже в коде.", fin:true, p:{score:[it("a → (0, 0, 1)"),it(".nav .link → (0, 2, 0)"),it(".link.active:hover → (0, 3, 0)"),it("#menu a → (1, 0, 1)")],win:[it("orange <span class=\"chip cbad\">!important</span>")]}},
+  ]
+},
+
+/* ===== POSITION И Z-INDEX ===== */
+css_position: {
+  name:"position и z-index",
+  code:[
+  ".card   { position: relative; z-index: <span class=\"num\">1</span>; }",
+  ".tooltip { position: absolute; top: <span class=\"num\">0</span>; right: <span class=\"num\">0</span>; z-index: <span class=\"num\">9999</span>; }",
+  ".header { position: sticky; top: <span class=\"num\">0</span>; z-index: <span class=\"num\">2</span>; }",
+  ".modal  { position: fixed; inset: <span class=\"num\">0</span>; z-index: <span class=\"num\">10</span>; }"],
+  panels:[["pos", "Позиционирование", "items"], ["stack", "Слои (сверху вниз)", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>static</b> — обычный поток; <b>relative</b> — сдвиг от своего места, место в потоке <b>сохраняется</b>; <b>absolute</b> — вынут из потока, позиция от ближайшего <b>позиционированного предка</b>.</li><li><b>fixed</b> — от <b>окна</b> браузера, не скроллится; <b>sticky</b> — ведёт себя как relative, пока не доскроллит до порога, потом <b>прилипает</b> внутри родителя.</li><li><b>z-index:</b> работает у позиционированных элементов (и flex/grid-детей); сравнивается <b>внутри одного контекста наложения</b>.</li><li><b>Подвох:</b> <code>opacity &lt; 1</code>, <code>transform</code>, <code>z-index</code> у позиционированного родителя создают <b>новый контекст наложения</b> — ребёнок с <code>z-index: 9999</code> не выйдет выше соседа родителя.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"relative", x:"Остаётся в потоке и становится точкой отсчёта для absolute-детей.", hl:"pos", p:{pos:[it(".card — в потоке, точка отсчёта",'new')],stack:[it("—")]}},
+   {line:[2], t:"absolute", x:"Вынут из потока, позиция — от ближайшего позиционированного предка: правый верхний угол карточки.", hl:"pos", p:{pos:[it(".card — в потоке, точка отсчёта"),it(".tooltip — от угла .card",'new')],stack:[it("—")]}},
+   {line:[3], t:"sticky", x:"Идёт в потоке, при прокрутке прилипает к top: 0 — в пределах своего родителя.", hl:"pos", p:{pos:[it(".card"),it(".tooltip"),it(".header — прилипает при скролле",'new')],stack:[it("—")]}},
+   {line:[4], t:"fixed", x:"Привязан к окну, не скроллится.", hl:"pos", p:{pos:[it(".card"),it(".tooltip"),it(".header"),it(".modal — на весь экран",'new')],stack:[it("—")]}},
+   {line:[1, 2, 3], t:"Ловушка z-index", x:".card с z-index: 1 создала свой контекст наложения. Tooltip с 9999 сравнивается только внутри карточки — вся карточка ниже шапки с z-index: 2.", hl:"stack", p:{pos:[it(".card"),it(".tooltip"),it(".header"),it(".modal — на весь экран")],stack:[it(".modal (10)",'new'),it(".header (2)",'new'),it(".card (1) → внутри .tooltip (9999) <span class=\"chip cbad\">не выше шапки</span>",'new')]}},
+   {line:[], t:"Итог", x:"relative — в потоке; absolute — от позиционированного предка; fixed — от окна; sticky — прилипает в родителе. z-index работает внутри контекста наложения.", fin:true, p:{pos:[it(".card"),it(".tooltip"),it(".header"),it(".modal — на весь экран")],stack:[it(".modal (10)"),it(".header (2)"),it(".card (1) → внутри .tooltip (9999) <span class=\"chip cbad\">не выше шапки</span>")]}},
+  ]
+},
+
+/* ===== FLEXBOX И GRID ===== */
+css_flexgrid: {
+  name:"Flexbox и Grid",
+  code:[
+  ".toolbar { display: flex; gap: 8px; align-items: center; }",
+  ".toolbar .search { flex: <span class=\"num\">1</span>; }",
+  "",
+  ".cards {",
+  "  display: grid;",
+  "  grid-template-columns: <span class=\"fn\">repeat</span>(auto-fill, <span class=\"fn\">minmax</span>(240px, 1fr));",
+  "  gap: 16px;",
+  "}"],
+  panels:[["flex", "Flex: строка", "items"], ["grid", "Grid: сетка (ширина 800px)", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Flexbox:</b> раскладка <b>в одном направлении</b> — строка или колонка; размеры от <b>содержимого</b>.</li><li><b>Grid:</b> раскладка <b>в двух измерениях</b> — строки и колонки одновременно; сетка задаётся <b>контейнером</b>.</li><li><b>Когда что:</b> <b>flex</b> — меню, ряд кнопок, выравнивание внутри карточки; <b>grid</b> — каркас страницы, галерея карточек, формы с колонками.</li><li><b>Пример:</b> <code>grid-template-columns: repeat(auto-fill, minmax(240px, 1fr))</code> — адаптивная сетка карточек <b>без медиазапросов</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Flex", x:"Одна ось — элементы в строку, выровнены по центру по вертикали.", hl:"flex", p:{flex:[it("[Лого] [Поиск] [Профиль]",'new')],grid:[it("—")]}},
+   {line:[2], t:"flex: 1", x:"Поиск забирает всё свободное место.", hl:"flex", p:{flex:[it("[Лого] [——— Поиск ———] [Профиль]",'new')],grid:[it("—")]}},
+   {line:[4, 5, 6], t:"Grid", x:"Две оси: колонки задаёт контейнер. Влезает 3 колонки по 240px минимум, остаток делится поровну.", hl:"grid", p:{flex:[it("[Лого] [——— Поиск ———] [Профиль]")],grid:[it("3 колонки × ~256px",'new')]}},
+   {line:[6], t:"Узкий экран 500px", x:"Влезают только 2 колонки — переносит сам, без медиазапросов.", hl:"grid", p:{flex:[it("[Лого] [——— Поиск ———] [Профиль]")],grid:[it("3 колонки (800px)"),it("2 колонки (500px)",'new'),it("1 колонка (300px)",'new')]}},
+   {line:[], t:"Итог", x:"Flex — одна ось, размеры от содержимого: меню, панели. Grid — две оси, сетку задаёт контейнер: каркас, галереи.", fin:true, p:{flex:[it("[Лого] [——— Поиск ———] [Профиль]")],grid:[it("3 колонки (800px)"),it("2 колонки (500px)"),it("1 колонка (300px)")]}},
+  ]
+},
+
+/* ===== ЦЕНТРИРОВАНИЕ ===== */
+css_center: {
+  name:"Центрирование",
+  code:[
+  ".a { display: flex; justify-content: center; align-items: center; }",
+  ".b { display: grid; place-items: center; }",
+  ".c-child { position: absolute; top: <span class=\"num\">50</span>%; left: <span class=\"num\">50</span>%;",
+  "           transform: <span class=\"fn\">translate</span>(-<span class=\"num\">50</span>%, -<span class=\"num\">50</span>%); }",
+  ".d { width: 600px; margin: <span class=\"num\">0</span> auto; }"],
+  panels:[["how", "Способ", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Flex:</b> контейнеру <code>display: flex; justify-content: center; align-items: center;</code> — по обеим осям.</li><li><b>Grid:</b> <code>display: grid; place-items: center;</code> — самый короткий способ.</li><li><b>Absolute:</b> <code>position: absolute; inset: 0; margin: auto;</code> с заданными размерами, или <code>top: 50%; left: 50%; transform: translate(-50%, -50%)</code>.</li><li><b>По горизонтали:</b> блок с шириной — <code>margin: 0 auto</code>; текст — <code>text-align: center</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Flex", x:"justify-content — главная ось, align-items — поперечная.", hl:"how", p:{how:[it("flex: justify-content + align-items",'new')]}},
+   {line:[2], t:"Grid", x:"Одна строка на родителе.", hl:"how", p:{how:[it("flex: justify-content + align-items"),it("grid: place-items: center",'new')]}},
+   {line:[3, 4], t:"Absolute", x:"Угол — в центр (50%), потом сдвиг на половину своего размера назад.", hl:"how", p:{how:[it("flex"),it("grid"),it("absolute: 50% + translate(-50%, -50%)",'new')]}},
+   {line:[5], t:"По горизонтали", x:"Блок с шириной — автоматические боковые отступы.", hl:"how", p:{how:[it("flex"),it("grid"),it("absolute"),it("margin: 0 auto (только горизонталь)",'new')]}},
+   {line:[], t:"Итог", x:"Проще всего — <code>display: grid; place-items: center</code> или flex с двумя свойствами. Для наложения — absolute + translate.", fin:true, p:{how:[it("flex"),it("grid"),it("absolute"),it("margin: 0 auto (только горизонталь)")]}},
+  ]
+},
+
+/* ===== СКРЫТИЕ ЭЛЕМЕНТОВ ===== */
+css_hide: {
+  name:"Скрытие элементов",
+  code:[
+  ".a { display: none; }",
+  ".b { visibility: hidden; }",
+  ".c { opacity: <span class=\"num\">0</span>; }",
+  ".d { /* visually-hidden */ position: absolute; width: 1px; height: 1px;",
+  "     overflow: hidden; clip-path: <span class=\"fn\">inset</span>(<span class=\"num\">50</span>%); }"],
+  panels:[["tbl", "Место · клик · скринридер", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>display: none</b> — элемента <b>нет в раскладке</b> и в дереве доступности: места не занимает, скринридер не видит, не кликается.</li><li><b>visibility: hidden</b> — <b>место остаётся</b>, элемент невидим и не кликается, скринридер не читает.</li><li><b>opacity: 0</b> — место остаётся, элемент <b>кликабелен</b> и <b>читается</b> скринридером; можно анимировать.</li><li><b>Для скринридеров:</b> спрятать визуально, но оставить для чтения — класс <b><code>.visually-hidden</code></b> (sr-only).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"display: none", x:"Элемента нет совсем.", hl:"tbl", p:{tbl:[it("none: места нет · не кликается · не читается",'new')]}},
+   {line:[2], t:"visibility: hidden", x:"Невидим, но место занимает.", hl:"tbl", p:{tbl:[it("none: нет · нет · нет"),it("hidden: место есть · не кликается · не читается",'new')]}},
+   {line:[3], t:"opacity: 0", x:"Только прозрачный — всё остальное работает. Ловушка: невидимая кнопка ловит клики.", hl:"tbl", p:{tbl:[it("none: нет · нет · нет"),it("hidden: есть · нет · нет"),it("opacity 0: есть · кликается · читается <span class=\"chip cbad\">ловушка</span>",'new')]}},
+   {line:[4, 5], t:"visually-hidden", x:"Не видно глазами, но скринридер читает — подписи для иконок.", hl:"tbl", p:{tbl:[it("none"),it("hidden"),it("opacity 0"),it("visually-hidden: не видно · читается <span class=\"chip cok\">a11y</span>",'new')]}},
+   {line:[], t:"Итог", x:"none — убрать совсем, hidden — спрятать с местом, opacity — для анимаций появления, visually-hidden — только для скринридеров.", fin:true, p:{tbl:[it("none"),it("hidden"),it("opacity 0"),it("visually-hidden: не видно · читается <span class=\"chip cok\">a11y</span>")]}},
+  ]
+},
+
+/* ===== ЕДИНИЦЫ ИЗМЕРЕНИЯ ===== */
+css_units: {
+  name:"Единицы измерения",
+  code:[
+  "html { font-size: 16px; }",
+  ".card { font-size: <span class=\"num\">1.</span>25em; padding: 1em; }",
+  ".card .title { font-size: <span class=\"num\">1.</span>5em; }",
+  ".card .text { font-size: 1rem; }",
+  ".hero { height: 100vh; }",
+  ".hero-mobile { height: 100dvh; }"],
+  panels:[["calc", "Вычисленные значения", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>px</b> — абсолютные пиксели; <b>%</b> — от размера <b>родителя</b> (для <code>width</code> — от ширины родителя).</li><li><b>em</b> — от <b>font-size текущего элемента</b> (для <code>font-size</code> — от родителя), <b>накапливается</b> во вложенности; <b>rem</b> — от font-size <b>корня</b> <code>html</code> — предсказуемо.</li><li><b>vw / vh</b> — проценты от <b>окна</b>; <b>dvh</b> — высота окна с учётом <b>мобильных панелей</b> браузера.</li><li><b>Практика:</b> шрифты и отступы — <code>rem</code> (уважает настройки пользователя), локальные отступы компонента — <code>em</code>, высота на весь экран на мобильных — <code>100dvh</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Корень", x:"От этого считается rem.", hl:"calc", p:{calc:[it("html: 16px → 1rem = 16px",'new')]}},
+   {line:[2], t:"em", x:"font-size в em — от родителя: 1.25 × 16 = 20px. padding в em — от своего шрифта: 20px.", hl:"calc", p:{calc:[it("html: 16px"),it(".card: font 20px, padding 20px",'new')]}},
+   {line:[3], t:"em накапливается", x:"Заголовок внутри карточки: 1.5 × 20 = 30px, а не 24.", hl:"calc", p:{calc:[it("html: 16px"),it(".card: 20px"),it(".title: 30px <span class=\"chip cbad\">накопилось</span>",'new')]}},
+   {line:[4], t:"rem", x:"rem всегда от корня — 16px, где бы ни стоял.", hl:"calc", p:{calc:[it("html: 16px"),it(".card: 20px"),it(".title: 30px"),it(".text: 16px <span class=\"chip cok\">предсказуемо</span>",'new')]}},
+   {line:[5, 6], t:"vh и dvh", x:"На мобильном 100vh не учитывает адресную строку — блок вылезает. dvh — видимая высота.", hl:"calc", p:{calc:[it("html: 16px"),it(".card: 20px"),it(".title: 30px"),it(".text: 16px"),it("100vh — может быть больше экрана",'new'),it("100dvh — ровно видимая область",'new')]}},
+   {line:[], t:"Итог", x:"rem — от корня (шрифты, отступы), em — от родителя/своего шрифта (накапливается), % — от родителя, vw/vh — от окна, dvh — с учётом мобильных панелей.", fin:true, p:{calc:[it("html: 16px"),it(".card: 20px"),it(".title: 30px"),it(".text: 16px"),it("100vh — может быть больше экрана"),it("100dvh — ровно видимая область")]}},
+  ]
+},
+
+/* ===== АДАПТИВНАЯ ВЁРСТКА ===== */
+css_adaptive: {
+  name:"Адаптивная вёрстка",
+  code:[
+  ".list { display: grid; gap: 12px; }",
+  "@<span class=\"fn\">media</span> (min-width: 768px) {",
+  "  .list { grid-template-columns: 1fr 1fr; }",
+  "}",
+  "",
+  ".card-wrap { container-type: inline-size; }",
+  "@<span class=\"fn\">container</span> (min-width: 400px) {",
+  "  .card { display: flex; }",
+  "}"],
+  panels:[["screen", "Ширина окна", "items"], ["result", "Раскладка", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Mobile first:</b> базовые стили — <b>для телефона</b>, а медиазапросы <b><code>min-width</code></b> добавляют раскладку для больших экранов.</li><li><b>Медиазапросы</b> реагируют на размер <b>окна</b>: <code>@media (min-width: 768px) { ... }</code>.</li><li><b>Container queries</b> реагируют на размер <b>контейнера</b>: <code>container-type: inline-size</code> + <code>@container (min-width: 400px)</code> — карточка подстраивается под место, куда её поставили.</li><li><b>Ещё:</b> гибкие сетки (<code>minmax</code>, <code>auto-fill</code>), <b><code>clamp()</code></b> для шрифтов, <code>srcset</code> для картинок, мета-тег <code>viewport</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Mobile first", x:"Базовые стили — для телефона: одна колонка.", hl:"result", p:{screen:[it("375px",'new')],result:[it("список: 1 колонка",'new'),it("карточка: вертикальная",'new')]}},
+   {line:[2, 3, 4], t:"Планшет", x:"Медиазапрос <code>min-width</code> добавляет вторую колонку.", hl:"result", p:{screen:[it("800px",'new')],result:[it("список: 2 колонки",'new'),it("карточка: ?")]}},
+   {line:[6, 7, 8, 9], t:"Container query", x:"Карточка смотрит не на окно, а на ширину своей колонки: колонка 390px — вертикальная, хотя окно 800px.", hl:"result", p:{screen:[it("800px")],result:[it("список: 2 колонки"),it("карточка в колонке 390px: вертикальная <span class=\"chip c2\">контейнер</span>",'new')]}},
+   {line:[], t:"Широкий экран", x:"Окно 1200px: колонки по 590px — карточка стала горизонтальной.", hl:"result", p:{screen:[it("1200px",'new')],result:[it("список: 2 колонки"),it("карточка в колонке 590px: горизонтальная",'new')]}},
+   {line:[], t:"Итог", x:"Mobile first + <code>min-width</code>. Медиазапрос — от окна, container query — от контейнера: компонент подстраивается под место.", fin:true, p:{screen:[it("1200px")],result:[it("список: 2 колонки"),it("карточка в колонке 590px: горизонтальная")]}},
+  ]
+},
+
+/* ===== БЭМ ===== */
+css_bem: {
+  name:"БЭМ",
+  code:[
+  "&lt;article <span class=\"kw\">class</span>=<span class=\"str\">\"card card--featured\"</span>&gt;",
+  "  &lt;img <span class=\"kw\">class</span>=<span class=\"str\">\"card__image\"</span> src=<span class=\"str\">\"…\"</span> alt=<span class=\"str\">\"…\"</span>&gt;",
+  "  &lt;h3 <span class=\"kw\">class</span>=<span class=\"str\">\"card__title\"</span>&gt;Чай&lt;/h3&gt;",
+  "  &lt;button <span class=\"kw\">class</span>=<span class=\"str\">\"card__button card__button--disabled\"</span>&gt;Купить&lt;/button&gt;",
+  "&lt;/article&gt;",
+  "",
+  ".card {}",
+  ".card--featured {}",
+  ".card__title {}",
+  ".card__button--disabled {}"],
+  panels:[["parts", "Части", "items"], ["spec", "Специфичность", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> БЭМ — методология именования классов: <b>Блок</b>, <b>Элемент</b>, <b>Модификатор</b>.</li><li><b>Синтаксис:</b> блок <code>card</code>, элемент <b><code>card__title</code></b> (два подчёркивания), модификатор <b><code>card--active</code></b> или <code>card__button--disabled</code> (два дефиса).</li><li><b>Зачем:</b> <b>нет конфликтов</b> имён, <b>низкая одинаковая специфичность</b> (один класс), по имени понятна структура.</li><li><b>Правила:</b> элемент принадлежит <b>блоку</b>, а не другому элементу (<code>card__title</code>, не <code>card__header__title</code>); модификатор <b>не используется без</b> основного класса.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Блок", x:"Самостоятельный компонент — можно переносить куда угодно.", hl:"parts", p:{parts:[it("блок: card",'new')],spec:[it(".card → (0,1,0)",'new')]}},
+   {line:[2, 3, 4], t:"Элементы", x:"Части блока: <code>блок__элемент</code>. Вложенность DOM в имени не повторяем.", hl:"parts", p:{parts:[it("блок: card"),it("элементы: card__image, card__title, card__button",'new')],spec:[it(".card → (0,1,0)")]}},
+   {line:[1, 4], t:"Модификаторы", x:"Вариант или состояние: <code>--featured</code>, <code>--disabled</code>. Всегда вместе с основным классом.", hl:"parts", p:{parts:[it("блок: card"),it("элементы: card__image, card__title, card__button"),it("модификаторы: card--featured, card__button--disabled",'new')],spec:[it(".card → (0,1,0)")]}},
+   {line:[7, 8, 9, 10], t:"Одинаковая специфичность", x:"Каждое правило — один класс. Нет войн специфичности, порядок в файле предсказуем.", hl:"spec", p:{parts:[it("блок: card"),it("элементы: card__image, card__title, card__button"),it("модификаторы: card--featured, card__button--disabled")],spec:[it(".card → (0,1,0)"),it(".card--featured → (0,1,0)",'new'),it(".card__title → (0,1,0) <span class=\"chip cok\">всё одинаково</span>",'new')]}},
+   {line:[], t:"Итог", x:"Блок, <code>блок__элемент</code>, <code>блок--модификатор</code>. Уникальные имена без конфликтов и одинаково низкая специфичность.", fin:true, p:{parts:[it("блок: card"),it("элементы: card__image, card__title, card__button"),it("модификаторы: card--featured, card__button--disabled")],spec:[it(".card → (0,1,0)"),it(".card--featured → (0,1,0)"),it(".card__title → (0,1,0) <span class=\"chip cok\">всё одинаково</span>")]}},
+  ]
+},
+
+/* ===== ПСЕВДОКЛАССЫ И ПСЕВДОЭЛЕМЕНТЫ ===== */
+css_pseudo: {
+  name:"Псевдоклассы и псевдоэлементы",
+  code:[
+  ".field:<span class=\"fn\">has</span>(input:invalid) { border-color: red; }",
+  "input:focus-visible { outline: 2px solid; }",
+  "li:nth-<span class=\"fn\">child</span>(odd) { background: #f5f5f5; }",
+  ".required::after { content: <span class=\"str\">' *'</span>; color: red; }",
+  "input::placeholder { color: gray; }"],
+  panels:[["pc", "Псевдоклассы — состояние", "items"], ["pe", "Псевдоэлементы — виртуальная часть", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Псевдокласс</b> (одно двоеточие) — <b>состояние</b> существующего элемента: <code>:hover</code>, <code>:focus-visible</code>, <code>:checked</code>, <code>:disabled</code>, <code>:nth-child(2n)</code>.</li><li><b>Псевдоэлемент</b> (два двоеточия) — <b>виртуальная часть</b> элемента, которой нет в DOM: <code>::before</code>, <code>::after</code>, <code>::placeholder</code>, <code>::marker</code>.</li><li><b>Пример:</b> <code>::before</code> с <code>content: ''</code> — декоративная иконка без лишнего тега.</li><li><b>Современные:</b> <code>:has()</code> — «родитель по ребёнку» (<code>.card:has(img)</code>), <code>:focus-visible</code> — фокус только с клавиатуры.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:":focus-visible", x:"Фокус с клавиатуры (при клике мышью рамки нет).", hl:"pc", p:{pc:[it(":focus-visible — фокус с клавиатуры",'new')],pe:[it("—")]}},
+   {line:[3], t:":nth-child", x:"Положение среди соседей — зебра в списке.", hl:"pc", p:{pc:[it(":focus-visible"),it(":nth-child(odd) — нечётные",'new')],pe:[it("—")]}},
+   {line:[1], t:":has", x:"«Родитель по ребёнку»: подсветить поле, если внутри невалидный input.", hl:"pc", p:{pc:[it(":focus-visible"),it(":nth-child(odd)"),it(":has(input:invalid) — родитель по потомку",'new')],pe:[it("—")]}},
+   {line:[4], t:"::after", x:"Виртуальный элемент после содержимого. Без <code>content</code> не появится.", hl:"pe", p:{pc:[it(":focus-visible"),it(":nth-child(odd)"),it(":has(input:invalid) — родитель по потомку")],pe:[it("::after → ' *' (нет в HTML)",'new')]}},
+   {line:[5], t:"::placeholder", x:"Часть самого элемента — текст-подсказка.", hl:"pe", p:{pc:[it(":focus-visible"),it(":nth-child(odd)"),it(":has(input:invalid) — родитель по потомку")],pe:[it("::after → ' *'"),it("::placeholder — подсказка в поле",'new')]}},
+   {line:[], t:"Итог", x:"Псевдокласс (<code>:</code>) — состояние или положение существующего элемента. Псевдоэлемент (<code>::</code>) — виртуальная часть, которой нет в DOM.", fin:true, p:{pc:[it(":focus-visible"),it(":nth-child(odd)"),it(":has(input:invalid) — родитель по потомку")],pe:[it("::after → ' *'"),it("::placeholder — подсказка в поле")]}},
+  ]
+},
+
+/* ===== CSS-ПЕРЕМЕННЫЕ ===== */
+css_modern: {
+  name:"CSS-переменные",
+  code:[
+  ":root { --accent: #c1121f; --radius: 8px; }",
+  "[data-theme=<span class=\"str\">\"dark\"</span>] { --accent: #ff4d5a; }",
+  "",
+  ".button {",
+  "  background: <span class=\"kw\">var</span>(--accent);",
+  "  border-radius: <span class=\"kw\">var</span>(--radius);",
+  "  &amp;:hover { filter: <span class=\"fn\">brightness</span>(<span class=\"num\">1.1</span>); }",
+  "}"],
+  panels:[["vars", "Значения переменных", "items"], ["btn", "Кнопка", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>CSS-переменные:</b> <code>--accent: #c1121f;</code> и <code>color: var(--accent)</code>; <b>наследуются</b> и меняются <b>в рантайме</b> — темы, состояния.</li><li><b>Отличие от Sass-переменных:</b> Sass подставляет значения <b>при сборке</b>, CSS-переменные живут <b>в браузере</b> и меняются через классы, медиазапросы и JS.</li><li><b>Современное:</b> <b>нативная вложенность</b> селекторов, <code>:has()</code>, <b>container queries</b>, <code>clamp()</code>, <b><code>@layer</code></b> для управления каскадом, <code>aspect-ratio</code>, <code>gap</code> во flex.</li><li><b>Пример тем:</b> переопределить переменные в <code>[data-theme=\"dark\"]</code> — весь интерфейс перекрасится без дублирования стилей.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Объявили", x:"Переменные на корне — доступны всем элементам через наследование.", hl:"vars", p:{vars:[it("--accent = #c1121f",'new'),it("--radius = 8px",'new')],btn:[it("—")]}},
+   {line:[4, 5, 6], t:"Используем", x:"<code>var()</code> читает значение. Можно указать запасное: <code>var(--accent, red)</code>.", hl:"btn", p:{vars:[it("--accent = #c1121f"),it("--radius = 8px")],btn:[it("фон #c1121f, скругление 8px",'new')]}},
+   {line:[2], t:"Тёмная тема", x:"Переопределили переменную на корне — кнопка перекрасилась без единой строки в её стилях. Это работает в браузере, а не при сборке, как в Sass.", hl:"vars", p:{vars:[it("--accent = #ff4d5a (dark)",'new'),it("--radius = 8px")],btn:[it("фон #ff4d5a <span class=\"chip cok\">сама</span>",'new')]}},
+   {line:[7], t:"Вложенность", x:"Нативная вложенность CSS: <code>&</code> — ссылка на родительский селектор.", hl:"btn", p:{vars:[it("--accent = #ff4d5a (dark)"),it("--radius = 8px")],btn:[it("фон #ff4d5a"),it(":hover → ярче",'new')]}},
+   {line:[], t:"Итог", x:"CSS-переменные наследуются и меняются в рантайме — темы и состояния. Современный CSS: вложенность, <code>:has</code>, container queries, <code>clamp</code>, <code>@layer</code>.", fin:true, p:{vars:[it("--accent = #ff4d5a (dark)"),it("--radius = 8px")],btn:[it("фон #ff4d5a"),it(":hover → ярче")]}},
+  ]
+},
+
+/* ===== СТИЛИ В REACT ===== */
+css_react: {
+  name:"Стили в React",
+  code:[
+  "<span class=\"cm\">// 1. CSS Modules</span>",
+  "<span class=\"kw\">import</span> s <span class=\"kw\">from</span> <span class=\"str\">'./Card.module.css'</span>;",
+  "&lt;div className={s.card} /&gt;        <span class=\"cm\">// → class=\"Card_card__x7f2a\"</span>",
+  "",
+  "<span class=\"cm\">// 2. Tailwind</span>",
+  "&lt;div className=<span class=\"str\">\"p-4 rounded-lg bg-white shadow\"</span> /&gt;",
+  "",
+  "<span class=\"cm\">// 3. CSS-in-JS</span>",
+  "<span class=\"kw\">const</span> Card = styled.div<span class=\"str\">`padding: </span>${(p) =&gt; p.big ? 24 : 16}<span class=\"str\">px;`</span>;"],
+  panels:[["out", "Что попадёт в HTML/CSS", "items", "wide"], ["pro", "Плюс / минус", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Обычный CSS / БЭМ</b> — просто, но <b>глобальная область видимости</b> имён.</li><li><b>CSS Modules</b> — файл <code>*.module.css</code>, имена классов <b>уникализируются</b> при сборке: <code>styles.card</code> → <code>Card_card__x7f2a</code> — <b>без конфликтов</b>.</li><li><b>CSS-in-JS</b> (styled-components, Emotion) — стили в JS, <b>динамика через props</b>, но есть <b>накладные расходы</b> в рантайме и сложности с Server Components.</li><li><b>Tailwind</b> — <b>утилитарные классы</b> прямо в разметке (<code>flex gap-4 p-2</code>), быстрая вёрстка и маленький итоговый CSS; минус — длинные списки классов.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3], t:"CSS Modules", x:"Сборщик делает имя класса уникальным — конфликтов нет.", hl:"out", p:{out:[it("class=\"Card_card__x7f2a\"",'new')],pro:[it("Modules: изоляция, обычный CSS / минимум магии",'new')]}},
+   {line:[6], t:"Tailwind", x:"Утилитарные классы прямо в разметке; в CSS попадают только используемые.", hl:"out", p:{out:[it("Card_card__x7f2a"),it("p-4 rounded-lg bg-white shadow",'new')],pro:[it("Modules: изоляция"),it("Tailwind: быстро, маленький CSS / длинные className",'new')]}},
+   {line:[9], t:"CSS-in-JS", x:"Стили генерируются в рантайме по props.", hl:"out", p:{out:[it("Card_card__x7f2a"),it("p-4 …"),it("class=\"sc-abc123\" (создан при рендере)",'new')],pro:[it("Modules"),it("Tailwind"),it("CSS-in-JS: динамика по props / работа в рантайме <span class=\"chip cbad\">нагрузка</span>",'new')]}},
+   {line:[], t:"Итог", x:"CSS Modules — изоляция без рантайма, Tailwind — утилиты, CSS-in-JS — динамика ценой рантайма. Выбор — по проекту и команде.", fin:true, p:{out:[it("Card_card__x7f2a"),it("p-4 …"),it("class=\"sc-abc123\" (создан при рендере)")],pro:[it("Modules"),it("Tailwind"),it("CSS-in-JS: динамика по props / работа в рантайме <span class=\"chip cbad\">нагрузка</span>")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ css_semantic:[
+  {"t": "★ Семантика", "d": "Использование тегов по смыслу: <code>header</code>, <code>nav</code>, <code>main</code>, <code>article</code>, <code>footer</code>, <code>button</code>. Браузер, поисковики и скринридеры понимают структуру страницы.", "open": true},
+  {"t": "★ button или div", "d": "<code>button</code> фокусируется с клавиатуры, нажимается <code>Enter</code> и <code>Space</code>, сообщает скринридеру роль «кнопка». У <code>div</code> всего этого нет — пришлось бы добавлять вручную."},
+  {"t": "★ article и section", "d": "<code>article</code> — самостоятельный блок, который имеет смысл отдельно: пост, карточка товара. <code>section</code> — тематический раздел страницы, обычно с заголовком."},
+ ],
+ css_a11y:[
+  {"t": "★ alt", "d": "Текстовая замена картинки для скринридеров и когда картинка не загрузилась. Для декоративных изображений — пустой <code>alt=\"\"</code>, чтобы скринридер их пропустил.", "c": "<img src=\"chart.png\" alt=\"Продажи выросли на 20% за квартал\">\n<img src=\"decor.svg\" alt=\"\">", "open": true},
+  {"t": "★ label", "d": "Атрибут <code>for</code> у <code>label</code> указывает на <code>id</code> поля, или поле кладётся внутрь <code>label</code>. Скринридер прочитает подпись, а клик по подписи поставит фокус в поле.", "c": "<label for=\"email\">Email</label>\n<input id=\"email\" type=\"email\">"},
+  {"t": "★ ARIA", "d": "Когда нативного HTML не хватает, чтобы описать роль или состояние: раскрыто ли меню, что за иконка-кнопка. Но сначала — подходящий семантический тег.", "c": "<button aria-expanded=\"false\" aria-controls=\"menu\">Меню</button>"},
+  {"t": "★ Фокус", "d": "Что всё доступно через <code>Tab</code>, порядок логичный, фокус виден (не убирать <code>outline</code> без замены), модальные окна держат фокус внутри и закрываются по <code>Esc</code>."},
+ ],
+ css_script:[
+  {"t": "★ Обычный script", "d": "Блокирует разбор HTML: браузер останавливается, скачивает и выполняет скрипт, и только потом продолжает. Страница появляется позже.", "open": true},
+  {"t": "★ async", "d": "Скрипт грузится параллельно с разбором HTML и выполняется сразу после загрузки. Порядок выполнения нескольких async-скриптов не гарантирован."},
+  {"t": "★ defer", "d": "Скрипт грузится параллельно, а выполняется после разбора всего HTML, в порядке подключения, до события <code>DOMContentLoaded</code>. Подходит для своих скриптов, которые работают с DOM."},
+  {"t": "★ type=module", "d": "Как <code>defer</code> по умолчанию: грузится параллельно, выполняется после разбора HTML. Плюс поддерживает <code>import</code> и работает в строгом режиме."},
+ ],
+ css_box:[
+  {"t": "★ Box model", "d": "Из четырёх слоёв: content (содержимое), padding (внутренний отступ), border (рамка), margin (внешний отступ).", "open": true},
+  {"t": "★ box-sizing", "d": "При <code>content-box</code> (по умолчанию) — 250px: 200 + 20×2 + 5×2. При <code>border-box</code> — ровно 200px, padding и border входят в ширину.", "c": ".box {\n  width: 200px;\n  padding: 20px;\n  border: 5px solid;\n}"},
+  {"t": "★ Схлопывание margin", "d": "Вертикальные margin соседних блоков не складываются, а берётся больший. Во flex и grid контейнерах схлопывания нет.", "c": ".a { margin-bottom: 20px; }\n.b { margin-top: 30px; } /* между ними 30px, не 50 */"},
+ ],
+ css_spec:[
+  {"t": "★ Специфичность", "d": "Тройкой: число id, число классов/атрибутов/псевдоклассов, число тегов/псевдоэлементов. Сравниваем слева направо — один id сильнее любого числа классов.", "c": "#header .nav a   → (1, 1, 1)\n.nav .link:hover → (0, 3, 0)\nul li a          → (0, 0, 3)", "open": true},
+  {"t": "★ Каскад", "d": "Сначала <code>!important</code>, потом инлайн-стили, потом большая специфичность, а при равной — правило, которое идёт позже в коде."},
+  {"t": "★ :where и :is", "d": "<code>:is()</code> берёт специфичность самого сильного аргумента. <code>:where()</code> всегда даёт 0 — удобно для базовых стилей, которые легко переопределить.", "c": ":is(.card, #main) p    → (1, 0, 1)\n:where(.card, #main) p → (0, 0, 1)"},
+ ],
+ css_position:[
+  {"t": "★ absolute", "d": "От ближайшего предка, у которого <code>position</code> не <code>static</code>. Если такого нет — от начального блока (страницы). Элемент вынимается из потока.", "open": true},
+  {"t": "★ fixed и sticky", "d": "<code>fixed</code> привязан к окну и всегда на месте при скролле. <code>sticky</code> идёт в потоке как обычный элемент, а при прокрутке до заданного <code>top</code> прилипает — но только в пределах своего родителя."},
+  {"t": "★ Контекст наложения", "d": "Родитель создал свой контекст наложения с <code>z-index: 1</code>. Ребёнок сравнивается только внутри него, а весь родитель целиком ниже соседа с <code>z-index: 2</code>.", "c": ".parent { position: relative; z-index: 1; }\n.child  { position: absolute; z-index: 9999; }\n.sibling { position: relative; z-index: 2; }"},
+ ],
+ css_flexgrid:[
+  {"t": "★ Flex или Grid", "d": "Flexbox — для одного направления: ряд кнопок, меню, выравнивание элементов в строке. Grid — для двух измерений: каркас страницы, сетка карточек, где важны и строки, и колонки.", "open": true},
+  {"t": "★ justify и align", "d": "Во flex <code>justify-content</code> выравнивает по главной оси (по умолчанию горизонталь), <code>align-items</code> — по поперечной. Задаются на контейнере."},
+  {"t": "★ auto-fill minmax", "d": "Через <code>repeat(auto-fill, minmax(240px, 1fr))</code>: колонок столько, сколько влезает по 240px, остаток делится поровну.", "c": ".grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));\n  gap: 16px;\n}"},
+  {"t": "★ flex: 1", "d": "Сокращение <code>flex-grow: 1; flex-shrink: 1; flex-basis: 0</code>. Элементы делят свободное место поровну."},
+ ],
+ css_center:[
+  {"t": "★ Центр через flex", "d": "На родителе: <code>display: flex</code>, <code>justify-content: center</code> — по горизонтали, <code>align-items: center</code> — по вертикали.", "c": ".parent {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}", "open": true},
+  {"t": "★ place-items", "d": "Grid и <code>place-items: center</code> — центрирует содержимое по обеим осям одной строкой.", "c": ".parent { display: grid; place-items: center; }"},
+  {"t": "★ transform", "d": "Сдвинуть левый верхний угол в центр родителя через <code>top</code> и <code>left</code> 50%, а потом вернуть элемент на половину его же размера через <code>transform: translate(-50%, -50%)</code>.", "c": ".child {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n}"},
+ ],
+ css_hide:[
+  {"t": "★ display none", "d": "Убирает элемент из раскладки: места не занимает, событий не получает, скринридер его не видит. Анимировать нельзя.", "open": true},
+  {"t": "★ visibility hidden", "d": "Элемент невидим и не кликается, но место в раскладке занимает. <code>display: none</code> убирает и место."},
+  {"t": "★ opacity 0", "d": "Элемент невидим, но по-прежнему занимает место, получает клики и фокус и читается скринридером. Удобно для плавного появления, но не для скрытия."},
+ ],
+ css_units:[
+  {"t": "★ em и rem", "d": "<code>rem</code> считается от размера шрифта корня <code>html</code> — всегда одинаково. <code>em</code> — от размера шрифта текущего элемента или родителя, поэтому во вложенности накапливается.", "c": "html { font-size: 16px; }\n.card { font-size: 2em; }   /* 32px */\n.card p { font-size: 2em; } /* 64px! */\n.card p { font-size: 2rem; } /* 32px */", "open": true},
+  {"t": "★ vh и dvh", "d": "На мобильных <code>100vh</code> не учитывает появляющуюся адресную строку, и блок вылезает за экран. <code>100dvh</code> — динамическая высота видимой области."},
+  {"t": "★ Проценты", "d": "Для <code>width</code> — от ширины родителя. Для <code>padding</code> и <code>margin</code> — тоже от ширины родителя, даже вертикальные. Для <code>height</code> — от высоты родителя, если она задана."},
+ ],
+ css_adaptive:[
+  {"t": "★ Mobile first", "d": "Подход, где базовые стили пишутся для маленьких экранов, а для больших добавляются через <code>min-width</code>. Мобильные устройства грузят меньше лишнего CSS.", "c": ".grid { display: grid; gap: 12px; }\n@media (min-width: 768px) {\n  .grid { grid-template-columns: 1fr 1fr; }\n}", "open": true},
+  {"t": "★ Container queries", "d": "Медиазапрос смотрит на ширину окна, container query — на ширину конкретного контейнера. Компонент меняет вид в зависимости от места, куда его вставили.", "c": ".card-wrap { container-type: inline-size; }\n@container (min-width: 400px) {\n  .card { display: flex; }\n}"},
+  {"t": "★ clamp", "d": "Задаёт значение с минимумом и максимумом: шрифт растёт вместе с окном, но не меньше 1.5rem и не больше 3rem — без медиазапросов.", "c": "h1 { font-size: clamp(1.5rem, 4vw, 3rem); }"},
+ ],
+ css_bem:[
+  {"t": "★ БЭМ", "d": "Методология именования CSS-классов: блок — самостоятельный компонент, элемент — его часть, модификатор — вариант внешнего вида или состояния.", "open": true},
+  {"t": "★ Синтаксис БЭМ", "d": "Элемент — <code>блок__элемент</code>, модификатор — <code>блок--модификатор</code> или <code>блок__элемент--модификатор</code>. Модификатор пишется вместе с основным классом.", "c": "<article class=\"card card--featured\">\n  <h3 class=\"card__title\">…</h3>\n  <button class=\"card__button card__button--disabled\">…</button>\n</article>"},
+  {"t": "★ Вложенные элементы", "d": "Нет. Элемент принадлежит блоку, а не другому элементу: правильно <code>card__title</code>, даже если в разметке он внутри <code>card__header</code>. Вложенность DOM в имени не повторяют."},
+ ],
+ css_pseudo:[
+  {"t": "★ Псевдокласс", "d": "Селектор состояния или положения существующего элемента: наведение, фокус, отмеченность, номер среди соседей. Пишется с одним двоеточием.", "c": "a:hover { color: red; }\ninput:focus-visible { outline: 2px solid; }\nli:nth-child(odd) { background: #eee; }", "open": true},
+  {"t": "★ Псевдоэлемент", "d": "Виртуальная часть элемента, которой нет в HTML: <code>::before</code>, <code>::after</code>, <code>::placeholder</code>. Пишется с двумя двоеточиями, для <code>before</code>/<code>after</code> обязателен <code>content</code>.", "c": ".required::after {\n  content: ' *';\n  color: red;\n}"},
+  {"t": "★ :has", "d": "Выбирает элемент, внутри которого есть подходящий потомок. Фактически «селектор родителя» — раньше такое делали только через JS.", "c": ".field:has(input:invalid) { border-color: red; }"},
+ ],
+ css_modern:[
+  {"t": "★ CSS-переменные", "d": "Объявляются через <code>--имя</code>, читаются через <code>var(--имя, запасное)</code>. Наследуются по дереву и могут меняться в рантайме — удобно для тем.", "c": ":root { --accent: #c1121f; }\n.button { background: var(--accent, red); }\n[data-theme=\"dark\"] { --accent: #ff4d5a; }", "open": true},
+  {"t": "★ CSS и Sass переменные", "d": "Переменные Sass заменяются значениями при сборке и в браузере их нет. CSS-переменные живут в браузере: наследуются, переопределяются в медиазапросах и меняются из JS."},
+  {"t": "★ Вложенность", "d": "Возможность писать вложенные селекторы прямо в CSS, как в Sass: <code>&amp;</code> — ссылка на родительский селектор. Поддерживается современными браузерами без сборки.", "c": ".card {\n  padding: 16px;\n  &:hover { border-color: var(--accent); }\n  .title { font-weight: 600; }\n}"},
+ ],
+ css_react:[
+  {"t": "★ CSS Modules", "d": "CSS-файлы, классы которых при сборке получают уникальные имена. Стили изолированы внутри компонента, конфликтов имён нет.", "c": "import styles from './Card.module.css';\n<div className={styles.card}>…</div>", "open": true},
+  {"t": "★ CSS-in-JS", "d": "Плюсы: стили рядом с компонентом и зависят от props. Минусы: стили создаются в рантайме — дополнительная нагрузка, сложнее с серверными компонентами."},
+  {"t": "★ Tailwind", "d": "CSS-фреймворк утилитарных классов: каждый класс — одно свойство. Верстаешь прямо в разметке, в итоговый CSS попадают только используемые классы.", "c": "<button className=\"px-4 py-2 rounded bg-red-600 hover:bg-red-700\">OK</button>"},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"html-css",n:"HTML и CSS",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

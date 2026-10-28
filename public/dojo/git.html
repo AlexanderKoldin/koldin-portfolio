@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Git по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Git</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Git <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== ОСНОВНЫЕ КОМАНДЫ ===== */
+git_basics: {
+  name:"Основные команды",
+  code:[
+  "git status",
+  "git add src/Form.tsx",
+  "git commit -m <span class=\"str\">\"feat: форма входа\"</span>",
+  "git push",
+  "git fetch",
+  "git pull"],
+  panels:[["work", "Рабочая папка", "items"], ["stage", "Индекс", "items"], ["local", "Локальный репозиторий", "items"], ["remote", "GitHub", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> у Git три зоны: <b>рабочая папка</b> → <b>индекс (staging)</b> → <b>репозиторий</b> (коммиты); плюс <b>удалённый</b> репозиторий.</li><li><b>Команды:</b> <code>git add</code> — в индекс, <code>git commit</code> — сохранить снимок, <code>git push</code> — отправить на сервер, <code>git pull</code> — забрать и слить (<code>fetch</code> + <code>merge</code>).</li><li><b>Пример:</b> <code>git status</code> → <code>git add .</code> → <code>git commit -m \"feat: форма входа\"</code> → <code>git push</code>.</li><li><b>Подвох:</b> <code>fetch</code> только <b>скачивает</b> изменения, не трогая твою ветку; <code>pull</code> ещё и <b>сливает</b> их.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Изменили файл", x:"<code>git status</code> показывает изменённый файл — пока только в рабочей папке.", hl:"work", p:{work:[it("Form.tsx (изменён)",'new')],stage:[it("—")],local:[it("A — B",'new')],remote:[it("A — B",'new')]}},
+   {line:[2], t:"git add", x:"Файл попал в индекс — он войдёт в следующий коммит.", hl:"stage", p:{work:[it("—")],stage:[it("Form.tsx",'new')],local:[it("A — B")],remote:[it("A — B")]}},
+   {line:[3], t:"git commit", x:"Снимок индекса сохранён в истории как коммит C.", hl:"local", p:{work:[it("—")],stage:[it("—")],local:[it("A — B — C",'new')],remote:[it("A — B")]}},
+   {line:[4], t:"git push", x:"Коммит отправлен на сервер.", hl:"remote", p:{work:[it("—")],stage:[it("—")],local:[it("A — B — C")],remote:[it("A — B — C",'new')]}},
+   {line:[5], t:"git fetch", x:"Коллега запушил D. <code>fetch</code> скачал его в <code>origin/main</code>, но твою ветку не тронул.", hl:"local", p:{work:[it("—")],stage:[it("—")],local:[it("A — B — C (main)"),it("D в origin/main <span class=\"chip cmut\">не слито</span>",'new')],remote:[it("A — B — C — D",'new')]}},
+   {line:[6], t:"git pull", x:"<code>pull</code> = fetch + merge: D влит в твою ветку.", hl:"local", p:{work:[it("—")],stage:[it("—")],local:[it("A — B — C — D (main)",'new')],remote:[it("A — B — C — D")]}},
+   {line:[], t:"Итог", x:"Рабочая папка → <code>add</code> → индекс → <code>commit</code> → история → <code>push</code> → сервер. <code>fetch</code> только скачивает, <code>pull</code> ещё и сливает.", fin:true, p:{work:[it("—")],stage:[it("—")],local:[it("A — B — C — D (main)")],remote:[it("A — B — C — D")]}},
+  ]
+},
+
+/* ===== ВЕТКИ И PULL REQUEST ===== */
+git_flow: {
+  name:"Ветки и Pull Request",
+  code:[
+  "git switch -c feature/login-form",
+  "git commit -m <span class=\"str\">\"feat: форма входа\"</span>",
+  "git push -u origin feature/login-form",
+  "# на GitHub: Pull Request → CI → ревью → merge"],
+  panels:[["graph", "Ветки", "items", "wide"], ["pr", "Pull Request", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> каждая задача делается в <b>своей ветке</b> от основной (<code>feature/login-form</code>), основная ветка остаётся рабочей.</li><li><b>Pull Request:</b> готовую ветку отправляем на сервер и создаём <b>PR</b> — запрос на слияние; запускаются <b>CI-проверки</b> (тесты, линтер).</li><li><b>Код-ревью:</b> коллеги смотрят код, оставляют замечания, после исправлений и одобрения ветку <b>сливают</b> в <code>main</code>.</li><li><b>Практика:</b> маленькие PR с понятным описанием, ветку обновлять от <code>main</code>, конфликты решать до слияния.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Новая ветка", x:"Ветка от main под одну задачу.", hl:"graph", p:{graph:[it("main: A — B",'new'),it("feature/login-form: от B",'new')],pr:[it("—")]}},
+   {line:[2, 3], t:"Коммиты и push", x:"Работа идёт в своей ветке, main не тронут.", hl:"graph", p:{graph:[it("main: A — B"),it("feature/login-form: B — C — D",'new')],pr:[it("—")]}},
+   {line:[4], t:"Pull Request", x:"Запрос на слияние: описание, что сделано и как проверить. Автоматически запускаются тесты и линтер.", hl:"pr", p:{graph:[it("main: A — B"),it("feature/login-form: B — C — D")],pr:[it("PR: feature/login-form → main",'new'),it("CI: тесты ✓ линтер ✓",'new')]}},
+   {line:[4], t:"Код-ревью", x:"Коллега оставил замечание — исправляем новым коммитом в той же ветке.", hl:"pr", p:{graph:[it("main: A — B"),it("feature/login-form: B — C — D — E",'new')],pr:[it("PR: feature/login-form → main"),it("CI ✓"),it("ревью: «вынеси валидацию» → коммит E",'new'),it("approve ✓",'new')]}},
+   {line:[4], t:"Merge", x:"После одобрения ветку сливают в main и удаляют.", hl:"graph", p:{graph:[it("main: A — B — C — D — E",'new')],pr:[it("PR: feature/login-form → main"),it("CI ✓"),it("ревью: «вынеси валидацию» → коммит E"),it("approve ✓")]}},
+   {line:[], t:"Итог", x:"Задача — своя ветка, изменения — через Pull Request с проверками и ревью, потом merge в main.", fin:true, p:{graph:[it("main: A — B — C — D — E")],pr:[it("PR: feature/login-form → main"),it("CI ✓"),it("ревью: «вынеси валидацию» → коммит E"),it("approve ✓")]}},
+  ]
+},
+
+/* ===== MERGE И REBASE ===== */
+git_rebase: {
+  name:"merge и rebase",
+  code:[
+  "# main:    A — B — E",
+  "# feature: A — B — C — D",
+  "",
+  "git switch feature",
+  "git merge main      # вариант <span class=\"num\">1</span>",
+  "# или",
+  "git rebase main     # вариант <span class=\"num\">2</span>"],
+  panels:[["merge", "После merge", "items"], ["rebase", "После rebase", "items"], ["note", "Важно", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> оба способа переносят изменения одной ветки в другую.</li><li><b>merge:</b> создаёт <b>коммит слияния</b>, история сохраняется как была — с <b>разветвлениями</b>.</li><li><b>rebase:</b> <b>переписывает</b> коммиты ветки поверх свежего <code>main</code> — история получается <b>линейной</b>, но у коммитов <b>новые хэши</b>.</li><li><b>Правило:</b> не делать rebase <b>общих веток</b>, которые уже запушены и с которыми работают другие; свою ветку перед PR — можно.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"Ветки разошлись", x:"Пока ты делал C и D, в main появился E.", hl:"note", p:{merge:[it("—")],rebase:[it("—")],note:[it("main: A–B–E, feature: A–B–C–D",'new')]}},
+   {line:[5], t:"merge", x:"Создаётся коммит слияния M с двумя родителями. История сохранена как была — с развилкой.", hl:"merge", p:{merge:[it("A — B — C — D — M",'new'),it("       \\— E —/",'new'),it("M — коммит слияния",'new')],rebase:[it("—")],note:[it("main: A–B–E, feature: A–B–C–D")]}},
+   {line:[7], t:"rebase", x:"C и D заново применяются поверх E. История линейная, но это <b>новые</b> коммиты C' и D' с другими хэшами.", hl:"rebase", p:{merge:[it("A — B — C — D — M"),it("       \\— E —/"),it("M — коммит слияния")],rebase:[it("A — B — E — C' — D'",'new'),it("хэши C, D изменились <span class=\"chip c2\">переписано</span>",'new')],note:[it("main: A–B–E, feature: A–B–C–D")]}},
+   {line:[], t:"Когда что", x:"rebase своей ветки перед PR — ок. rebase общей ветки, которую уже скачали другие, — нельзя: у них останутся старые C и D, история разойдётся.", hl:"note", p:{merge:[it("A — B — C — D — M"),it("       \\— E —/"),it("M — коммит слияния")],rebase:[it("A — B — E — C' — D'"),it("хэши C, D изменились <span class=\"chip c2\">переписано</span>")],note:[it("main: A–B–E, feature: A–B–C–D"),it("свою ветку — rebase можно",'new'),it("общую историю — только merge <span class=\"chip cbad\">не переписывать</span>",'new')]}},
+   {line:[], t:"Итог", x:"merge — коммит слияния, история как была. rebase — линейная история, но коммиты переписаны. Общую историю не ребейзим.", fin:true, p:{merge:[it("A — B — C — D — M"),it("       \\— E —/"),it("M — коммит слияния")],rebase:[it("A — B — E — C' — D'"),it("хэши C, D изменились <span class=\"chip c2\">переписано</span>")],note:[it("main: A–B–E, feature: A–B–C–D"),it("свою ветку — rebase можно"),it("общую историю — только merge <span class=\"chip cbad\">не переписывать</span>")]}},
+  ]
+},
+
+/* ===== КОНФЛИКТ ===== */
+git_conflict: {
+  name:"Конфликт",
+  code:[
+  "# в main:     <span class=\"kw\">const</span> limit = <span class=\"num\">10</span>;",
+  "# в feature:  <span class=\"kw\">const</span> limit = <span class=\"num\">20</span>;",
+  "git merge feature",
+  "",
+  "&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD",
+  "<span class=\"kw\">const</span> limit = <span class=\"num\">10</span>;",
+  "=======",
+  "<span class=\"kw\">const</span> limit = <span class=\"num\">20</span>;",
+  "&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature"],
+  panels:[["file", "Файл api.ts", "items", "wide"], ["status", "git status", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> конфликт — когда <b>одни и те же строки</b> изменены в двух ветках по-разному, и Git не может выбрать сам.</li><li><b>Как выглядит:</b> в файле маркеры <b><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></b>, <b><code>=======</code></b>, <b><code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code></b> — твоя версия и входящая.</li><li><b>Как решать:</b> открыть файл, <b>оставить правильный код</b> (свой, чужой или объединить), убрать маркеры, <code>git add</code>, затем <code>git commit</code> (или <code>git rebase --continue</code>).</li><li><b>Практика:</b> если не понимаешь чужой код — <b>спросить автора</b>; после решения — запустить проект и тесты.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Одна строка — две правки", x:"Git не может сам выбрать, какая версия верная, — слияние остановилось.", hl:"status", p:{file:[it("—")],status:[it("CONFLICT (content): api.ts",'new')]}},
+   {line:[5, 6, 7, 8, 9], t:"Маркеры", x:"Сверху — версия текущей ветки (HEAD), снизу — входящая.", hl:"file", p:{file:[it("&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD — наше: limit = 10",'new'),it("======= — разделитель",'new'),it(">>>>>>> feature — их: limit = 20",'new')],status:[it("CONFLICT (content): api.ts")]}},
+   {line:[], t:"Решаем", x:"Выбираем правильное значение (свой, чужой или объединяем) и удаляем маркеры. Если неясно — спрашиваем автора.", hl:"file", p:{file:[it("const limit = 20; <span class=\"chip cok\">маркеры удалены</span>",'new')],status:[it("CONFLICT (content): api.ts")]}},
+   {line:[], t:"Завершаем", x:"<code>git add api.ts</code> → <code>git commit</code> (при rebase — <code>git rebase --continue</code>). Запускаем проект и тесты.", hl:"status", p:{file:[it("const limit = 20; <span class=\"chip cok\">маркеры удалены</span>")],status:[it("CONFLICT: api.ts"),it("git add api.ts → git commit ✓",'new')]}},
+   {line:[], t:"Итог", x:"Конфликт — одни строки изменены по-разному. Решаем вручную, удаляем маркеры, add, commit, проверяем, что всё работает.", fin:true, p:{file:[it("const limit = 20; <span class=\"chip cok\">маркеры удалены</span>")],status:[it("CONFLICT: api.ts"),it("git add api.ts → git commit ✓")]}},
+  ]
+},
+
+/* ===== RESET И REVERT ===== */
+git_reset: {
+  name:"reset и revert",
+  code:[
+  "# история: A — B — <span class=\"fn\">C</span> (C уже на GitHub)",
+  "",
+  "git revert C          # вариант <span class=\"num\">1</span>",
+  "git reset --soft B    # вариант <span class=\"num\">2</span>",
+  "git reset B           # вариант <span class=\"num\">3</span> (--mixed)",
+  "git reset --hard B    # вариант <span class=\"num\">4</span>"],
+  panels:[["hist", "История", "items"], ["files", "Изменения из C", "items"], ["note", "Когда", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> оба отменяют изменения, но по-разному.</li><li><b>revert:</b> создаёт <b>новый коммит</b>, который делает обратное изменение; история <b>не переписывается</b> — безопасно для общих веток.</li><li><b>reset:</b> <b>передвигает ветку</b> назад, «удаляя» коммиты из истории: <code>--soft</code> — изменения остаются в индексе, <code>--mixed</code> (по умолчанию) — в рабочей папке, <code>--hard</code> — <b>удаляются совсем</b>.</li><li><b>Правило:</b> уже запушенное в общую ветку — <b>revert</b>; свои локальные коммиты — можно <b>reset</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3], t:"revert", x:"Новый коммит C', который отменяет C. История не переписана — безопасно для общей ветки.", hl:"hist", p:{hist:[it("A — B — C — C' (отмена C) <span class=\"chip cok\">безопасно</span>",'new')],files:[it("отменены новым коммитом",'new')],note:[it("revert — для того, что уже запушено",'new')]}},
+   {line:[4], t:"reset --soft", x:"Ветка вернулась на B, а изменения C лежат в <b>индексе</b> — можно переделать коммит.", hl:"files", p:{hist:[it("A — B",'new')],files:[it("в индексе (staged)",'new')],note:[it("revert — для того, что уже запушено")]}},
+   {line:[5], t:"reset (mixed)", x:"То же, но изменения в <b>рабочей папке</b>, не в индексе.", hl:"files", p:{hist:[it("A — B")],files:[it("в рабочей папке (unstaged)",'new')],note:[it("revert — для того, что уже запушено")]}},
+   {line:[6], t:"reset --hard", x:"Изменения C <b>удалены</b> совсем.", hl:"files", p:{hist:[it("A — B")],files:[it("удалены <span class=\"chip cbad\">осторожно</span>",'new')],note:[it("revert — для того, что уже запушено")]}},
+   {line:[], t:"Правило", x:"C уже на GitHub — значит, reset перепишет общую историю. Для него — revert. Reset — для локальных коммитов.", hl:"note", p:{hist:[it("A — B")],files:[it("удалены <span class=\"chip cbad\">осторожно</span>")],note:[it("revert — для того, что уже запушено"),it("reset — только для локальных коммитов",'new')]}},
+   {line:[], t:"Итог", x:"revert — новый обратный коммит, история цела. reset — сдвиг ветки: soft (в индекс), mixed (в папку), hard (удалить).", fin:true, p:{hist:[it("A — B")],files:[it("удалены <span class=\"chip cbad\">осторожно</span>")],note:[it("revert — для того, что уже запушено"),it("reset — только для локальных коммитов")]}},
+  ]
+},
+
+/* ===== STASH И CHERRY-PICK ===== */
+git_stash: {
+  name:"stash и cherry-pick",
+  code:[
+  "# работаешь в feature, всё не закоммичено",
+  "git stash",
+  "git switch main",
+  "git cherry-pick 9f8e7d6   # фикс из ветки develop",
+  "git switch feature",
+  "git stash pop"],
+  panels:[["work", "Рабочая папка", "items"], ["stash", "Stash", "items"], ["main", "main", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>stash:</b> <b>временно убирает</b> незакоммиченные изменения в «карман» и возвращает чистую папку; <code>git stash pop</code> — вернуть их обратно.</li><li><b>Пример stash:</b> работаешь над задачей, срочно нужно переключиться на другую ветку — <code>stash</code>, переключился, вернулся, <code>stash pop</code>.</li><li><b>cherry-pick:</b> <b>копирует один конкретный коммит</b> из другой ветки в текущую.</li><li><b>Пример cherry-pick:</b> исправление бага сделано в <code>develop</code>, а нужно срочно в <code>release</code> — переносим только этот коммит.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Незаконченная работа", x:"Изменения не готовы к коммиту, а нужно срочно переключиться.", hl:"work", p:{work:[it("Form.tsx (изменён)",'new')],stash:[it("—")],main:[it("A — B",'new')]}},
+   {line:[2], t:"git stash", x:"Изменения отложены, рабочая папка чистая.", hl:"stash", p:{work:[it("чисто",'new')],stash:[it("stash@{0}: Form.tsx",'new')],main:[it("A — B")]}},
+   {line:[3, 4], t:"cherry-pick", x:"Переносим в main только один коммит-исправление из другой ветки (новый коммит с тем же изменением).", hl:"main", p:{work:[it("чисто")],stash:[it("stash@{0}: Form.tsx")],main:[it("A — B — F' (копия фикса)",'new')]}},
+   {line:[5, 6], t:"stash pop", x:"Вернулись в свою ветку и достали отложенные изменения.", hl:"work", p:{work:[it("Form.tsx (изменён)",'new')],stash:[it("пусто",'new')],main:[it("A — B — F' (копия фикса)")]}},
+   {line:[], t:"Итог", x:"<code>stash</code> — отложить незакоммиченное и вернуть через <code>pop</code>. <code>cherry-pick</code> — скопировать один коммит в текущую ветку.", fin:true, p:{work:[it("Form.tsx (изменён)")],stash:[it("пусто")],main:[it("A — B — F' (копия фикса)")]}},
+  ]
+},
+
+/* ===== .GITIGNORE И КОММИТЫ ===== */
+git_ignore: {
+  name:".gitignore и коммиты",
+  code:[
+  "# .gitignore",
+  "node_modules/",
+  "dist/",
+  ".env",
+  "",
+  "git status",
+  "git rm --cached .env",
+  "git commit -m <span class=\"str\">\"fix: не отправлять форму с пустым email\"</span>"],
+  panels:[["track", "Что отслеживает Git", "items"], ["msg", "История", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>.gitignore:</b> список файлов и папок, которые Git <b>не отслеживает</b>: <code>node_modules</code>, <code>dist</code>, <code>.env</code> с секретами, файлы редактора.</li><li><b>Подвох:</b> файл, который <b>уже в репозитории</b>, <code>.gitignore</code> не уберёт — нужно <code>git rm --cached</code>.</li><li><b>Сообщения:</b> коротко <b>что и зачем</b>, в повелительном наклонении; часто по <b>Conventional Commits</b>: <code>feat:</code>, <code>fix:</code>, <code>refactor:</code>, <code>docs:</code>.</li><li><b>Пример:</b> <code>fix: не отправлять форму при пустом email</code> — по истории понятно, что изменилось.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:".gitignore", x:"Зависимости, сборку и секреты Git не отслеживает.", hl:"track", p:{track:[it("src/ ✓",'new'),it("node_modules/ — игнор",'new'),it("dist/ — игнор",'new'),it(".env — игнор?",'new')],msg:[it("—")]}},
+   {line:[6], t:"Сюрприз", x:"<code>.env</code> добавили в репозиторий ещё до .gitignore — Git продолжает его отслеживать.", hl:"track", p:{track:[it("src/ ✓"),it("node_modules/ — игнор"),it("dist/ — игнор"),it(".env — всё ещё в репо <span class=\"chip cbad\">уже отслеживается</span>",'new')],msg:[it("—")]}},
+   {line:[7], t:"rm --cached", x:"Убираем из индекса, файл на диске остаётся. Если там был секрет — его нужно сменить: в истории он остался.", hl:"track", p:{track:[it("src/ ✓"),it("node_modules/ — игнор"),it("dist/ — игнор"),it(".env — игнор ✓",'new')],msg:[it("—")]}},
+   {line:[8], t:"Сообщение коммита", x:"Тип + что сделано. По истории сразу понятно, что изменилось.", hl:"msg", p:{track:[it("src/ ✓"),it("node_modules/ — игнор"),it("dist/ — игнор"),it(".env — игнор ✓")],msg:[it("fix: не отправлять форму с пустым email",'new'),it("feat: … / refactor: … / docs: …",'new')]}},
+   {line:[], t:"Итог", x:".gitignore — для неотслеживаемых файлов; уже добавленные убирают <code>git rm --cached</code>. Сообщения — коротко, по делу, с типом изменения.", fin:true, p:{track:[it("src/ ✓"),it("node_modules/ — игнор"),it("dist/ — игнор"),it(".env — игнор ✓")],msg:[it("fix: не отправлять форму с пустым email"),it("feat: … / refactor: … / docs: …")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ git_basics:[
+  {"t": "★ Три зоны", "d": "Рабочая папка — где правим файлы, индекс (staging) — что попадёт в следующий коммит, локальный репозиторий — история коммитов. Плюс удалённый репозиторий на GitHub.", "open": true},
+  {"t": "★ add и commit", "d": "<code>add</code> добавляет изменения в индекс — готовит коммит. <code>commit</code> сохраняет снимок индекса в историю с сообщением."},
+  {"t": "★ fetch и pull", "d": "<code>fetch</code> скачивает новые коммиты с сервера, но не меняет твою ветку. <code>pull</code> = <code>fetch</code> + <code>merge</code> (или <code>rebase</code>): сразу вливает их в текущую ветку."},
+ ],
+ git_flow:[
+  {"t": "★ Feature branch", "d": "Отдельная ветка под одну задачу, созданная от основной. Основная ветка остаётся рабочей, а изменения попадают в неё только через Pull Request.", "open": true},
+  {"t": "★ Pull Request", "d": "Запрос на слияние ветки в основную. На нём запускаются автоматические проверки и проходит код-ревью; после одобрения ветку сливают."},
+  {"t": "★ Код-ревью", "d": "Найти ошибки до попадания в основную ветку, держать единый стиль, делиться знаниями о коде. На ревью смотрят логику, читаемость, тесты и крайние случаи."},
+ ],
+ git_rebase:[
+  {"t": "★ merge", "d": "Сливает ветку в текущую, создавая коммит слияния с двумя родителями. История остаётся как была, с разветвлением.", "open": true},
+  {"t": "★ rebase", "d": "Берёт коммиты твоей ветки и заново применяет их поверх другой ветки. История линейная, но коммиты получают новые хэши."},
+  {"t": "★ Когда не rebase", "d": "На общих ветках, которые уже отправлены на сервер и используются другими: у них останутся старые коммиты, и истории разойдутся. Свою локальную ветку перед PR ребейзить можно."},
+ ],
+ git_conflict:[
+  {"t": "★ Конфликт", "d": "Когда одни и те же строки файла изменены в двух ветках по-разному (или файл удалён в одной и изменён в другой). Git останавливается и просит выбрать вручную.", "open": true},
+  {"t": "★ Маркеры конфликта", "d": "Между <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> и <code>=======</code> — версия текущей ветки, между <code>=======</code> и <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code> — входящая. Нужно оставить правильный вариант и удалить маркеры.", "c": "<<<<<<< HEAD\nconst limit = 10;\n=======\nconst limit = 20;\n>>>>>>> feature/pagination"},
+  {"t": "★ Решение конфликта", "d": "Открыть файлы с конфликтом, выбрать или объединить код, удалить маркеры, <code>git add</code>, затем <code>git commit</code> (при rebase — <code>git rebase --continue</code>). Проверить, что проект собирается."},
+ ],
+ git_reset:[
+  {"t": "★ revert", "d": "Создаёт новый коммит, который отменяет изменения указанного. История не переписывается, поэтому так отменяют то, что уже в общей ветке.", "c": "git revert a1b2c3d", "open": true},
+  {"t": "★ reset", "d": "Передвигает указатель ветки на другой коммит. <code>--soft</code> оставляет изменения в индексе, <code>--mixed</code> — в рабочей папке, <code>--hard</code> удаляет их.", "c": "git reset --soft HEAD~1   # коммит отменён, изменения в индексе\ngit reset HEAD~1          # изменения в рабочей папке\ngit reset --hard HEAD~1   # изменения удалены"},
+  {"t": "★ reset или revert", "d": "Revert — для коммитов, которые уже запушены и есть у других. Reset — для локальных коммитов, которые ещё никто не видел."},
+ ],
+ git_stash:[
+  {"t": "★ stash", "d": "Временно убрать незакоммиченные изменения, чтобы получить чистую рабочую папку, например переключиться на другую ветку. <code>stash pop</code> возвращает их.", "c": "git stash\ngit switch hotfix\n# …\ngit switch feature\ngit stash pop", "open": true},
+  {"t": "★ cherry-pick", "d": "Копирует изменения одного конкретного коммита в текущую ветку новым коммитом. Нужен, когда из ветки нужен не весь код, а одно исправление.", "c": "git cherry-pick 9f8e7d6"},
+ ],
+ git_ignore:[
+  {"t": "★ .gitignore", "d": "Зависимости, результаты сборки, файлы с секретами (<code>.env</code>), служебные файлы ОС и редактора — всё, что генерируется или не должно попасть в репозиторий.", "c": "node_modules/\ndist/\n.env\n.DS_Store", "open": true},
+  {"t": "★ Уже отслеживаемый файл", "d": "<code>.gitignore</code> действует только на неотслеживаемые файлы. Если файл уже добавлен, его надо убрать из индекса <code>git rm --cached</code>, а если там был секрет — сменить сам секрет.", "c": "git rm --cached .env"},
+  {"t": "★ Conventional Commits", "d": "Коротко, по делу, что сделано: тип (<code>feat</code>, <code>fix</code>, <code>refactor</code>, <code>docs</code>, <code>test</code>), двоеточие и описание. Один коммит — одно логическое изменение.", "c": "feat: добавить фильтр по статусу\nfix: исправить двойную отправку формы\nrefactor: вынести useFetch в хук"},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"git",n:"Git",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

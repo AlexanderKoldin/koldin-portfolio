@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TypeScript по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>TypeScript</span></nav>
+<div class="wrap">
+  <header>
+    <h1>TypeScript <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== TS: ЗАЧЕМ ===== */
+ts_why: {
+  name:"Зачем TypeScript",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">total</span>(price: number, qty: number) {",
+  "  <span class=\"kw\">return</span> price * qty;",
+  "}",
+  "",
+  "<span class=\"fn\">total</span>(<span class=\"num\">100</span>, <span class=\"num\">2</span>);",
+  "<span class=\"fn\">total</span>(<span class=\"str\">'100'</span>, <span class=\"num\">2</span>);",
+  "",
+  "<span class=\"kw\">const</span> data = JSON.<span class=\"fn\">parse</span>(response);  <span class=\"cm\">// any</span>",
+  "<span class=\"fn\">total</span>(data.price, <span class=\"num\">2</span>);"],
+  panels:[["ts", "Проверка TS (в редакторе)", "items"], ["js", "После компиляции (в браузере)", "items"], ["out", "Результат", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> TypeScript — <b>надстройка над JavaScript</b> со <b>статической типизацией</b>; компилируется в обычный JS.</li><li><b>Как работает:</b> типы проверяются <b>во время разработки и сборки</b>, а в рантайме их <b>нет</b> — браузер выполняет обычный JS.</li><li><b>Пример:</b> передал в функцию <code>string</code> вместо <code>number</code> — ошибка видна <b>в редакторе</b>, до запуска.</li><li><b>Зачем:</b> меньше ошибок, <b>автодополнение</b> и подсказки, безопасный <b>рефакторинг</b>, типы как <b>документация</b> API.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Типы параметров", x:"Описываем, что функция ждёт два числа.", hl:"ts", p:{ts:[it("total(price: number, qty: number)",'new')],js:[it("—")],out:[]}},
+   {line:[5], t:"Правильный вызов", x:"Типы совпадают — всё хорошо.", hl:"ts", p:{ts:[it("total(price: number, qty: number)"),it("total(100, 2) ✓",'new')],js:[it("—")],out:[]}},
+   {line:[6], t:"Ошибка ловится заранее", x:"Строка вместо числа — TS подчеркнёт это <b>в редакторе</b>, до запуска. Без TS получили бы <code>'100' * 2 = 200</code> случайно или <code>NaN</code> в другом месте.", hl:"ts", p:{ts:[it("total(price: number, qty: number)"),it("total(100, 2) ✓"),it("total('100', 2) ✗ string не number <span class=\"chip cok\">до запуска</span>",'new')],js:[it("—")],out:[]}},
+   {line:[1], t:"Компиляция", x:"Типы <b>стираются</b>. В браузер уходит обычный JS — проверок в рантайме нет.", hl:"js", p:{ts:[it("total(price: number, qty: number)"),it("total(100, 2) ✓"),it("total('100', 2) ✗ string не number <span class=\"chip cok\">до запуска</span>")],js:[it("function total(price, qty) { … }",'new')],out:[]}},
+   {line:[8, 9], t:"Данные извне", x:"<code>JSON.parse</code> возвращает <code>any</code> — TS не знает, что придёт с сервера. Здесь нужна проверка в рантайме (например, Zod).", hl:"out", p:{ts:[it("total(price: number, qty: number)"),it("total(100, 2) ✓"),it("total('100', 2) ✗ string не number <span class=\"chip cok\">до запуска</span>")],js:[it("function total(price, qty) { … }")],out:[it("data.price может быть чем угодно — TS не проверит <span class=\"chip cbad\">рантайм</span>",'new')]}},
+   {line:[], t:"Итог", x:"TS проверяет типы при разработке и сборке, в браузере их нет. Ошибки видны раньше, работает автодополнение и безопасный рефакторинг.", fin:true, p:{ts:[it("total(price: number, qty: number)"),it("total(100, 2) ✓"),it("total('100', 2) ✗ string не number <span class=\"chip cok\">до запуска</span>")],js:[it("function total(price, qty) { … }")],out:[it("data.price может быть чем угодно — TS не проверит <span class=\"chip cbad\">рантайм</span>")]}},
+  ]
+},
+
+/* ===== TS: INTERFACE И TYPE ===== */
+ts_interface: {
+  name:"interface и type",
+  code:[
+  "interface User { id: number; name: string; }",
+  "interface User { email?: string; }          <span class=\"cm\">// слияние</span>",
+  "",
+  "interface Admin <span class=\"kw\">extends</span> User { role: <span class=\"str\">'admin'</span>; }",
+  "",
+  "type Status = <span class=\"str\">'active'</span> | <span class=\"str\">'banned'</span>;           <span class=\"cm\">// только type</span>",
+  "type Member = User &amp; { status: Status };"],
+  panels:[["types", "Получившиеся типы", "items", "wide"], ["rule", "Что умеет", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>interface</code> и <code>type</code> — два способа <b>описать форму объекта</b>; для объектов почти взаимозаменяемы.</li><li><b>interface:</b> расширяется через <b><code>extends</code></b>, поддерживает <b>слияние объявлений</b> (два <code>interface User</code> объединятся).</li><li><b>type:</b> умеет больше — <b>union</b> (<code>'a' | 'b'</code>), <b>пересечения</b> (<code>&amp;</code>), кортежи, mapped и conditional types.</li><li><b>Правило:</b> объекты и props — чаще <code>interface</code> (или как принято в проекте); объединения и вычисляемые типы — <code>type</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"interface", x:"Описание формы объекта.", hl:"types", p:{types:[it("User { id: number; name: string }",'new')],rule:[it("—")]}},
+   {line:[2], t:"Слияние объявлений", x:"Второй <code>interface User</code> не ошибка — поля <b>сливаются</b>. С <code>type</code> одинаковое имя дало бы ошибку.", hl:"types", p:{types:[it("User { id; name; email? } <span class=\"chip c1\">слияние</span>",'new')],rule:[it("interface: declaration merging",'new')]}},
+   {line:[4], t:"extends", x:"Расширение интерфейса.", hl:"types", p:{types:[it("User { id; name; email? }"),it("Admin { id; name; email?; role: 'admin' }",'new')],rule:[it("interface: declaration merging")]}},
+   {line:[6], t:"Union — только type", x:"Объединения литералов <code>interface</code> описать не может.", hl:"rule", p:{types:[it("User { id; name; email? }"),it("Admin { id; name; email?; role }"),it("Status = 'active' | 'banned'",'new')],rule:[it("interface: declaration merging"),it("type: union, кортежи, mapped types",'new')]}},
+   {line:[7], t:"Пересечение &", x:"<code>type</code> расширяют через <code>&</code>.", hl:"types", p:{types:[it("User { id; name; email? }"),it("Admin { id; name; email?; role }"),it("Status = 'active' | 'banned'"),it("Member = User & { status }",'new')],rule:[it("interface: declaration merging"),it("type: union, кортежи, mapped types")]}},
+   {line:[], t:"Итог", x:"Для объектов оба подходят. <code>interface</code> — extends и слияние. <code>type</code> — union, пересечения и вычисляемые типы.", fin:true, p:{types:[it("User { id; name; email? }"),it("Admin { id; name; email?; role }"),it("Status = 'active' | 'banned'"),it("Member = User & { status }")],rule:[it("interface: declaration merging"),it("type: union, кортежи, mapped types")]}},
+  ]
+},
+
+/* ===== TS: ANY, UNKNOWN, NEVER ===== */
+ts_basic: {
+  name:"any, unknown, never",
+  code:[
+  "<span class=\"kw\">let</span> a: any = <span class=\"fn\">getData</span>();",
+  "a.foo.<span class=\"fn\">bar</span>();                      <span class=\"cm\">// TS молчит</span>",
+  "",
+  "<span class=\"kw\">let</span> u: unknown = <span class=\"fn\">getData</span>();",
+  "u.foo;                            <span class=\"cm\">// ошибка</span>",
+  "<span class=\"kw\">if</span> (<span class=\"kw\">typeof</span> u === <span class=\"str\">'string'</span>) {",
+  "  u.<span class=\"fn\">toUpperCase</span>();                <span class=\"cm\">// можно</span>",
+  "}",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">fail</span>(msg: string): never {",
+  "  throw <span class=\"kw\">new</span> <span class=\"fn\">Error</span>(msg);",
+  "}"],
+  panels:[["type", "Тип в этой строке", "items"], ["check", "Проверка TS", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>union</b> <code>A | B</code> — значение одного из типов; <b>literal</b> — конкретное значение как тип (<code>'success'</code>); <code>?</code> — <b>необязательное</b> поле.</li><li><b>any и unknown:</b> <code>any</code> <b>отключает проверку</b>; <code>unknown</code> — «что-то неизвестное», использовать можно только после <b>сужения типа</b>.</li><li><b>never:</b> тип значения, которого <b>не бывает</b> — функция всегда бросает ошибку, или все варианты union уже разобраны.</li><li><b>Правило:</b> вместо <code>any</code> — <code>unknown</code> + проверка; <code>never</code> используют для <b>проверки исчерпанности</b> в <code>switch</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"any", x:"<code>any</code> отключает проверку: можно что угодно — и упасть в рантайме.", hl:"check", p:{type:[it("a: any",'new')],check:[it("a.foo.bar() — без ошибок <span class=\"chip cbad\">опасно</span>",'new')]}},
+   {line:[4, 5], t:"unknown", x:"<code>unknown</code> принять можно, а использовать — нет, пока не проверили.", hl:"check", p:{type:[it("u: unknown",'new')],check:[it("u.foo — ошибка <span class=\"chip cok\">безопасно</span>",'new')]}},
+   {line:[6, 7], t:"Сужение", x:"После <code>typeof u === 'string'</code> внутри ветки <code>u</code> — строка.", hl:"type", p:{type:[it("u: string (внутри if)",'new')],check:[it("u.toUpperCase() ✓",'new')]}},
+   {line:[10, 11, 12], t:"never", x:"Функция всегда бросает ошибку — до возврата значения не доходит. Её тип результата — <code>never</code>.", hl:"type", p:{type:[it("fail(): never",'new')],check:[it("значение never не существует",'new')]}},
+   {line:[], t:"Итог", x:"<code>any</code> — без проверки. <code>unknown</code> — безопасный вариант, нужна проверка. <code>never</code> — значения не бывает. Литералы и union сужают допустимые значения.", fin:true, p:{type:[it("fail(): never")],check:[it("значение never не существует")]}},
+  ]
+},
+
+/* ===== TS: СУЖЕНИЕ ТИПОВ ===== */
+ts_narrowing: {
+  name:"сужение типов",
+  code:[
+  "type Result =",
+  "  | { status: <span class=\"str\">'ok'</span>; data: string[] }",
+  "  | { status: <span class=\"str\">'error'</span>; message: string };",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">show</span>(r: Result) {",
+  "  <span class=\"cm\">// r: Result</span>",
+  "  <span class=\"kw\">if</span> (r.status === <span class=\"str\">'ok'</span>) {",
+  "    <span class=\"kw\">return</span> r.data.<span class=\"fn\">join</span>(<span class=\"str\">', '</span>);      <span class=\"cm\">// r: { status: 'ok'; data }</span>",
+  "  }",
+  "  <span class=\"kw\">return</span> r.message;                <span class=\"cm\">// r: { status: 'error'; message }</span>",
+  "}"],
+  panels:[["type", "Тип r в этой точке", "items", "wide"], ["access", "Доступные поля", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>сужение типа</b> (narrowing) — TS по проверкам в коде <b>уточняет тип</b> переменной внутри ветки.</li><li><b>Способы:</b> <code>typeof</code>, <code>instanceof</code>, <code>in</code>, сравнение с литералом, проверка на <code>null</code>; <b>discriminated union</b> — по общему полю <code>type</code>/<code>status</code>.</li><li><b>Пример:</b> <code>if (typeof id === 'string') id.toUpperCase()</code> — внутри <code>if</code> TS знает, что это строка.</li><li><b>Type guard:</b> своя функция с ответом <b><code>x is T</code></b> — когда встроенных проверок мало.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Размеченное объединение", x:"Два варианта с общим полем-меткой <code>status</code>.", hl:"type", p:{type:[it("ok | error",'new')],access:[it("—")]}},
+   {line:[5, 6], t:"До проверки", x:"Пока неизвестно, какой вариант, доступно только общее — <code>status</code>. <code>r.data</code> — ошибка.", hl:"access", p:{type:[it("Result (ok | error)",'new')],access:[it("status ✓",'new'),it("data ✗ (нет у error)",'new'),it("message ✗ (нет у ok)",'new')]}},
+   {line:[7, 8], t:"Ветка ok", x:"Проверка метки <b>сужает</b> тип до варианта <code>ok</code> — появляется <code>data</code>.", hl:"type", p:{type:[it("{ status: 'ok'; data: string[] }",'new')],access:[it("status ✓"),it("data ✓",'new')]}},
+   {line:[10], t:"После return", x:"Вариант <code>ok</code> уже вернулся — дальше TS знает, что остался только <code>error</code>.", hl:"type", p:{type:[it("{ status: 'error'; message: string }",'new')],access:[it("status ✓"),it("message ✓",'new')]}},
+   {line:[], t:"Другие способы", x:"<code>typeof</code>, <code>instanceof</code>, <code>'key' in obj</code>, проверка на <code>null</code>, своя функция <code>x is T</code>.", hl:"access", p:{type:[it("{ status: 'error'; message: string }")],access:[it("typeof / instanceof / in / !== null / x is T",'new')]}},
+   {line:[], t:"Итог", x:"TS читает проверки в коде и уточняет тип внутри ветки. Для объектов удобнее всего размеченное объединение с полем-меткой.", fin:true, p:{type:[it("{ status: 'error'; message: string }")],access:[it("typeof / instanceof / in / !== null / x is T")]}},
+  ]
+},
+
+/* ===== TS: ДЖЕНЕРИКИ ===== */
+ts_generics: {
+  name:"дженерики",
+  code:[
+  "<span class=\"kw\">function</span> first&lt;T&gt;(arr: T[]): T | <span class=\"kw\">undefined</span> {",
+  "  <span class=\"kw\">return</span> arr[<span class=\"num\">0</span>];",
+  "}",
+  "",
+  "<span class=\"kw\">const</span> n = <span class=\"fn\">first</span>([<span class=\"num\">10</span>, <span class=\"num\">20</span>]);",
+  "<span class=\"kw\">const</span> s = <span class=\"fn\">first</span>([<span class=\"str\">'a'</span>, <span class=\"str\">'b'</span>]);",
+  "",
+  "<span class=\"kw\">function</span> byId&lt;T <span class=\"kw\">extends</span> { id: number }&gt;(list: T[], id: number) {",
+  "  <span class=\"kw\">return</span> list.<span class=\"fn\">find</span>((x) =&gt; x.id === id);",
+  "}",
+  "<span class=\"fn\">byId</span>([{ id: <span class=\"num\">1</span>, name: <span class=\"str\">'Саша'</span> }], <span class=\"num\">1</span>);",
+  "<span class=\"fn\">byId</span>([<span class=\"num\">1</span>, <span class=\"num\">2</span>, <span class=\"num\">3</span>], <span class=\"num\">1</span>);"],
+  panels:[["infer", "Что вывел TS", "items", "wide"], ["check", "Проверка", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> дженерик — <b>тип-параметр</b>, который позволяет писать функцию или тип <b>для любых типов</b>, не теряя связи между ними.</li><li><b>Как работает:</b> <code>function first&lt;T&gt;(arr: T[]): T</code> — что пришло в массиве, то и вернётся; TS <b>выводит <code>T</code> сам</b> по аргументам.</li><li><b>Пример:</b> <code>useState&lt;User | null&gt;(null)</code>, <code>Promise&lt;User&gt;</code>, <code>Array&lt;string&gt;</code> — всё это дженерики.</li><li><b>Ограничение:</b> <code>&lt;T extends { id: number }&gt;</code> — требуем, чтобы у типа было нужное поле.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Параметр типа T", x:"<code>T</code> — «какой-то тип», который определится при вызове. Вход и выход связаны.", hl:"infer", p:{infer:[it("first&lt;T>(arr: T[]): T | undefined",'new')],check:[it("—")]}},
+   {line:[5], t:"Вывод T = number", x:"Передали массив чисел — TS сам решил, что <code>T</code> = <code>number</code>.", hl:"infer", p:{infer:[it("first&lt;T>(arr: T[]): T | undefined"),it("first([10, 20]) → T = number → n: number | undefined",'new')],check:[it("—")]}},
+   {line:[6], t:"Вывод T = string", x:"Та же функция, другой тип — без <code>any</code> и без дублирования.", hl:"infer", p:{infer:[it("first&lt;T>(arr: T[]): T | undefined"),it("first([10, 20]) → T = number"),it("first(['a', 'b']) → T = string",'new')],check:[it("—")]}},
+   {line:[8, 9, 10, 11], t:"Ограничение extends", x:"<code>T extends { id: number }</code> — подойдёт любой тип, у которого есть <code>id</code>.", hl:"check", p:{infer:[it("first&lt;T>(arr: T[]): T | undefined"),it("first([10, 20]) → T = number"),it("first(['a', 'b']) → T = string")],check:[it("byId([{ id, name }], 1) ✓",'new')]}},
+   {line:[12], t:"Не подходит", x:"У числа нет поля <code>id</code> — ошибка компиляции.", hl:"check", p:{infer:[it("first&lt;T>(arr: T[]): T | undefined"),it("first([10, 20]) → T = number"),it("first(['a', 'b']) → T = string")],check:[it("byId([{ id, name }], 1) ✓"),it("byId([1, 2, 3], 1) ✗ number не имеет id <span class=\"chip cbad\">ошибка</span>",'new')]}},
+   {line:[], t:"Итог", x:"Дженерик — тип как параметр: одна функция для разных типов без потери связи. TS выводит <code>T</code> сам, <code>extends</code> задаёт ограничение.", fin:true, p:{infer:[it("first&lt;T>(arr: T[]): T | undefined"),it("first([10, 20]) → T = number"),it("first(['a', 'b']) → T = string")],check:[it("byId([{ id, name }], 1) ✓"),it("byId([1, 2, 3], 1) ✗ number не имеет id <span class=\"chip cbad\">ошибка</span>")]}},
+  ]
+},
+
+/* ===== TS: UTILITY TYPES ===== */
+ts_utility: {
+  name:"utility types",
+  code:[
+  "interface User {",
+  "  id: number;",
+  "  name: string;",
+  "  email: string;",
+  "  password: string;",
+  "}",
+  "type UserUpdate = Partial&lt;User&gt;;",
+  "type PublicUser = Omit&lt;User, <span class=\"str\">'password'</span>&gt;;",
+  "type Preview = Pick&lt;User, <span class=\"str\">'id'</span> | <span class=\"str\">'name'</span>&gt;;",
+  "type ById = Record&lt;number, User&gt;;"],
+  panels:[["result", "Получившийся тип", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> utility types — <b>встроенные типы-помощники</b>, которые делают новый тип из существующего.</li><li><b>Основные:</b> <code>Partial&lt;T&gt;</code> — все поля необязательные; <code>Required&lt;T&gt;</code> — все обязательные; <code>Pick&lt;T, K&gt;</code> — только выбранные поля; <code>Omit&lt;T, K&gt;</code> — все кроме; <code>Record&lt;K, V&gt;</code> — объект с ключами <code>K</code> и значениями <code>V</code>; <code>ReturnType&lt;F&gt;</code> — тип результата функции.</li><li><b>Пример:</b> <code>updateUser(id, data: Partial&lt;User&gt;)</code> — передаём только изменённые поля.</li><li><b>Зачем:</b> <b>не дублировать</b> описание типов — меняем <code>User</code>, и все производные типы обновятся.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 5, 6], t:"Исходный тип", x:"Четыре обязательных поля.", hl:"result", p:{result:[it("User { id; name; email; password }",'new')]}},
+   {line:[7], t:"Partial", x:"Все поля стали необязательными — для обновления можно передать только изменённое.", hl:"result", p:{result:[it("User { id; name; email; password }"),it("UserUpdate { id?; name?; email?; password? }",'new')]}},
+   {line:[8], t:"Omit", x:"Всё, кроме <code>password</code> — безопасно отдать на клиент.", hl:"result", p:{result:[it("User { id; name; email; password }"),it("UserUpdate { все поля? }"),it("PublicUser { id; name; email }",'new')]}},
+   {line:[9], t:"Pick", x:"Только перечисленные поля.", hl:"result", p:{result:[it("User { id; name; email; password }"),it("UserUpdate { все поля? }"),it("PublicUser { id; name; email }"),it("Preview { id; name }",'new')]}},
+   {line:[10], t:"Record", x:"Словарь: ключ — число, значение — <code>User</code>.", hl:"result", p:{result:[it("User { id; name; email; password }"),it("UserUpdate { все поля? }"),it("PublicUser { id; name; email }"),it("Preview { id; name }"),it("ById { [id: number]: User }",'new')]}},
+   {line:[], t:"Итог", x:"Utility types строят новые типы из существующих. Меняем <code>User</code> — все производные обновятся сами.", fin:true, p:{result:[it("User { id; name; email; password }"),it("UserUpdate { все поля? }"),it("PublicUser { id; name; email }"),it("Preview { id; name }"),it("ById { [id: number]: User }")]}},
+  ]
+},
+
+/* ===== TS: KEYOF, TYPEOF, T[K] ===== */
+ts_keyof: {
+  name:"keyof, typeof, T[K]",
+  code:[
+  "<span class=\"kw\">const</span> config = { port: <span class=\"num\">3000</span>, host: <span class=\"str\">'localhost'</span>, debug: <span class=\"kw\">false</span> };",
+  "",
+  "type Config = <span class=\"kw\">typeof</span> config;",
+  "type Key = keyof Config;",
+  "type Port = Config[<span class=\"str\">'port'</span>];",
+  "",
+  "<span class=\"kw\">function</span> get&lt;K <span class=\"kw\">extends</span> keyof Config&gt;(key: K): Config[K] {",
+  "  <span class=\"kw\">return</span> config[key];",
+  "}",
+  "<span class=\"kw\">const</span> p = <span class=\"fn\">get</span>(<span class=\"str\">'port'</span>);",
+  "<span class=\"fn\">get</span>(<span class=\"str\">'url'</span>);"],
+  panels:[["types", "Типы", "items", "wide"], ["check", "Проверка", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>keyof T</code> — <b>union ключей</b> типа; <code>typeof x</code> в позиции типа — <b>тип переменной</b>; <code>T['field']</code> — <b>тип поля</b> по индексу.</li><li><b>Как работает:</b> это операторы <b>уровня типов</b> — вычисляют новый тип из существующего.</li><li><b>Пример:</b> <code>function get&lt;T, K extends keyof T&gt;(obj: T, key: K): T[K]</code> — нельзя передать несуществующий ключ, а результат имеет точный тип.</li><li><b>Подвох:</b> <code>typeof</code> в выражении JS даёт строку (<code>'object'</code>), а в позиции <b>типа</b> — полный TS-тип значения.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Значение", x:"Обычный объект в JS.", hl:"types", p:{types:[it("config = { port: 3000, host: 'localhost', debug: false }",'new')],check:[it("—")]}},
+   {line:[3], t:"typeof", x:"Берём тип из существующего значения.", hl:"types", p:{types:[it("config = …"),it("Config = { port: number; host: string; debug: boolean }",'new')],check:[it("—")]}},
+   {line:[4], t:"keyof", x:"Union всех ключей.", hl:"types", p:{types:[it("config = …"),it("Config = { port; host; debug }"),it("Key = 'port' | 'host' | 'debug'",'new')],check:[it("—")]}},
+   {line:[5], t:"Индексный доступ", x:"Тип конкретного поля.", hl:"types", p:{types:[it("config = …"),it("Config = { port; host; debug }"),it("Key = 'port' | 'host' | 'debug'"),it("Port = number",'new')],check:[it("—")]}},
+   {line:[7, 8, 9, 10], t:"Безопасный геттер", x:"<code>K</code> — один из ключей, результат — точный тип этого поля.", hl:"check", p:{types:[it("config = …"),it("Config = { port; host; debug }"),it("Key = 'port' | 'host' | 'debug'"),it("Port = number")],check:[it("get('port') → number ✓",'new')]}},
+   {line:[11], t:"Несуществующий ключ", x:"<code>'url'</code> нет среди ключей — ошибка компиляции.", hl:"check", p:{types:[it("config = …"),it("Config = { port; host; debug }"),it("Key = 'port' | 'host' | 'debug'"),it("Port = number")],check:[it("get('port') → number ✓"),it("get('url') ✗ не входит в keyof Config <span class=\"chip cbad\">ошибка</span>",'new')]}},
+   {line:[], t:"Итог", x:"<code>typeof</code> — тип из значения, <code>keyof</code> — union ключей, <code>T[K]</code> — тип поля. Вместе дают типобезопасный доступ к полям.", fin:true, p:{types:[it("config = …"),it("Config = { port; host; debug }"),it("Key = 'port' | 'host' | 'debug'"),it("Port = number")],check:[it("get('port') → number ✓"),it("get('url') ✗ не входит в keyof Config <span class=\"chip cbad\">ошибка</span>")]}},
+  ]
+},
+
+/* ===== TS: ENUM И AS CONST ===== */
+ts_enum: {
+  name:"enum и as const",
+  code:[
+  "enum Role { Admin = <span class=\"str\">'admin'</span>, User = <span class=\"str\">'user'</span> }",
+  "",
+  "type Role2 = <span class=\"str\">'admin'</span> | <span class=\"str\">'user'</span>;",
+  "",
+  "<span class=\"kw\">const</span> ROLES = [<span class=\"str\">'admin'</span>, <span class=\"str\">'user'</span>] as <span class=\"kw\">const</span>;",
+  "type Role3 = <span class=\"kw\">typeof</span> ROLES[number];"],
+  panels:[["ts", "В TypeScript", "items"], ["js", "В итоговом JS", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>enum</code> — набор <b>именованных констант</b>, который <b>существует и в рантайме</b>; union литералов — <b>только тип</b>, в JS его нет.</li><li><b>as const:</b> делает значение <b>глубоко readonly</b> и сохраняет <b>литеральные типы</b> вместо <code>string</code>.</li><li><b>Пример:</b> <code>const ROLES = ['admin', 'user'] as const; type Role = typeof ROLES[number];</code> — и массив для рантайма, и тип.</li><li><b>Что выбрать:</b> сейчас чаще <b>union литералов</b> или <b>объект с <code>as const</code></b> — проще, нет лишнего кода в бандле; <code>enum</code> встречается в старом коде.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"enum", x:"<code>enum</code> — это и тип, и <b>настоящий объект</b> в JS после компиляции.", hl:"js", p:{ts:[it("enum Role",'new')],js:[it("var Role = { Admin: 'admin', User: 'user' } <span class=\"chip c1\">код в бандле</span>",'new')]}},
+   {line:[3], t:"Union литералов", x:"Только тип — при компиляции исчезает полностью.", hl:"js", p:{ts:[it("enum Role"),it("type Role2 = 'admin' | 'user'",'new')],js:[it("var Role = { … }"),it("(ничего) <span class=\"chip cok\">0 байт</span>",'new')]}},
+   {line:[5], t:"as const", x:"Без <code>as const</code> тип был бы <code>string[]</code>. С ним — readonly кортеж точных значений.", hl:"ts", p:{ts:[it("enum Role"),it("type Role2 = 'admin' | 'user'"),it("ROLES: readonly ['admin', 'user']",'new')],js:[it("var Role = { … }"),it("(ничего)"),it("const ROLES = ['admin', 'user']",'new')]}},
+   {line:[6], t:"Тип из массива", x:"<code>typeof ROLES[number]</code> — union всех элементов. Есть и массив для рантайма (например, для select), и тип.", hl:"ts", p:{ts:[it("enum Role"),it("type Role2 = 'admin' | 'user'"),it("ROLES: readonly ['admin', 'user']"),it("Role3 = 'admin' | 'user'",'new')],js:[it("var Role = { … }"),it("(ничего)"),it("const ROLES = ['admin', 'user']")]}},
+   {line:[], t:"Итог", x:"<code>enum</code> существует в рантайме. Union литералов — только тип. <code>as const</code> сохраняет литералы и даёт тип из значения.", fin:true, p:{ts:[it("enum Role"),it("type Role2 = 'admin' | 'user'"),it("ROLES: readonly ['admin', 'user']"),it("Role3 = 'admin' | 'user'")],js:[it("var Role = { … }"),it("(ничего)"),it("const ROLES = ['admin', 'user']")]}},
+  ]
+},
+
+/* ===== TS: AS И SATISFIES ===== */
+ts_as: {
+  name:"as и satisfies",
+  code:[
+  "type Theme = Record&lt;string, string | number[]&gt;;",
+  "",
+  "<span class=\"kw\">const</span> t1 = { red: [<span class=\"num\">255</span>, <span class=\"num\">0</span>, <span class=\"num\">0</span>], bg: <span class=\"str\">'#000'</span> } as Theme;",
+  "<span class=\"kw\">const</span> t2 = { red: [<span class=\"num\">255</span>, <span class=\"num\">0</span>, <span class=\"num\">0</span>], bg: <span class=\"str\">'#000'</span> } satisfies Theme;",
+  "",
+  "t1.bg.<span class=\"fn\">toUpperCase</span>();",
+  "t2.bg.<span class=\"fn\">toUpperCase</span>();",
+  "",
+  "<span class=\"kw\">const</span> bad = { red: <span class=\"str\">'x'</span> } as unknown as number;"],
+  panels:[["t1", "as Theme", "items"], ["t2", "satisfies Theme", "items"], ["note", "Вывод", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>as</code> — <b>утверждение типа</b>: «поверь мне, это <code>T»</code>, проверки нет; <code>satisfies</code> — <b>проверяет</b>, что значение подходит под тип, но <b>сохраняет точный тип</b> значения; type guard — <b>проверка в рантайме</b> + сужение.</li><li><b>Как работает:</b> <code>as</code> может скрыть ошибку; <code>satisfies</code> поймает лишние или недостающие поля и не расширит литералы.</li><li><b>Пример:</b> <code>const config = { port: 3000 } satisfies Config</code> — проверено, и <code>config.port</code> остаётся <code>number</code>, а не union.</li><li><b>Правило:</b> реже <code>as</code>, чаще <code>satisfies</code> и <b>type guards</b>; <code>as</code> — когда знаешь больше TS (например, элемент DOM).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Тип темы", x:"Значение — строка или массив чисел.", hl:"note", p:{t1:[it("—")],t2:[it("—")],note:[it("Theme = Record&lt;string, string | number[]>",'new')]}},
+   {line:[3], t:"as", x:"<code>as</code> говорит «считай это Theme». Точные типы полей <b>потеряны</b>: <code>bg</code> теперь <code>string | number[]</code>.", hl:"t1", p:{t1:[it("bg: string | number[] <span class=\"chip cbad\">расширился</span>",'new')],t2:[it("—")],note:[it("Theme = Record&lt;string, string | number[]>")]}},
+   {line:[4], t:"satisfies", x:"<code>satisfies</code> <b>проверяет</b> соответствие Theme, но оставляет точный тип значения.", hl:"t2", p:{t1:[it("bg: string | number[] <span class=\"chip cbad\">расширился</span>")],t2:[it("bg: string <span class=\"chip cok\">точный</span>",'new'),it("red: number[]",'new')],note:[it("Theme = Record&lt;string, string | number[]>")]}},
+   {line:[6, 7], t:"Использование", x:"У <code>t1</code> нельзя вызвать <code>toUpperCase</code> — вдруг это массив. У <code>t2</code> можно.", hl:"note", p:{t1:[it("bg: string | number[]"),it("bg.toUpperCase() ✗",'new')],t2:[it("bg: string"),it("red: number[]"),it("bg.toUpperCase() ✓",'new')],note:[it("Theme = Record&lt;string, string | number[]>")]}},
+   {line:[9], t:"Опасность as", x:"Через <code>as unknown as</code> можно «убедить» TS в чём угодно — проверки нет, ошибка всплывёт в рантайме.", hl:"note", p:{t1:[it("bg: string | number[]"),it("bg.toUpperCase() ✗")],t2:[it("bg: string"),it("red: number[]"),it("bg.toUpperCase() ✓")],note:[it("Theme = Record&lt;string, string | number[]>"),it("as — утверждение без проверки <span class=\"chip cbad\">риск</span>",'new')]}},
+   {line:[], t:"Итог", x:"<code>as</code> — «поверь мне», без проверки. <code>satisfies</code> — проверка без потери точного типа. Для данных извне — type guard или Zod.", fin:true, p:{t1:[it("bg: string | number[]"),it("bg.toUpperCase() ✗")],t2:[it("bg: string"),it("red: number[]"),it("bg.toUpperCase() ✓")],note:[it("Theme = Record&lt;string, string | number[]>"),it("as — утверждение без проверки <span class=\"chip cbad\">риск</span>")]}},
+  ]
+},
+
+/* ===== TS: ТИПИЗАЦИЯ REACT ===== */
+ts_react: {
+  name:"типизация React",
+  code:[
+  "interface ButtonProps <span class=\"kw\">extends</span> React.ComponentProps&lt;<span class=\"str\">'button'</span>&gt; {",
+  "  variant?: <span class=\"str\">'primary'</span> | <span class=\"str\">'ghost'</span>;",
+  "  loading?: boolean;",
+  "}",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Button</span>({ variant = <span class=\"str\">'primary'</span>, loading, children, ...rest }: ButtonProps) {",
+  "  <span class=\"kw\">return</span> &lt;button className={variant} disabled={loading} {...rest}&gt;{children}&lt;/button&gt;;",
+  "}",
+  "",
+  "<span class=\"kw\">const</span> [user, setUser] = useState&lt;User | <span class=\"kw\">null</span>&gt;(<span class=\"kw\">null</span>);",
+  "<span class=\"kw\">const</span> inputRef = useRef&lt;HTMLInputElement&gt;(<span class=\"kw\">null</span>);",
+  "<span class=\"kw\">const</span> onChange = (e: React.ChangeEvent&lt;HTMLInputElement&gt;) =&gt; <span class=\"fn\">setName</span>(e.target.value);"],
+  panels:[["props", "Props", "items"], ["hooks", "Хуки и события", "items"], ["check", "Что ловит TS", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Props:</b> описываем <code>interface ButtonProps</code> и типизируем параметр: <code>function Button({ label, onClick }: ButtonProps)</code>.</li><li><b>children:</b> тип <b><code>React.ReactNode</code></b> — всё, что можно отрендерить.</li><li><b>События и хуки:</b> <code>React.ChangeEvent&lt;HTMLInputElement&gt;</code>, <code>React.MouseEvent&lt;HTMLButtonElement&gt;</code>; <code>useState&lt;User | null&gt;(null)</code>, <code>useRef&lt;HTMLInputElement&gt;(null)</code>.</li><li><b>Подвох:</b> <code>React.FC</code> сейчас используют редко; для пропсов нативного элемента — <code>React.ComponentProps&lt;'button'&gt;</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:"Тип props", x:"Берём все атрибуты нативной кнопки и добавляем свои поля.", hl:"props", p:{props:[it("onClick, type, disabled… (от button)",'new'),it("variant?: 'primary' | 'ghost'",'new'),it("loading?: boolean",'new')],hooks:[it("—")],check:[it("—")]}},
+   {line:[6, 7], t:"Деструктуризация", x:"Значение по умолчанию — прямо в параметрах. <code>children</code> уже есть в ComponentProps (тип ReactNode).", hl:"props", p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest",'new')],hooks:[it("—")],check:[it("—")]}},
+   {line:[10], t:"useState с null", x:"Из <code>null</code> тип не вывести — указываем явно.", hl:"hooks", p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest")],hooks:[it("user: User | null",'new')],check:[it("—")]}},
+   {line:[11], t:"useRef для DOM", x:"Тип элемента и начальное <code>null</code>.", hl:"hooks", p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest")],hooks:[it("user: User | null"),it("inputRef.current: HTMLInputElement | null",'new')],check:[it("—")]}},
+   {line:[12], t:"Событие", x:"Тип события с элементом — и <code>e.target.value</code> известен как строка.", hl:"hooks", p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest")],hooks:[it("user: User | null"),it("inputRef.current: HTMLInputElement | null"),it("e: ChangeEvent&lt;HTMLInputElement> → e.target.value: string",'new')],check:[it("—")]}},
+   {line:[], t:"Что ловит TS", x:"Опечатку в варианте, лишний проп, обращение к <code>user.name</code> без проверки на <code>null</code>.", hl:"check", p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest")],hooks:[it("user: User | null"),it("inputRef.current: HTMLInputElement | null"),it("e: ChangeEvent&lt;HTMLInputElement> → e.target.value: string")],check:[it("&lt;Button variant=\"primry\"> ✗",'new'),it("user.name ✗ — может быть null → user?.name",'new')]}},
+   {line:[], t:"Итог", x:"Props — интерфейс, <code>children: React.ReactNode</code>, события — <code>React.XxxEvent&lt;Элемент&gt;</code>, хуки — дженерик, когда начальное значение не говорит о типе.", fin:true, p:{props:[it("onClick, type, disabled…"),it("variant = 'primary' по умолчанию"),it("loading?: boolean"),it("children: ReactNode, ...rest")],hooks:[it("user: User | null"),it("inputRef.current: HTMLInputElement | null"),it("e: ChangeEvent&lt;HTMLInputElement> → e.target.value: string")],check:[it("&lt;Button variant=\"primry\"> ✗"),it("user.name ✗ — может быть null → user?.name")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ ts_why:[
+  {"t": "★ TypeScript", "d": "Надстройка над JavaScript со статической типизацией. Код проверяется при разработке и компилируется в обычный JS — в браузере типов нет.", "open": true},
+  {"t": "★ Типы в рантайме", "d": "Нет. Типы стираются при компиляции. Данные с сервера или из <code>JSON.parse</code> TS не проверяет — для этого нужна проверка в рантайме, например библиотекой Zod.", "c": "function f(x: number) {}\nf(JSON.parse('\"5\"')); // TS не спасёт"},
+  {"t": "★ Польза TS", "d": "Ошибки ловятся до запуска, работает автодополнение, рефакторинг безопасен — переименовал поле и сразу видишь все места. Типы описывают API и служат документацией."},
+ ],
+ ts_interface:[
+  {"t": "★ interface", "d": "Описание формы объекта: какие поля и каких типов. Расширяется через <code>extends</code>, одноимённые интерфейсы сливаются.", "c": "interface User {\n  id: number;\n  name: string;\n  email?: string;\n}", "open": true},
+  {"t": "★ type", "d": "Описывать объединения (union), кортежи, примитивы, пересечения через <code>&amp;</code>, mapped и conditional types. <code>interface</code> описывает только объекты.", "c": "type Status = 'idle' | 'loading' | 'error';\ntype Point = [number, number];"},
+  {"t": "★ Declaration merging", "d": "Два <code>interface</code> с одним именем объединяются в один. Так расширяют чужие типы, например <code>Window</code>. С <code>type</code> одинаковое имя — ошибка.", "c": "interface Window { myLib: string; }\n// добавили поле к глобальному Window"},
+  {"t": "★ extends и &", "d": "У <code>interface</code> — через <code>extends</code>, у <code>type</code> — через пересечение <code>&amp;</code>. Результат похож, но <code>extends</code> даёт понятнее ошибки при конфликте полей.", "c": "interface Admin extends User { role: string; }\ntype Admin2 = User & { role: string };"},
+ ],
+ ts_basic:[
+  {"t": "★ Union", "d": "Объединение: значение может быть одного из перечисленных типов. Использовать можно только то, что есть у всех вариантов, пока тип не сужен.", "c": "let id: number | string;\nid = 5;\nid = 'abc';", "open": true},
+  {"t": "★ Literal type", "d": "Конкретное значение как тип. Объединение литералов ограничивает значение заданным списком.", "c": "type Size = 's' | 'm' | 'l';\nlet size: Size = 'm';\nsize = 'xl'; // ошибка"},
+  {"t": "★ any и unknown", "d": "<code>any</code> выключает проверку типов целиком. <code>unknown</code> — безопасный аналог: значение принять можно, а использовать — только после проверки типа.", "c": "let a: any = getData();\na.foo.bar(); // TS молчит\nlet u: unknown = getData();\nu.foo;       // ошибка\nif (typeof u === 'string') u.toUpperCase(); // можно"},
+  {"t": "★ never", "d": "Тип значения, которого не может быть: функция никогда не возвращает управление, или в <code>switch</code> разобраны все варианты union и осталось «ничего».", "c": "function fail(msg: string): never {\n  throw new Error(msg);\n}"},
+ ],
+ ts_narrowing:[
+  {"t": "★ Narrowing", "d": "TS анализирует проверки в коде и внутри ветки уточняет тип переменной. После <code>typeof id === 'string'</code> в этой ветке <code>id</code> — строка.", "c": "function show(id: number | string) {\n  if (typeof id === 'string') {\n    return id.toUpperCase(); // здесь string\n  }\n  return id.toFixed(2);      // здесь number\n}", "open": true},
+  {"t": "★ Discriminated union", "d": "Union объектов с общим полем-литералом. Проверка этого поля сужает тип до конкретного варианта, и становятся доступны его поля.", "c": "type State =\n  | { status: 'loading' }\n  | { status: 'ok'; data: string[] }\n  | { status: 'error'; message: string };\nif (state.status === 'ok') state.data;"},
+  {"t": "★ Type guard", "d": "Функция, которая возвращает <code>x is T</code>. Если она вернула <code>true</code>, TS считает значение типом <code>T</code> в этой ветке.", "c": "function isUser(x: unknown): x is User {\n  return typeof x === 'object' && x !== null && 'id' in x;\n}"},
+  {"t": "★ Проверка исчерпанности", "d": "В <code>default</code> присвоить значение переменной типа <code>never</code>. Если добавят новый вариант и забудут его обработать, будет ошибка компиляции.", "c": "switch (state.status) {\n  case 'loading': ...\n  case 'ok': ...\n  case 'error': ...\n  default: const _check: never = state;\n}"},
+ ],
+ ts_generics:[
+  {"t": "★ Дженерик", "d": "Параметр типа: функция работает с любым типом и сохраняет связь между входом и выходом. Без дженерика пришлось бы писать <code>any</code> и терять тип.", "c": "function first<T>(arr: T[]): T {\n  return arr[0];\n}\nconst n = first([1, 2]);     // number\nconst s = first(['a', 'b']); // string", "open": true},
+  {"t": "★ Вывод типа", "d": "Обычно нет: TS выводит его по аргументам. Указывают явно, когда вывести не из чего — например <code>useState&lt;User | null&gt;(null)</code>."},
+  {"t": "★ extends в дженерике", "d": "Ограничивает параметр типа: подойдёт любой тип, у которого есть поле <code>id: number</code>. Без ограничения обратиться к <code>item.id</code> нельзя.", "c": "function getId<T extends { id: number }>(item: T) {\n  return item.id;\n}"},
+ ],
+ ts_utility:[
+  {"t": "★ Partial и Required", "d": "<code>Partial</code> делает все поля необязательными — удобно для обновлений. <code>Required</code> — наоборот, все обязательными.", "c": "type Draft = Partial<User>;  // все поля необязательные\ntype Full = Required<User>;  // все обязательные", "open": true},
+  {"t": "★ Pick и Omit", "d": "<code>Pick</code> берёт только перечисленные поля, <code>Omit</code> — все, кроме перечисленных.", "c": "type Preview = Pick<User, 'id' | 'name'>;\ntype NewUser = Omit<User, 'id'>;"},
+  {"t": "★ Record", "d": "Тип объекта с заданными ключами и одним типом значений. Удобен для словарей и таблиц соответствия.", "c": "const roles: Record<'admin' | 'user', string[]> = {\n  admin: ['all'],\n  user: ['read'],\n};"},
+  {"t": "★ ReturnType", "d": "Достаёт тип результата функции. Часто вместе с <code>typeof</code>: например <code>ReturnType&lt;typeof store.getState&gt;</code> в Redux.", "c": "function makeStore() { return { user: null, items: [] }; }\ntype Store = ReturnType<typeof makeStore>;"},
+ ],
+ ts_keyof:[
+  {"t": "★ keyof", "d": "Возвращает объединение ключей типа как строковых литералов.", "c": "type User = { id: number; name: string };\ntype Keys = keyof User; // 'id' | 'name'", "open": true},
+  {"t": "★ typeof в типах", "d": "Берёт тип существующей переменной. Удобно, когда значение уже есть, и не хочется описывать его тип вручную.", "c": "const config = { port: 3000, host: 'localhost' };\ntype Config = typeof config; // { port: number; host: string }"},
+  {"t": "★ Индексный доступ", "d": "Обращение к типу поля по ключу. Можно и через union: <code>User['id' | 'name']</code>.", "c": "type User = { address: { city: string } };\ntype Address = User['address']; // { city: string }"},
+  {"t": "★ Безопасный геттер", "d": "Дженерик <code>K extends keyof T</code> разрешает только существующие ключи, а <code>T[K]</code> даёт точный тип результата.", "c": "function get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}"},
+ ],
+ ts_enum:[
+  {"t": "★ enum", "d": "Набор именованных констант. В отличие от типов, <code>enum</code> компилируется в настоящий JS-объект и существует в рантайме.", "c": "enum Status {\n  Idle = 'idle',\n  Loading = 'loading',\n}\nStatus.Loading; // 'loading'", "open": true},
+  {"t": "★ Union вместо enum", "d": "Union литералов — только тип, в бандле ничего не появляется, значения — обычные строки. Проще читать и сериализовать.", "c": "type Status = 'idle' | 'loading' | 'error';"},
+  {"t": "★ as const", "d": "Делает значение readonly и сохраняет точные литеральные типы вместо общих <code>string</code>/<code>number</code>. Позволяет получить тип из массива или объекта констант.", "c": "const ROLES = ['admin', 'user'] as const;\n// readonly ['admin', 'user']\ntype Role = typeof ROLES[number]; // 'admin' | 'user'"},
+ ],
+ ts_as:[
+  {"t": "★ as", "d": "Утверждение типа: говорим TS считать значение указанным типом. Ничего не проверяет ни при сборке, ни в рантайме — можно ошибиться и получить падение.", "c": "const input = document.getElementById('name') as HTMLInputElement;", "open": true},
+  {"t": "★ satisfies", "d": "Проверяет, что значение соответствует типу, но оставляет его собственный, более точный тип. В отличие от аннотации <code>: Colors</code>, не расширяет поля до общего типа.", "c": "type Colors = Record<string, string | number[]>;\nconst palette = {\n  red: [255, 0, 0],\n  green: '#0f0',\n} satisfies Colors;\npalette.green.toUpperCase(); // ок: тип string сохранён"},
+  {"t": "★ as или satisfies", "d": "<code>satisfies</code> — когда хотим проверку соответствия типу и точный вывод. <code>as</code> — редко, когда мы знаем больше компилятора, например тип DOM-элемента. Для данных извне — type guard или Zod."},
+ ],
+ ts_react:[
+  {"t": "★ Типизация props", "d": "Описать интерфейс props и указать его как тип параметра. Необязательные — через <code>?</code>, значения по умолчанию — в деструктуризации.", "c": "interface ButtonProps {\n  label: string;\n  variant?: 'primary' | 'ghost';\n  onClick: () => void;\n}\nfunction Button({ label, variant = 'primary', onClick }: ButtonProps) { ... }", "open": true},
+  {"t": "★ children", "d": "<code>React.ReactNode</code> — всё, что React умеет отрендерить: элементы, строки, числа, массивы, <code>null</code>.", "c": "interface CardProps {\n  title: string;\n  children: React.ReactNode;\n}"},
+  {"t": "★ Типы событий", "d": "Через типы событий React с указанием элемента: <code>React.ChangeEvent&lt;HTMLInputElement&gt;</code>, <code>React.MouseEvent&lt;HTMLButtonElement&gt;</code>, <code>React.FormEvent&lt;HTMLFormElement&gt;</code>.", "c": "function handleChange(e: React.ChangeEvent<HTMLInputElement>) {\n  setValue(e.target.value);\n}"},
+  {"t": "★ Типизация хуков", "d": "Когда начальное значение не говорит о типе (<code>null</code>, пустой массив), передаём тип в угловых скобках. Для DOM-ref — тип элемента и <code>null</code>.", "c": "const [user, setUser] = useState<User | null>(null);\nconst inputRef = useRef<HTMLInputElement>(null);"},
+  {"t": "★ ComponentProps", "d": "<code>React.ComponentProps&lt;'button'&gt;</code> даёт все атрибуты <code>button</code>. Удобно для своих обёрток над нативными элементами.", "c": "type Props = React.ComponentProps<'button'> & { loading?: boolean };"},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"typescript",n:"TypeScript",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Браузер по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Браузер и производительность</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Браузер <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== CRITICAL RENDERING PATH ===== */
+br_crp: {
+  name:"Critical rendering path",
+  code:[
+  "&lt;html&gt;",
+  "&lt;head&gt;&lt;link rel=<span class=\"str\">\"stylesheet\"</span> href=<span class=\"str\">\"style.css\"</span>&gt;&lt;/head&gt;",
+  "&lt;body&gt;",
+  "  &lt;h1&gt;Каталог&lt;/h1&gt;",
+  "  &lt;p <span class=\"kw\">class</span>=<span class=\"str\">\"hidden\"</span>&gt;…&lt;/p&gt;",
+  "&lt;/body&gt;",
+  "&lt;/html&gt;",
+  "/* style.css: .hidden { display: none } */"],
+  panels:[["stage", "Этапы", "items", "wide"], ["tree", "Деревья", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> путь от HTML до пикселей: <b>DOM</b> → <b>CSSOM</b> → <b>render tree</b> → <b>layout</b> → <b>paint</b> → <b>composite</b>.</li><li><b>Как работает:</b> HTML парсится в DOM, CSS — в CSSOM; вместе — дерево отрисовки (только видимое); <b>layout</b> считает размеры и позиции, <b>paint</b> рисует, <b>composite</b> собирает слои.</li><li><b>Блокировки:</b> CSS <b>блокирует отрисовку</b>, обычный <code>&lt;script&gt;</code> <b>блокирует разбор</b> HTML.</li><li><b>Как ускорить:</b> критичный CSS — пораньше, скрипты — <code>defer</code>, меньше и легче ресурсы в начале страницы.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 3, 4, 5, 6, 7], t:"DOM", x:"HTML разбирается в дерево узлов.", hl:"tree", p:{stage:[it("HTML → DOM",'new')],tree:[it("DOM: html > body > h1, p",'new')]}},
+   {line:[2, 8], t:"CSSOM", x:"CSS — в дерево стилей. Пока он не готов, браузер не рисует — CSS блокирует отрисовку.", hl:"tree", p:{stage:[it("HTML → DOM"),it("CSS → CSSOM <span class=\"chip c1\">блокирует отрисовку</span>",'new')],tree:[it("DOM: html > body > h1, p"),it("CSSOM: .hidden { display: none }",'new')]}},
+   {line:[5], t:"Render tree", x:"Только видимое: <code>p.hidden</code> в дерево отрисовки не попал.", hl:"tree", p:{stage:[it("HTML → DOM"),it("CSS → CSSOM"),it("DOM + CSSOM → render tree",'new')],tree:[it("DOM"),it("CSSOM"),it("render tree: body > h1 (p нет)",'new')]}},
+   {line:[], t:"Layout, paint, composite", x:"Посчитали размеры и позиции, нарисовали пиксели, собрали слои.", hl:"stage", p:{stage:[it("HTML → DOM"),it("CSS → CSSOM"),it("render tree"),it("layout → paint → composite",'new')],tree:[it("DOM"),it("CSSOM"),it("render tree: body > h1 (p нет)")]}},
+   {line:[], t:"Итог", x:"DOM + CSSOM → render tree → layout → paint → composite. CSS блокирует отрисовку, синхронный JS — разбор HTML.", fin:true, p:{stage:[it("HTML → DOM"),it("CSS → CSSOM"),it("render tree"),it("layout → paint → composite")],tree:[it("DOM"),it("CSSOM"),it("render tree: body > h1 (p нет)")]}},
+  ]
+},
+
+/* ===== REFLOW И REPAINT ===== */
+br_reflow: {
+  name:"Reflow и repaint",
+  code:[
+  "box.style.width = <span class=\"str\">'300px'</span>;      <span class=\"cm\">// 1</span>",
+  "box.style.color = <span class=\"str\">'red'</span>;        <span class=\"cm\">// 2</span>",
+  "box.style.transform = <span class=\"str\">'translateX(100px)'</span>;  <span class=\"cm\">// 3</span>",
+  "",
+  "<span class=\"kw\">for</span> (<span class=\"kw\">const</span> el <span class=\"kw\">of</span> items) {       <span class=\"cm\">// 4</span>",
+  "  el.style.height = box.offsetHeight + <span class=\"str\">'px'</span>;",
+  "}"],
+  panels:[["pipe", "Что пересчитывает браузер", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Reflow (layout):</b> <b>пересчёт геометрии</b> — размеров и позиций; дорогой, может затронуть <b>всю страницу</b>.</li><li><b>Repaint:</b> <b>перерисовка</b> без изменения геометрии — цвет, фон, тень.</li><li><b>Composite:</b> самые дешёвые изменения — <b><code>transform</code></b> и <b><code>opacity</code></b>: обрабатываются на этапе композиции, часто <b>на GPU</b>, без layout и paint.</li><li><b>Подвох:</b> чтение <code>offsetHeight</code> сразу после изменения стилей <b>заставляет</b> браузер сделать layout немедленно (<b>layout thrashing</b>); анимировать лучше <code>transform</code>, а не <code>top</code>/<code>width</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"width", x:"Изменилась геометрия — layout (reflow) для элемента и соседей, потом paint.", hl:"pipe", p:{pipe:[it("width → layout → paint → composite <span class=\"chip cbad\">дорого</span>",'new')]}},
+   {line:[2], t:"color", x:"Геометрия та же — только перерисовка.", hl:"pipe", p:{pipe:[it("width → layout → paint → composite"),it("color → paint → composite",'new')]}},
+   {line:[3], t:"transform", x:"Только композиция слоёв, часто на GPU. Лучшее свойство для анимаций, как и opacity.", hl:"pipe", p:{pipe:[it("width → layout → paint → composite"),it("color → paint → composite"),it("transform → composite <span class=\"chip cok\">дёшево</span>",'new')]}},
+   {line:[5, 6, 7], t:"Layout thrashing", x:"Чтение offsetHeight после записи заставляет пересчитать layout <b>немедленно</b> — на каждой итерации цикла.", hl:"pipe", p:{pipe:[it("width → layout → paint"),it("color → paint"),it("transform → composite"),it("чтение-запись в цикле → layout × N <span class=\"chip cbad\">thrashing</span>",'new')]}},
+   {line:[], t:"Итог", x:"Reflow — пересчёт геометрии (дорого), repaint — перерисовка, composite — сборка слоёв. Анимируем transform и opacity, чтения и записи не чередуем.", fin:true, p:{pipe:[it("width → layout → paint"),it("color → paint"),it("transform → composite"),it("чтение-запись в цикле → layout × N <span class=\"chip cbad\">thrashing</span>")]}},
+  ]
+},
+
+/* ===== CORE WEB VITALS ===== */
+br_vitals: {
+  name:"Core Web Vitals",
+  code:[
+  "&lt;img src=<span class=\"str\">\"hero.jpg\"</span>&gt;                       &lt;!-- без размеров --&gt;",
+  "&lt;button onClick={heavyFilter}&gt;Фильтр&lt;/button&gt;   &lt;!-- <span class=\"num\">400</span> мс в главном потоке --&gt;",
+  "",
+  "&lt;img src=<span class=\"str\">\"hero.webp\"</span> width=<span class=\"str\">\"1200\"</span> height=<span class=\"str\">\"600\"</span> fetchpriority=<span class=\"str\">\"high\"</span>&gt;",
+  "<span class=\"fn\">startTransition</span>(() =&gt; <span class=\"fn\">setFilter</span>(v));"],
+  panels:[["m", "Метрики", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> три метрики Google о <b>реальном опыте</b> пользователя.</li><li><b>LCP</b> (Largest Contentful Paint) — когда отрисован <b>самый большой</b> элемент первого экрана; хорошо — <b>до 2,5 с</b>.</li><li><b>INP</b> (Interaction to Next Paint) — <b>задержка реакции</b> на клики и ввод; хорошо — <b>до 200 мс</b>. <b>CLS</b> (Cumulative Layout Shift) — <b>прыжки</b> вёрстки; хорошо — <b>до 0,1</b>.</li><li><b>Как улучшать:</b> LCP — оптимизировать главную картинку и сервер; INP — разбивать долгие задачи; CLS — задавать <b>размеры</b> картинкам и местам под рекламу.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"LCP и CLS", x:"Главная картинка грузится долго (LCP), а без размеров при загрузке толкает текст вниз (CLS).", hl:"m", p:{m:[it("LCP 4.1 с <span class=\"chip cbad\">плохо</span>",'new'),it("CLS 0.25 <span class=\"chip cbad\">плохо</span>",'new')]}},
+   {line:[2], t:"INP", x:"Клик запускает 400 мс работы — интерфейс замирает.", hl:"m", p:{m:[it("LCP 4.1 с"),it("CLS 0.25"),it("INP 450 мс <span class=\"chip cbad\">плохо</span>",'new')]}},
+   {line:[4], t:"Исправляем картинку", x:"Лёгкий формат, высокий приоритет, заданные размеры — место зарезервировано.", hl:"m", p:{m:[it("LCP 1.9 с <span class=\"chip cok\">хорошо ≤ 2.5</span>",'new'),it("CLS 0.02 <span class=\"chip cok\">хорошо ≤ 0.1</span>",'new'),it("INP 450 мс")]}},
+   {line:[5], t:"Исправляем отклик", x:"Тяжёлое обновление — несрочное, отклик на клик мгновенный (или разбить долгую задачу).", hl:"m", p:{m:[it("LCP 1.9 с"),it("CLS 0.02"),it("INP 120 мс <span class=\"chip cok\">хорошо ≤ 200</span>",'new')]}},
+   {line:[], t:"Итог", x:"LCP — главный контент (≤ 2,5 с), INP — отклик (≤ 200 мс), CLS — прыжки (≤ 0,1). Картинки с размерами и приоритетом, долгие задачи разбивать.", fin:true, p:{m:[it("LCP 1.9 с"),it("CLS 0.02"),it("INP 120 мс <span class=\"chip cok\">хорошо ≤ 200</span>")]}},
+  ]
+},
+
+/* ===== УСКОРЕНИЕ ЗАГРУЗКИ ===== */
+br_speed: {
+  name:"Ускорение загрузки",
+  code:[
+  "<span class=\"cm\">// было</span>",
+  "main.js <span class=\"num\">1.8</span> МБ, hero.png <span class=\"num\">2.5</span> МБ, шрифты блокируют текст",
+  "",
+  "<span class=\"cm\">// стало</span>",
+  "<span class=\"fn\">lazy</span>(() =&gt; <span class=\"kw\">import</span>(<span class=\"str\">'./pages/Admin'</span>))",
+  "&lt;img src=<span class=\"str\">\"hero.avif\"</span> loading=<span class=\"str\">\"lazy\"</span> srcset=<span class=\"str\">\"…\"</span>&gt;",
+  "&lt;link rel=<span class=\"str\">\"preload\"</span> href=<span class=\"str\">\"font.woff2\"</span> as=<span class=\"str\">\"font\"</span>&gt;",
+  "Cache-Control: max-age=<span class=\"num\">31536000</span> для файлов с хэшем"],
+  panels:[["size", "Первая загрузка", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Меньше JS:</b> <b>code splitting</b>, lazy-загрузка страниц, удалить лишние зависимости, <b>tree shaking</b>.</li><li><b>Картинки:</b> современные форматы (<b>WebP/AVIF</b>), правильные размеры через <code>srcset</code>, <b><code>loading=\"lazy\"</code></b> ниже первого экрана.</li><li><b>Сеть:</b> <b>кэширование</b> с хэшем в именах, сжатие (gzip/brotli), <b>CDN</b>, <code>preload</code> для критичных ресурсов.</li><li><b>Рендер:</b> скрипты с <code>defer</code>, критичный CSS пораньше, шрифты с <code>font-display: swap</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"Было", x:"Всё в одном бандле, тяжёлые картинки.", hl:"size", p:{size:[it("JS 1.8 МБ · картинки 2.5 МБ · 4.8 с <span class=\"chip cbad\">медленно</span>",'new')]}},
+   {line:[5], t:"Code splitting", x:"Редкие страницы — отдельными чанками.", hl:"size", p:{size:[it("было 4.8 с"),it("JS 0.6 МБ",'new')]}},
+   {line:[6], t:"Картинки", x:"AVIF/WebP, нужный размер через srcset, lazy ниже первого экрана.", hl:"size", p:{size:[it("было 4.8 с"),it("JS 0.6 МБ"),it("картинки 0.3 МБ",'new')]}},
+   {line:[7, 8], t:"Шрифты и кэш", x:"Важное — заранее (preload), повторные визиты — из кэша.", hl:"size", p:{size:[it("было 4.8 с"),it("JS 0.6 МБ"),it("картинки 0.3 МБ"),it("1.6 с, повторно — 0.4 с <span class=\"chip cok\">быстро</span>",'new')]}},
+   {line:[], t:"Итог", x:"Меньше JS (splitting, tree shaking), лёгкие картинки (формат, размер, lazy), preload важного, кэширование, CDN и сжатие.", fin:true, p:{size:[it("было 4.8 с"),it("JS 0.6 МБ"),it("картинки 0.3 МБ"),it("1.6 с, повторно — 0.4 с <span class=\"chip cok\">быстро</span>")]}},
+  ]
+},
+
+/* ===== XSS, CSRF, CLICKJACKING ===== */
+br_security: {
+  name:"XSS, CSRF, clickjacking",
+  code:[
+  "<span class=\"cm\">// комментарий пользователя:</span>",
+  "<span class=\"kw\">const</span> comment = <span class=\"str\">'&lt;img src=x onerror=\"steal(document.cookie)\"&gt;'</span>;",
+  "",
+  "&lt;p&gt;{comment}&lt;/p&gt;                                         <span class=\"cm\">// 1</span>",
+  "&lt;div dangerouslySetInnerHTML={{ __html: comment }} /&gt;     <span class=\"cm\">// 2</span>",
+  "&lt;div dangerouslySetInnerHTML={{ __html: DOMPurify.<span class=\"fn\">sanitize</span>(comment) }} /&gt;  <span class=\"cm\">// 3</span>",
+  "",
+  "Set-Cookie: session=…; HttpOnly; Secure; SameSite=Lax"],
+  panels:[["xss", "XSS", "items"], ["other", "CSRF и clickjacking", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>XSS</b> — внедрение <b>чужого скрипта</b> на страницу через пользовательские данные. Защита: React <b>экранирует</b> вывод по умолчанию; опасно <b><code>dangerouslySetInnerHTML</code></b> без очистки (DOMPurify); <b>CSP</b>.</li><li><b>CSRF</b> — сайт злоумышленника заставляет браузер отправить запрос <b>с твоими cookie</b>. Защита: cookie <b><code>SameSite</code></b>, CSRF-токены.</li><li><b>Clickjacking</b> — твой сайт встраивают <b>невидимым iframe</b> и подсовывают клик. Защита: заголовки <b><code>X-Frame-Options</code></b> / CSP <code>frame-ancestors</code>.</li><li><b>Общее:</b> токены в <b>httpOnly</b>-cookie, HTTPS, не доверять данным с клиента — проверять на сервере.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 4], t:"Вывод в JSX", x:"React экранирует значение — на экране просто текст, скрипт не выполнится.", hl:"xss", p:{xss:[it("{comment} → текст «&lt;img…>» <span class=\"chip cok\">безопасно</span>",'new')],other:[it("—")]}},
+   {line:[5], t:"dangerouslySetInnerHTML", x:"HTML вставлен как есть — onerror выполнит чужой код. Это XSS.", hl:"xss", p:{xss:[it("{comment} → текст"),it("innerHTML → steal(cookie) <span class=\"chip cbad\">XSS</span>",'new')],other:[it("—")]}},
+   {line:[6], t:"Очистка", x:"DOMPurify вырезал опасные атрибуты.", hl:"xss", p:{xss:[it("{comment} → текст"),it("innerHTML → XSS"),it("sanitize → &lt;img src=x> без onerror ✓",'new')],other:[it("—")]}},
+   {line:[8], t:"Cookie", x:"HttpOnly — JS не прочитает cookie даже при XSS. SameSite — браузер не пошлёт cookie с запросом с чужого сайта (CSRF).", hl:"other", p:{xss:[it("{comment} → текст"),it("innerHTML → XSS"),it("sanitize → &lt;img src=x> без onerror ✓")],other:[it("HttpOnly → document.cookie не видит",'new'),it("SameSite → защита от CSRF",'new')]}},
+   {line:[], t:"Clickjacking", x:"Заголовок X-Frame-Options: DENY или CSP frame-ancestors — сайт нельзя встроить в чужой iframe.", hl:"other", p:{xss:[it("{comment} → текст"),it("innerHTML → XSS"),it("sanitize → &lt;img src=x> без onerror ✓")],other:[it("HttpOnly"),it("SameSite"),it("X-Frame-Options / frame-ancestors → нет iframe",'new')]}},
+   {line:[], t:"Итог", x:"XSS — чужой скрипт (React экранирует; опасны dangerouslySetInnerHTML и javascript:-ссылки). CSRF — SameSite и токены. Clickjacking — запрет iframe. Плюс CSP и HTTPS.", fin:true, p:{xss:[it("{comment} → текст"),it("innerHTML → XSS"),it("sanitize → &lt;img src=x> без onerror ✓")],other:[it("HttpOnly"),it("SameSite"),it("X-Frame-Options / frame-ancestors → нет iframe")]}},
+  ]
+},
+
+/* ===== СБОРЩИК VITE ===== */
+br_vite: {
+  name:"Сборщик Vite",
+  code:[
+  "src/main.tsx",
+  "src/App.<span class=\"fn\">tsx</span>         (JSX + TS)",
+  "src/pages/Admin.<span class=\"fn\">tsx</span> (lazy)",
+  "src/styles.css",
+  "",
+  "npm run dev     → нативные ES-модули, HMR",
+  "npm run build   → dist/"],
+  panels:[["dev", "Разработка", "items"], ["build", "Продакшен (dist/)", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> сборщик превращает исходники (<b>JSX, TS, модули, CSS, картинки</b>) в файлы, которые быстро грузит браузер.</li><li><b>Что делает:</b> <b>транспиляция</b> (TS/JSX → JS), <b>бандлинг</b>, <b>минификация</b>, <b>tree shaking</b>, <b>code splitting</b>, <b>хэши</b> в именах для кэша.</li><li><b>Vite в разработке:</b> отдаёт файлы как <b>нативные ES-модули</b> без сборки всего проекта — <b>мгновенный старт</b>, <b>HMR</b> (обновление модуля без перезагрузки).</li><li><b>Vite в продакшене:</b> собирает оптимизированный бандл (Rollup / Rolldown).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[6], t:"npm run dev", x:"Vite не собирает проект заранее: браузер запрашивает модули, Vite преобразует их на лету (TS, JSX).", hl:"dev", p:{dev:[it("старт ~300 мс",'new'),it("модули по запросу",'new')],build:[it("—")]}},
+   {line:[2], t:"Правка файла", x:"HMR: заменяется только изменённый модуль, страница не перезагружается, состояние сохраняется.", hl:"dev", p:{dev:[it("старт ~300 мс"),it("модули по запросу"),it("HMR: App.tsx обновлён без перезагрузки",'new')],build:[it("—")]}},
+   {line:[7], t:"npm run build", x:"Транспиляция, объединение, минификация, tree shaking.", hl:"build", p:{dev:[it("старт ~300 мс"),it("модули по запросу"),it("HMR: App.tsx обновлён без перезагрузки")],build:[it("index.html",'new'),it("assets/index-8f3a1c.js (минифицирован)",'new')]}},
+   {line:[3], t:"Code splitting и хэши", x:"Ленивые страницы — отдельные чанки; хэш в имени для долгого кэша.", hl:"build", p:{dev:[it("старт ~300 мс"),it("модули по запросу"),it("HMR: App.tsx обновлён без перезагрузки")],build:[it("index.html"),it("assets/index-8f3a1c.js"),it("assets/Admin-2b9c4d.js",'new'),it("assets/index-77ae01.css",'new')]}},
+   {line:[], t:"Итог", x:"Сборщик: TS/JSX → JS, бандлинг, минификация, tree shaking, чанки, хэши. Vite в dev отдаёт нативные ES-модули и HMR, в prod собирает оптимизированный бандл.", fin:true, p:{dev:[it("старт ~300 мс"),it("модули по запросу"),it("HMR: App.tsx обновлён без перезагрузки")],build:[it("index.html"),it("assets/index-8f3a1c.js"),it("assets/Admin-2b9c4d.js"),it("assets/index-77ae01.css")]}},
+  ]
+},
+
+/* ===== WEB WORKERS ===== */
+br_workers: {
+  name:"Web Workers",
+  code:[
+  "<span class=\"cm\">// main.js</span>",
+  "<span class=\"kw\">const</span> worker = <span class=\"kw\">new</span> <span class=\"fn\">Worker</span>(<span class=\"kw\">new</span> <span class=\"fn\">URL</span>(<span class=\"str\">'./parse.worker.js'</span>, <span class=\"kw\">import</span>.meta.url));",
+  "worker.<span class=\"fn\">postMessage</span>(csvText);",
+  "worker.onmessage = (e) =&gt; <span class=\"fn\">setRows</span>(e.data);",
+  "",
+  "<span class=\"cm\">// parse.worker.js</span>",
+  "self.onmessage = (e) =&gt; {",
+  "  <span class=\"kw\">const</span> rows = <span class=\"fn\">parseCsv</span>(e.data);   <span class=\"cm\">// 2 секунды</span>",
+  "  self.<span class=\"fn\">postMessage</span>(rows);",
+  "};"],
+  panels:[["main", "Главный поток (UI)", "items"], ["w", "Worker", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Web Worker — JS, который работает <b>в отдельном потоке</b>, не блокируя интерфейс.</li><li><b>Как работает:</b> общение с главным потоком только <b>сообщениями</b> — <code>postMessage</code> и <code>onmessage</code>; <b>доступа к DOM нет</b>.</li><li><b>Когда нужен:</b> <b>тяжёлые вычисления</b> — обработка больших данных, парсинг файлов, фильтрация огромных списков, работа с изображениями.</li><li><b>Пример:</b> разбор CSV на 100 000 строк в воркере — страница не зависает и кнопки отвечают.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[], t:"Без воркера", x:"parseCsv на 2 секунды в главном потоке — клики и скролл замирают.", hl:"main", p:{main:[it("parseCsv 2 с → интерфейс завис <span class=\"chip cbad\">плохо</span>",'new')],w:[it("—")]}},
+   {line:[2, 3], t:"Отдали воркеру", x:"Отдельный поток получил данные сообщением.", hl:"w", p:{main:[it("postMessage(csv) → свободен",'new')],w:[it("получил csv",'new')]}},
+   {line:[8], t:"Тяжёлая работа", x:"Воркер считает, а интерфейс отзывчив. DOM в воркере недоступен.", hl:"w", p:{main:[it("postMessage(csv) → свободен"),it("клики и скролл работают ✓",'new')],w:[it("получил csv"),it("parseCsv 2 с…",'new')]}},
+   {line:[9, 4], t:"Результат", x:"Воркер прислал результат сообщением.", hl:"main", p:{main:[it("setRows → таблица",'new')],w:[it("получил csv"),it("parseCsv ✓"),it("postMessage(rows)",'new')]}},
+   {line:[], t:"Итог", x:"Web Worker — отдельный поток для тяжёлых вычислений. Общение — сообщениями, DOM недоступен.", fin:true, p:{main:[it("setRows → таблица")],w:[it("получил csv"),it("parseCsv ✓"),it("postMessage(rows)")]}},
+  ]
+},
+
+/* ===== INTERSECTIONOBSERVER ===== */
+br_observer: {
+  name:"IntersectionObserver",
+  code:[
+  "<span class=\"kw\">const</span> io = <span class=\"kw\">new</span> <span class=\"fn\">IntersectionObserver</span>(([entry]) =&gt; {",
+  "  <span class=\"kw\">if</span> (entry.isIntersecting) <span class=\"fn\">loadMore</span>();",
+  "}, { rootMargin: <span class=\"str\">'200px'</span> });",
+  "",
+  "io.<span class=\"fn\">observe</span>(document.<span class=\"fn\">querySelector</span>(<span class=\"str\">'#sentinel'</span>));",
+  "<span class=\"cm\">// &lt;ul&gt;…20 товаров…&lt;/ul&gt; &lt;div id=\"sentinel\"&gt;&lt;/div&gt;</span>"],
+  panels:[["page", "Лента", "items"], ["calls", "Вызовы", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> API, которое сообщает, когда элемент <b>появился или исчез</b> в видимой области (или в другом контейнере).</li><li><b>Как работает:</b> создаём наблюдатель с колбэком и <code>threshold</code>, вызываем <code>observe(el)</code>; браузер сам вызывает колбэк — <b>без слушателя <code>scroll</code></b>.</li><li><b>Когда нужен:</b> <b>ленивая загрузка</b> картинок, <b>бесконечная лента</b> (догрузка при появлении «маячка» внизу), анимации при появлении, аналитика показов.</li><li><b>Почему лучше scroll:</b> <code>scroll</code> срабатывает очень часто и требует расчётов размеров (reflow); observer — асинхронный и экономный.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[5, 6], t:"Маячок внизу", x:"Наблюдаем за пустым div после списка.", hl:"page", p:{page:[it("20 товаров",'new'),it("#sentinel (далеко внизу)",'new')],calls:[it("—")]}},
+   {line:[], t:"Скроллим", x:"Браузер сам отслеживает пересечение — наш код не вызывается на каждый пиксель, в отличие от scroll.", hl:"calls", p:{page:[it("20 товаров"),it("#sentinel (далеко внизу)")],calls:[it("scroll-обработчик был бы: ~60 вызовов в секунду",'new'),it("observer: 0",'new')]}},
+   {line:[1, 2, 3], t:"Маячок в 200px от экрана", x:"rootMargin — начать догрузку заранее.", hl:"calls", p:{page:[it("40 товаров",'new'),it("#sentinel снова внизу")],calls:[it("scroll: ~60/с"),it("observer: isIntersecting → loadMore()",'new')]}},
+   {line:[], t:"Итог", x:"IntersectionObserver асинхронно сообщает, что элемент стал видимым: бесконечная лента, ленивые картинки, анимации появления — без обработчика scroll.", fin:true, p:{page:[it("40 товаров"),it("#sentinel снова внизу")],calls:[it("scroll: ~60/с"),it("observer: isIntersecting → loadMore()")]}},
+  ]
+},
+
+/* ===== DEVTOOLS ===== */
+br_devtools: {
+  name:"DevTools",
+  code:[
+  "<span class=\"cm\">// баг: «Сохранить» не работает</span>",
+  "<span class=\"kw\">async</span> <span class=\"kw\">function</span> <span class=\"fn\">save</span>(form) {",
+  "  <span class=\"kw\">const</span> res = <span class=\"kw\">await</span> <span class=\"fn\">fetch</span>(<span class=\"str\">'/api/profile'</span>, { method: <span class=\"str\">'PATCH'</span>, body: JSON.<span class=\"fn\">stringify</span>(form) });",
+  "  debugger;",
+  "  …",
+  "}"],
+  panels:[["tab", "Вкладка", "items"], ["found", "Что нашли", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Elements</b> — DOM и стили: смотрю, какие правила применились и что перебило; меняю на лету.</li><li><b>Console</b> — ошибки и <code>console.log</code>; <b>Sources</b> — <b>точки останова</b> (breakpoints) и пошаговое выполнение.</li><li><b>Network</b> — запросы: статус, заголовки, тело, время; проверка CORS и кэша.</li><li><b>Performance и Lighthouse</b> — долгие задачи, рендеры, Core Web Vitals; <b>React DevTools</b> — дерево компонентов, props, state и <b>Profiler</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[], t:"Console", x:"Сначала — ошибки в консоли.", hl:"found", p:{tab:[it("Console",'new')],found:[it("нет ошибок JS",'new')]}},
+   {line:[3], t:"Network", x:"Смотрим запрос: метод, статус, заголовки, тело.", hl:"found", p:{tab:[it("Network",'new')],found:[it("нет ошибок JS"),it("PATCH /api/profile → 415 Unsupported Media Type",'new')]}},
+   {line:[3], t:"Заголовки", x:"В запросе нет Content-Type: application/json — сервер не понял тело.", hl:"found", p:{tab:[it("Network")],found:[it("нет ошибок JS"),it("PATCH → 415"),it("Request headers: нет Content-Type <span class=\"chip cbad\">причина</span>",'new')]}},
+   {line:[4], t:"Sources", x:"<code>debugger</code> или точка останова — смотрим значения переменных по шагам.", hl:"tab", p:{tab:[it("Sources: breakpoint",'new')],found:[it("нет ошибок JS"),it("PATCH → 415"),it("нет Content-Type"),it("res.ok = false — дальше не проверяли",'new')]}},
+   {line:[], t:"Остальное", x:"Elements — стили и DOM, Performance и Lighthouse — скорость, React DevTools — props, state и Profiler.", hl:"tab", p:{tab:[it("Elements · Performance · Lighthouse · React DevTools",'new')],found:[it("нет ошибок JS"),it("PATCH → 415"),it("нет Content-Type"),it("res.ok = false — дальше не проверяли")]}},
+   {line:[], t:"Итог", x:"Console → Network (статус, заголовки, тело) → Sources (breakpoints) → Elements, Performance, React DevTools. Сначала понять, на чьей стороне ошибка.", fin:true, p:{tab:[it("Elements · Performance · Lighthouse · React DevTools")],found:[it("нет ошибок JS"),it("PATCH → 415"),it("нет Content-Type"),it("res.ok = false — дальше не проверяли")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ br_crp:[
+  {"t": "★ CRP", "d": "Разбор HTML в DOM, CSS в CSSOM, их объединение в render tree, layout (расчёт геометрии), paint (рисование) и composite (сборка слоёв).", "open": true},
+  {"t": "★ Render tree", "d": "Дерево только тех элементов, которые будут видны, с их стилями. Элементы с <code>display: none</code> и <code>head</code> в него не попадают."},
+  {"t": "★ Блокирующие ресурсы", "d": "CSS блокирует отрисовку — браузер ждёт CSSOM. Обычный скрипт без <code>async</code>/<code>defer</code> блокирует разбор HTML."},
+ ],
+ br_reflow:[
+  {"t": "★ Reflow", "d": "Пересчёт размеров и положения элементов. Вызывается изменением ширины, высоты, отступов, шрифта, добавлением элементов. Дорогой, может затронуть много элементов.", "open": true},
+  {"t": "★ Repaint", "d": "Перерисовка пикселей без изменения геометрии: смена цвета, фона, тени. Дешевле reflow."},
+  {"t": "★ Что анимировать", "d": "<code>transform</code> и <code>opacity</code>: они меняются на этапе композиции, без layout и paint, часто на видеокарте. Анимация <code>top</code>, <code>width</code>, <code>margin</code> вызывает reflow на каждом кадре.", "c": "/* плохо */  .box { transition: left 0.3s; }\n/* хорошо */ .box { transition: transform 0.3s; }"},
+  {"t": "★ Layout thrashing", "d": "Чередование изменения стилей и чтения размеров в цикле: каждое чтение заставляет браузер пересчитать layout сразу. Решение — сначала все чтения, потом все записи.", "c": "for (const el of items) {\n  el.style.width = box.offsetWidth + 'px'; // чтение + запись в цикле\n}"},
+ ],
+ br_vitals:[
+  {"t": "★ LCP", "d": "Largest Contentful Paint — время отрисовки самого большого элемента первого экрана (картинка, заголовок). Хорошо — до 2,5 секунды.", "open": true},
+  {"t": "★ INP", "d": "Interaction to Next Paint — сколько проходит от действия пользователя (клик, ввод) до следующей отрисовки. Хорошо — до 200 мс. Портят долгие задачи в главном потоке."},
+  {"t": "★ CLS", "d": "Cumulative Layout Shift — насколько сдвигается вёрстка при загрузке. Уменьшают, задавая размеры (<code>width</code>/<code>height</code> или <code>aspect-ratio</code>) картинкам, видео и блокам под рекламу, и не вставляя контент над уже показанным."},
+ ],
+ br_speed:[
+  {"t": "★ Lazy loading картинок", "d": "Современный формат (WebP, AVIF), подходящий размер через <code>srcset</code>, <code>loading=\"lazy\"</code> для картинок ниже первого экрана и заданные размеры против прыжков вёрстки.", "c": "<img src=\"photo.webp\" srcset=\"photo-480.webp 480w, photo-960.webp 960w\" sizes=\"(max-width: 600px) 480px, 960px\" loading=\"lazy\" width=\"960\" height=\"640\" alt=\"…\">", "open": true},
+  {"t": "★ preload", "d": "Говорит браузеру скачать важный ресурс заранее, не дожидаясь, пока он найдёт его в CSS или JS. Используют для шрифтов и главной картинки.", "c": "<link rel=\"preload\" href=\"/fonts/onest.woff2\" as=\"font\" crossorigin>"},
+  {"t": "★ Бандл", "d": "Разделить по страницам через lazy и динамический <code>import()</code>, убрать неиспользуемые зависимости, импортировать только нужные функции (tree shaking), проверить состав бандла анализатором."},
+ ],
+ br_security:[
+  {"t": "★ XSS", "d": "Внедрение вредоносного скрипта через данные пользователя. React экранирует значения в JSX, поэтому текст не станет кодом. Опасность — <code>dangerouslySetInnerHTML</code> без очистки (DOMPurify) и <code>href</code> с <code>javascript:</code>.", "c": "<p>{comment}</p>                              // безопасно: экранируется\n<div dangerouslySetInnerHTML={{ __html: comment }} /> // опасно", "open": true},
+  {"t": "★ CSRF", "d": "Атака, когда чужой сайт отправляет запрос на твой сервер от имени пользователя, а браузер сам прикладывает его cookie. Защищают флаг <code>SameSite</code> у cookie и CSRF-токены."},
+  {"t": "★ Clickjacking", "d": "Сайт встраивают в невидимый iframe поверх приманки, и пользователь кликает по кнопкам твоего сайта, не видя их. Защита — заголовки <code>X-Frame-Options: DENY</code> или CSP <code>frame-ancestors</code>."},
+  {"t": "★ CSP", "d": "Content Security Policy — заголовок, который разрешает загружать скрипты, стили и картинки только с указанных источников. Даже если XSS случился, чужой скрипт не загрузится."},
+ ],
+ br_vite:[
+  {"t": "★ Зачем сборщик", "d": "Перевести TS и JSX в JS, объединить модули, минифицировать, выкинуть неиспользуемый код, разделить на чанки и добавить хэши в имена для кэширования.", "open": true},
+  {"t": "★ Vite dev", "d": "Он не собирает весь проект заранее: отдаёт файлы браузеру как нативные ES-модули и преобразует их по запросу. Зависимости предварительно собирает один раз."},
+  {"t": "★ HMR", "d": "Hot Module Replacement — при сохранении файла заменяется только изменённый модуль без перезагрузки страницы, состояние компонентов сохраняется."},
+ ],
+ br_workers:[
+  {"t": "★ Web Worker", "d": "Скрипт в отдельном потоке. Выполняет тяжёлую работу, не блокируя главный поток и интерфейс. С главным потоком обменивается сообщениями.", "c": "const worker = new Worker(new URL('./parse.worker.js', import.meta.url));\nworker.postMessage(file);\nworker.onmessage = (e) => setRows(e.data);", "open": true},
+  {"t": "★ Ограничения воркера", "d": "Нельзя работать с DOM и <code>window</code>. Данные передаются сообщениями (копируются или передаются владение), а не через общие переменные."},
+ ],
+ br_observer:[
+  {"t": "★ IntersectionObserver", "d": "Асинхронно сообщает, когда элемент пересёк видимую область. Используют для бесконечной ленты, ленивой загрузки и анимаций при появлении.", "c": "const io = new IntersectionObserver(([entry]) => {\n  if (entry.isIntersecting) loadMore();\n}, { rootMargin: '200px' });\nio.observe(sentinel);", "open": true},
+  {"t": "★ Почему не scroll", "d": "Обработчик <code>scroll</code> вызывается десятки раз в секунду и обычно читает размеры, вызывая reflow. Observer работает асинхронно, браузер сам считает пересечения эффективно."},
+ ],
+ br_devtools:[
+  {"t": "★ Breakpoint", "d": "Поставить точку останова во вкладке Sources или написать <code>debugger</code>. Выполнение остановится, можно смотреть значения переменных и идти по шагам.", "c": "function calc(items) {\n  debugger; // остановка здесь при открытых DevTools\n  return items.reduce((s, i) => s + i.price, 0);\n}", "open": true},
+  {"t": "★ Network", "d": "Ушёл ли запрос, его метод, статус, заголовки (CORS, кэш, авторизация), тело запроса и ответа, время. Так понятно, на чьей стороне ошибка."},
+  {"t": "★ React DevTools", "d": "Дерево компонентов с их props, state и хуками, и Profiler — какие компоненты рендерились, почему и сколько времени."},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"browser",n:"Браузер и производительность",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

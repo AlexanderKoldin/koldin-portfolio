@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Redux по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Redux Toolkit</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Redux <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== ЗАЧЕМ REDUX ===== */
+rtk_why: {
+  name:"Зачем Redux",
+  code:[
+  "<span class=\"cm\">// Context: тема и корзина в одном value</span>",
+  "&lt;StoreContext value={{ theme, cart }}&gt;",
+  "  &lt;Header /&gt;   {/* читает cart */}",
+  "  &lt;Sidebar /&gt;  {/* читает theme */}",
+  "&lt;/StoreContext&gt;",
+  "",
+  "<span class=\"cm\">// Redux: каждый подписан на своё</span>",
+  "<span class=\"kw\">const</span> count = <span class=\"fn\">useSelector</span>((s) =&gt; s.cart.items.length);",
+  "<span class=\"kw\">const</span> theme = <span class=\"fn\">useSelector</span>((s) =&gt; s.ui.theme);"],
+  panels:[["ctx", "Context: кто рендерится при добавлении в корзину", "items"], ["rdx", "Redux: кто рендерится", "items"], ["note", "Вывод", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Redux — <b>глобальное хранилище</b> состояния вне компонентов с <b>предсказуемым</b> потоком изменений.</li><li><b>Чем лучше Context:</b> компоненты <b>подписываются на часть</b> состояния через селекторы и рендерятся только при её изменении; есть <b>DevTools</b> с историей действий и <b>middleware</b> для асинхронной логики.</li><li><b>Пример:</b> корзина, пользователь и фильтры, которые меняются часто и нужны в разных частях приложения.</li><li><b>Когда не нужен:</b> маленькое приложение или редко меняющиеся данные (тема, язык) — хватит <b>Context</b>; серверные данные часто удобнее в <b>RTK Query</b> или TanStack Query.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3, 4, 5], t:"Всё в одном контексте", x:"Корзина и тема лежат в одном значении контекста.", hl:"ctx", p:{ctx:[it("Header читает cart",'new'),it("Sidebar читает theme",'new')],rdx:[it("—")],note:[it("—")]}},
+   {line:[2], t:"Добавили товар", x:"Изменилось value контекста — React перерисует <b>всех</b> потребителей, даже тех, кому корзина не нужна.", hl:"ctx", p:{ctx:[it("Header ✓",'new'),it("Sidebar ✓ <span class=\"chip cbad\">зря</span>",'new')],rdx:[it("—")],note:[it("—")]}},
+   {line:[8, 9], t:"Подписка селектором", x:"В Redux каждый компонент подписан на свою часть стора.", hl:"rdx", p:{ctx:[it("Header ✓"),it("Sidebar ✓ <span class=\"chip cbad\">зря</span>")],rdx:[it("Header ← s.cart.items.length",'new'),it("Sidebar ← s.ui.theme",'new')],note:[it("—")]}},
+   {line:[8], t:"Добавили товар", x:"Изменилась только корзина. <code>useSelector</code> у Sidebar вернул ту же тему — ре-рендера нет.", hl:"rdx", p:{ctx:[it("Header ✓"),it("Sidebar ✓ <span class=\"chip cbad\">зря</span>")],rdx:[it("Header ✓",'new'),it("Sidebar ✗ <span class=\"chip cok\">тема та же</span>",'new')],note:[it("—")]}},
+   {line:[], t:"Итог", x:"Redux — для большого часто меняющегося состояния: подписка на часть, DevTools, middleware. Для темы и языка хватит Context.", fin:true, p:{ctx:[it("Header ✓"),it("Sidebar ✓ <span class=\"chip cbad\">зря</span>")],rdx:[it("Header ✓"),it("Sidebar ✗ <span class=\"chip cok\">тема та же</span>")],note:[it("Context: все потребители",'new'),it("Redux: только те, чей селектор изменился",'new')]}},
+  ]
+},
+
+/* ===== ПОТОК ДАННЫХ ===== */
+rtk_flow: {
+  name:"Поток данных",
+  code:[
+  "<span class=\"cm\">// компонент</span>",
+  "<span class=\"fn\">dispatch</span>({ type: <span class=\"str\">'cart/add'</span>, payload: { id: <span class=\"num\">7</span>, title: <span class=\"str\">'Чай'</span> } });",
+  "",
+  "<span class=\"cm\">// редьюсер</span>",
+  "<span class=\"kw\">function</span> <span class=\"fn\">cart</span>(state = { items: [] }, action) {",
+  "  <span class=\"kw\">if</span> (action.type === <span class=\"str\">'cart/add'</span>) {",
+  "    <span class=\"kw\">return</span> { items: [...state.items, action.payload] };",
+  "  }",
+  "  <span class=\"kw\">return</span> state;",
+  "}",
+  "",
+  "<span class=\"cm\">// другой компонент</span>",
+  "<span class=\"kw\">const</span> count = <span class=\"fn\">useSelector</span>((s) =&gt; s.cart.items.length);"],
+  panels:[["ui", "UI", "items"], ["action", "Action", "items"], ["store", "Store", "items"], ["subs", "Подписчики", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> однонаправленный цикл: <b>UI → dispatch(action) → reducer → новый state в store → UI</b>.</li><li><b>Как работает:</b> компонент вызывает <b><code>dispatch</code></b> с <b>action</b> (<code>{ type, payload }</code>); <b>reducer</b> — чистая функция <code>(state, action) =&gt; newState</code>; <b>store</b> сохраняет результат и уведомляет <b>подписчиков</b>.</li><li><b>Пример:</b> <code>dispatch(addToCart(item))</code> → редьюсер корзины добавил товар → <code>useSelector</code> в шапке увидел новое количество.</li><li><b>Правило:</b> состояние меняется <b>только</b> через действия, редьюсеры <b>чистые</b> и <b>без мутаций</b> (в RTK это делает Immer).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[12], t:"Начало", x:"В сторе пустая корзина, шапка показывает 0.", hl:"store", p:{ui:[it("шапка: 0 товаров",'new')],action:[it("—")],store:[it("cart.items = []",'new')],subs:[it("Header ← count",'new')]}},
+   {line:[2], t:"dispatch", x:"Клик «В корзину» — компонент отправляет действие: <b>что случилось</b> и данные.", hl:"action", p:{ui:[it("шапка: 0 товаров")],action:[it("{ type: 'cart/add', payload: { id: 7 } }",'new')],store:[it("cart.items = []")],subs:[it("Header ← count")]}},
+   {line:[5, 6, 7], t:"Reducer", x:"Store передаёт текущее состояние и действие в редьюсер. Тот возвращает <b>новый</b> объект.", hl:"store", p:{ui:[it("шапка: 0 товаров")],action:[it("{ type: 'cart/add', payload: { id: 7 } }")],store:[it("cart.items = [{ id: 7, title: 'Чай' }] <span class=\"chip cok\">новый объект</span>",'new')],subs:[it("Header ← count")]}},
+   {line:[12], t:"Уведомление подписчиков", x:"Store сообщает подписчикам. <code>useSelector</code> пересчитал: было 0, стало 1 — шапка рендерится.", hl:"subs", p:{ui:[it("шапка: 1 товар",'new')],action:[it("{ type: 'cart/add', payload: { id: 7 } }")],store:[it("cart.items = [{ id: 7, title: 'Чай' }] <span class=\"chip cok\">новый объект</span>")],subs:[it("Header: 0 → 1 → ре-рендер",'new')]}},
+   {line:[], t:"Итог", x:"UI → dispatch(action) → reducer → новый state → подписчики → UI. Изменить состояние можно только действием.", fin:true, p:{ui:[it("шапка: 1 товар")],action:[it("{ type: 'cart/add', payload: { id: 7 } }")],store:[it("cart.items = [{ id: 7, title: 'Чай' }] <span class=\"chip cok\">новый объект</span>")],subs:[it("Header: 0 → 1 → ре-рендер")]}},
+  ]
+},
+
+/* ===== CONFIGURESTORE ===== */
+rtk_store: {
+  name:"configureStore",
+  code:[
+  "<span class=\"kw\">import</span> { configureStore } <span class=\"kw\">from</span> <span class=\"str\">'@reduxjs/toolkit'</span>;",
+  "",
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> store = <span class=\"fn\">configureStore</span>({",
+  "  reducer: {",
+  "    cart: cartReducer,",
+  "    user: userReducer,",
+  "  },",
+  "});",
+  "",
+  "<span class=\"kw\">export</span> type RootState = ReturnType&lt;<span class=\"kw\">typeof</span> store.getState&gt;;",
+  "<span class=\"kw\">export</span> type AppDispatch = <span class=\"kw\">typeof</span> store.dispatch;"],
+  panels:[["store", "Что получилось", "items", "wide"], ["auto", "Что RTK включил сам", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>configureStore</code> — функция RTK для <b>создания store</b> с правильными настройками по умолчанию.</li><li><b>Что делает за тебя:</b> <b>объединяет редьюсеры</b> из объекта, подключает <b>thunk</b> middleware, включает <b>Redux DevTools</b> и в разработке — проверки на <b>мутации</b> и <b>несериализуемые</b> значения.</li><li><b>Пример:</b> <code>configureStore({ reducer: { cart: cartReducer, user: userReducer } })</code>.</li><li><b>Типизация:</b> <code>type RootState = ReturnType&lt;typeof store.getState&gt;</code>, <code>type AppDispatch = typeof store.dispatch</code> — для типизированных <code>useSelector</code> и <code>useDispatch</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3, 4, 5, 6, 7, 8], t:"Редьюсеры", x:"Объект редьюсеров — каждый отвечает за свой ключ состояния. <code>combineReducers</code> вызывать не нужно.", hl:"store", p:{store:[it("state.cart ← cartReducer",'new'),it("state.user ← userReducer",'new')],auto:[it("—")]}},
+   {line:[3], t:"Middleware и DevTools", x:"Без единой строки настройки подключены thunk и Redux DevTools.", hl:"auto", p:{store:[it("state.cart ← cartReducer"),it("state.user ← userReducer")],auto:[it("thunk — можно диспатчить функции",'new'),it("Redux DevTools — история действий",'new')]}},
+   {line:[3], t:"Проверки в разработке", x:"В dev-режиме RTK ругается, если мутировать состояние вне редьюсера или положить в стор несериализуемое значение (функцию, Date, класс).", hl:"auto", p:{store:[it("state.cart ← cartReducer"),it("state.user ← userReducer")],auto:[it("thunk"),it("Redux DevTools"),it("проверка мутаций <span class=\"chip c2\">dev</span>",'new'),it("проверка сериализуемости <span class=\"chip c2\">dev</span>",'new')]}},
+   {line:[10, 11], t:"Типы", x:"Тип всего состояния и тип dispatch — из самого стора, ничего не описываем вручную.", hl:"store", p:{store:[it("state.cart ← cartReducer"),it("state.user ← userReducer"),it("RootState = { cart: …, user: … }",'new'),it("AppDispatch умеет thunk-и",'new')],auto:[it("thunk"),it("Redux DevTools"),it("проверка мутаций <span class=\"chip c2\">dev</span>"),it("проверка сериализуемости <span class=\"chip c2\">dev</span>")]}},
+   {line:[], t:"Итог", x:"<code>configureStore</code> объединяет редьюсеры, подключает thunk и DevTools, в разработке проверяет мутации. Типы берём через ReturnType и typeof.", fin:true, p:{store:[it("state.cart ← cartReducer"),it("state.user ← userReducer"),it("RootState = { cart: …, user: … }"),it("AppDispatch умеет thunk-и")],auto:[it("thunk"),it("Redux DevTools"),it("проверка мутаций <span class=\"chip c2\">dev</span>"),it("проверка сериализуемости <span class=\"chip c2\">dev</span>")]}},
+  ]
+},
+
+/* ===== CREATESLICE ===== */
+rtk_slice: {
+  name:"createSlice",
+  code:[
+  "<span class=\"kw\">const</span> cartSlice = <span class=\"fn\">createSlice</span>({",
+  "  name: <span class=\"str\">'cart'</span>,",
+  "  initialState: { items: [] },",
+  "  reducers: {",
+  "    <span class=\"fn\">add</span>(state, action) {",
+  "      state.items.<span class=\"fn\">push</span>(action.payload);",
+  "    },",
+  "    <span class=\"fn\">clear</span>(state) {",
+  "      state.items = [];",
+  "    },",
+  "  },",
+  "});",
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> { add, clear } = cartSlice.actions;",
+  "",
+  "<span class=\"fn\">dispatch</span>(<span class=\"fn\">add</span>({ id: <span class=\"num\">1</span> }));"],
+  panels:[["gen", "Что сгенерировал createSlice", "items", "wide"], ["immer", "Immer: draft и результат", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>slice</b> — кусок состояния вместе с его редьюсерами; <code>createSlice</code> создаёт их одной функцией.</li><li><b>Как работает:</b> описываем <code>name</code>, <code>initialState</code> и <code>reducers</code> — RTK <b>сам генерирует action creators</b> и <code>type</code> вида <code>'cart/add'</code>.</li><li><b>Пример:</b> <code>add(state, action) { state.items.push(action.payload) }</code> — пишем «мутирующий» код, а <b>Immer</b> делает неизменяемую копию.</li><li><b>Подвох:</b> в редьюсере либо <b>мутируем draft</b>, либо <b>возвращаем</b> новое значение — но не то и другое сразу; <code>extraReducers</code> — для чужих действий (thunk-и).</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"name и initialState", x:"Имя слайса станет префиксом типов действий.", hl:"gen", p:{gen:[it("name: 'cart'",'new'),it("initialState: { items: [] }",'new')],immer:[it("—")]}},
+   {line:[4, 5, 6, 7, 8, 9, 10, 11], t:"reducers", x:"Для каждого ключа RTK создал action creator и тип.", hl:"gen", p:{gen:[it("name: 'cart'"),it("add(payload) → { type: 'cart/add', payload }",'new'),it("clear() → { type: 'cart/clear' }",'new')],immer:[it("—")]}},
+   {line:[14], t:"dispatch(add)", x:"Редьюсер получает не настоящее состояние, а <b>черновик</b> (draft) от Immer. <code>push</code> меняет черновик.", hl:"immer", p:{gen:[it("name: 'cart'"),it("add(payload) → { type: 'cart/add', payload }"),it("clear() → { type: 'cart/clear' }")],immer:[it("draft.items.push({ id: 1 })",'new')]}},
+   {line:[6], t:"Immer делает копию", x:"По изменениям черновика Immer строит <b>новый</b> объект. Старое состояние не тронуто — иммутабельность соблюдена.", hl:"immer", p:{gen:[it("name: 'cart'"),it("add(payload) → { type: 'cart/add', payload }"),it("clear() → { type: 'cart/clear' }")],immer:[it("draft.items.push({ id: 1 })"),it("старое: { items: [] } <span class=\"chip cok\">не изменилось</span>",'new'),it("новое: { items: [{ id: 1 }] }",'new')]}},
+   {line:[], t:"Итог", x:"<code>createSlice</code> = редьюсер + action creators по имени. Внутри можно «мутировать» — Immer сделает неизменяемую копию. Либо мутируем draft, либо возвращаем новое значение.", fin:true, p:{gen:[it("name: 'cart'"),it("add(payload) → { type: 'cart/add', payload }"),it("clear() → { type: 'cart/clear' }")],immer:[it("draft.items.push({ id: 1 })"),it("старое: { items: [] } <span class=\"chip cok\">не изменилось</span>"),it("новое: { items: [{ id: 1 }] }")]}},
+  ]
+},
+
+/* ===== CREATEASYNCTHUNK ===== */
+rtk_thunk: {
+  name:"createAsyncThunk",
+  code:[
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> fetchUsers = <span class=\"fn\">createAsyncThunk</span>(<span class=\"str\">'users/fetch'</span>, <span class=\"kw\">async</span> () =&gt; {",
+  "  <span class=\"kw\">const</span> res = <span class=\"kw\">await</span> <span class=\"fn\">fetch</span>(<span class=\"str\">'/api/users'</span>);",
+  "  <span class=\"kw\">return</span> res.<span class=\"fn\">json</span>();",
+  "});",
+  "",
+  "builder",
+  "  .<span class=\"fn\">addCase</span>(fetchUsers.pending, (s) =&gt; { s.loading = <span class=\"kw\">true</span>; })",
+  "  .<span class=\"fn\">addCase</span>(fetchUsers.fulfilled, (s, a) =&gt; { s.loading = <span class=\"kw\">false</span>; s.list = a.payload; })",
+  "  .<span class=\"fn\">addCase</span>(fetchUsers.rejected, (s, a) =&gt; { s.loading = <span class=\"kw\">false</span>; s.error = a.error.message; });",
+  "",
+  "<span class=\"fn\">dispatch</span>(<span class=\"fn\">fetchUsers</span>());"],
+  panels:[["actions", "Отправленные действия", "items"], ["state", "state.users", "items"], ["ui", "Экран", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>createAsyncThunk</code> — способ описать <b>асинхронное действие</b> (запрос), которое само отправляет три action: <b>pending</b>, <b>fulfilled</b>, <b>rejected</b>.</li><li><b>Как работает:</b> <code>dispatch(fetchUsers())</code> → сразу <code>pending</code> → после ответа <code>fulfilled</code> с данными в <code>payload</code> или <code>rejected</code> с ошибкой.</li><li><b>Пример:</b> в <code>extraReducers</code> на <code>pending</code> ставим <code>loading = true</code>, на <code>fulfilled</code> кладём данные, на <code>rejected</code> — текст ошибки.</li><li><b>Подвох:</b> свою ошибку сервера отдают через <b><code>rejectWithValue</code></b>; результат <code>dispatch(thunk())</code> — промис, <code>.unwrap()</code> даёт данные или бросает ошибку.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[11], t:"dispatch(fetchUsers())", x:"Thunk запустился и <b>сразу</b> отправил <code>pending</code>.", hl:"actions", p:{actions:[it("users/fetch/pending",'new')],state:[it("loading: true",'new')],ui:[it("Спиннер",'new')]}},
+   {line:[2, 3], t:"Запрос", x:"Идёт <code>fetch</code>. Компонент ничего не ждёт сам — состояние загрузки уже в сторе.", hl:"actions", p:{actions:[it("users/fetch/pending"),it("…ждём ответ",'new')],state:[it("loading: true")],ui:[it("Спиннер")]}},
+   {line:[3, 8], t:"Успех", x:"Функция вернула данные — RTK отправил <code>fulfilled</code> с ними в <code>payload</code>.", hl:"state", p:{actions:[it("users/fetch/pending"),it("users/fetch/fulfilled payload: [3 пользователя]",'new')],state:[it("loading: false",'new'),it("list: [3]",'new')],ui:[it("Список из 3",'new')]}},
+   {line:[9], t:"А если ошибка", x:"Если бы <code>fetch</code> упал (или мы вернули <code>rejectWithValue</code>) — ушёл бы <code>rejected</code>.", hl:"state", p:{actions:[it("users/fetch/pending"),it("users/fetch/rejected error: 'Network error'",'new')],state:[it("loading: false"),it("error: 'Network error'",'new')],ui:[it("Сообщение об ошибке",'new')]}},
+   {line:[], t:"Итог", x:"Один thunk — три действия: pending → fulfilled или rejected. Обрабатываем их в <code>extraReducers</code>. <code>.unwrap()</code> даёт данные или бросает ошибку в компоненте.", fin:true, p:{actions:[it("users/fetch/pending"),it("users/fetch/rejected error: 'Network error'")],state:[it("loading: false"),it("error: 'Network error'")],ui:[it("Сообщение об ошибке")]}},
+  ]
+},
+
+/* ===== СЕЛЕКТОРЫ ===== */
+rtk_select: {
+  name:"Селекторы",
+  code:[
+  "<span class=\"kw\">const</span> selectTodos = (s) =&gt; s.todos.items;",
+  "<span class=\"kw\">const</span> selectDoneBad = (s) =&gt; s.todos.items.<span class=\"fn\">filter</span>((t) =&gt; t.done);",
+  "<span class=\"kw\">const</span> selectDone = <span class=\"fn\">createSelector</span>([selectTodos], (items) =&gt; items.<span class=\"fn\">filter</span>((t) =&gt; t.done));",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">DoneList</span>() {",
+  "  <span class=\"kw\">const</span> done = <span class=\"fn\">useSelector</span>(selectDone);",
+  "  …",
+  "}",
+  "<span class=\"cm\">// диспатчим действие, которое меняет НЕ todos (например, тему)</span>"],
+  panels:[["bad", "С selectDoneBad", "items"], ["good", "С selectDone (createSelector)", "items"], ["note", "Почему", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> селектор — функция, которая <b>достаёт данные из state</b>: <code>(state) =&gt; state.cart.items</code>.</li><li><b>useSelector:</b> подписывает компонент на результат селектора; компонент рендерится, только когда результат <b>изменился по ссылке</b>.</li><li><b>createSelector:</b> <b>мемоизированный</b> селектор — пересчитывает производные данные, только когда изменились входные.</li><li><b>Подвох:</b> селектор, который каждый раз возвращает <b>новый массив или объект</b> (<code>filter</code>, <code>map</code>), вызывает ре-рендер на <b>любое</b> действие — его оборачивают в <code>createSelector</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"Обычный селектор с filter", x:"<code>filter</code> каждый раз создаёт <b>новый</b> массив.", hl:"bad", p:{bad:[it("filter → новый массив №1",'new')],good:[it("—")],note:[it("—")]}},
+   {line:[9], t:"Сменили тему", x:"После любого действия <code>useSelector</code> вызывает селектор и сравнивает результат по ссылке. Новый массив ≠ старый → ре-рендер, хотя задачи не менялись.", hl:"bad", p:{bad:[it("filter → новый массив №1"),it("filter → новый массив №2 <span class=\"chip cbad\">ре-рендер зря</span>",'new')],good:[it("—")],note:[it("—")]}},
+   {line:[3], t:"createSelector", x:"Мемоизированный селектор запоминает вход (<code>items</code>) и результат.", hl:"good", p:{bad:[it("filter → новый массив №1"),it("filter → новый массив №2 <span class=\"chip cbad\">ре-рендер зря</span>")],good:[it("вход items → результат №1",'new')],note:[it("—")]}},
+   {line:[9], t:"Сменили тему", x:"<code>items</code> та же ссылка — пересчёта нет, возвращается тот же массив. Ре-рендера нет.", hl:"good", p:{bad:[it("filter → новый массив №1"),it("filter → новый массив №2 <span class=\"chip cbad\">ре-рендер зря</span>")],good:[it("вход items → результат №1"),it("items тот же → результат №1 <span class=\"chip cok\">без ре-рендера</span>",'new')],note:[it("useSelector сравнивает результат по ===",'new'),it("createSelector возвращает ту же ссылку, пока вход не изменился",'new')]}},
+   {line:[], t:"Итог", x:"Селектор достаёт часть состояния. <code>useSelector</code> перерисовывает компонент, когда результат изменился по ссылке. Производные данные — через <code>createSelector</code>.", fin:true, p:{bad:[it("filter → новый массив №1"),it("filter → новый массив №2 <span class=\"chip cbad\">ре-рендер зря</span>")],good:[it("вход items → результат №1"),it("items тот же → результат №1 <span class=\"chip cok\">без ре-рендера</span>")],note:[it("useSelector сравнивает результат по ==="),it("createSelector возвращает ту же ссылку, пока вход не изменился")]}},
+  ]
+},
+
+/* ===== RTK QUERY ===== */
+rtk_query: {
+  name:"RTK Query",
+  code:[
+  "<span class=\"kw\">export</span> <span class=\"kw\">const</span> api = <span class=\"fn\">createApi</span>({",
+  "  baseQuery: <span class=\"fn\">fetchBaseQuery</span>({ baseUrl: <span class=\"str\">'/api'</span> }),",
+  "  tagTypes: [<span class=\"str\">'User'</span>],",
+  "  endpoints: (b) =&gt; ({",
+  "    getUsers: b.<span class=\"fn\">query</span>({ query: () =&gt; <span class=\"str\">'users'</span>, providesTags: [<span class=\"str\">'User'</span>] }),",
+  "    addUser: b.<span class=\"fn\">mutation</span>({",
+  "      query: (u) =&gt; ({ url: <span class=\"str\">'users'</span>, method: <span class=\"str\">'POST'</span>, body: u }),",
+  "      invalidatesTags: [<span class=\"str\">'User'</span>],",
+  "    }),",
+  "  }),",
+  "});",
+  "<span class=\"cm\">// Компонент A и B: useGetUsersQuery()</span>",
+  "<span class=\"cm\">// Кнопка: addUser({ name: 'Саша' })</span>"],
+  panels:[["cache", "Кэш RTK Query", "items"], ["net", "Сетевые запросы", "items"], ["ui", "Компоненты", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> RTK Query — встроенный в RTK инструмент для <b>запросов и кэширования серверных данных</b>.</li><li><b>Как работает:</b> описываем <code>createApi</code> с <b>endpoints</b>, получаем готовые хуки <code>useGetUsersQuery</code>, <code>useAddUserMutation</code> с <code>data</code>, <code>isLoading</code>, <code>error</code>.</li><li><b>Кэш:</b> одинаковые запросы <b>не дублируются</b>; после мутации нужные данные <b>перезапрашиваются</b> через <b>теги</b> (<code>providesTags</code>, <code>invalidatesTags</code>).</li><li><b>Что выбрать:</b> для работы с API — <b>RTK Query</b> (меньше кода, кэш); <code>createAsyncThunk</code> — для нестандартной логики, где запрос — лишь часть процесса.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[5, 12], t:"Компонент A", x:"Хук запустил запрос и показывает <code>isLoading</code>.", hl:"net", p:{cache:[it("getUsers: загрузка…",'new')],net:[it("GET /api/users",'new')],ui:[it("A: isLoading",'new')]}},
+   {line:[12], t:"Компонент B", x:"Второй компонент с тем же запросом <b>не</b> делает новый fetch — подписывается на тот же кэш.", hl:"cache", p:{cache:[it("getUsers: [2 пользователя] <span class=\"chip c1\">тег User</span>",'new')],net:[it("GET /api/users"),it("(повтора нет) <span class=\"chip cok\">дедупликация</span>",'new')],ui:[it("A: 2",'new'),it("B: 2",'new')]}},
+   {line:[6, 7, 8, 13], t:"Мутация", x:"<code>addUser</code> отправляет POST и объявляет тег <code>User</code> устаревшим.", hl:"net", p:{cache:[it("getUsers: устарел <span class=\"chip cbad\">invalidatesTags</span>",'new')],net:[it("GET /api/users"),it("POST /api/users",'new')],ui:[it("A: 2"),it("B: 2")]}},
+   {line:[5], t:"Автоматический перезапрос", x:"Есть подписчики на устаревшие данные — RTK Query сам перезапросил список. Оба компонента обновились.", hl:"cache", p:{cache:[it("getUsers: [3 пользователя]",'new')],net:[it("GET /api/users"),it("POST /api/users"),it("GET /api/users <span class=\"chip cok\">сам</span>",'new')],ui:[it("A: 3",'new'),it("B: 3",'new')]}},
+   {line:[], t:"Итог", x:"RTK Query генерирует хуки запросов, кэширует и не дублирует одинаковые запросы. После мутации теги говорят, что перезапросить.", fin:true, p:{cache:[it("getUsers: [3 пользователя]")],net:[it("GET /api/users"),it("POST /api/users"),it("GET /api/users <span class=\"chip cok\">сам</span>")],ui:[it("A: 3"),it("B: 3")]}},
+  ]
+},
+
+/* ===== MIDDLEWARE ===== */
+rtk_mw: {
+  name:"Middleware",
+  code:[
+  "<span class=\"kw\">const</span> logger = (store) =&gt; (next) =&gt; (action) =&gt; {",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'до'</span>, store.<span class=\"fn\">getState</span>().count);",
+  "  <span class=\"kw\">const</span> result = <span class=\"fn\">next</span>(action);",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'после'</span>, store.<span class=\"fn\">getState</span>().count);",
+  "  <span class=\"kw\">return</span> result;",
+  "};",
+  "",
+  "<span class=\"kw\">const</span> store = <span class=\"fn\">configureStore</span>({",
+  "  reducer,",
+  "  middleware: (getDefault) =&gt; <span class=\"fn\">getDefault</span>().<span class=\"fn\">concat</span>(logger),",
+  "});",
+  "store.<span class=\"fn\">dispatch</span>({ type: <span class=\"str\">'inc'</span> });"],
+  panels:[["chain", "Цепочка", "items", "wide"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> middleware — <b>прослойка</b> между <code>dispatch</code> и редьюсером, которая может посмотреть, изменить, задержать или остановить action.</li><li><b>Как работает:</b> цепочка функций <code>store =&gt; next =&gt; action =&gt; { ... next(action) }</code>; вызов <code>next</code> передаёт действие дальше.</li><li><b>Пример:</b> <b>thunk</b> (позволяет диспатчить функции), логгер, отправка аналитики, RTK Query middleware.</li><li><b>Зачем:</b> вынести <b>побочные эффекты</b> и асинхронность из редьюсеров, которые должны оставаться чистыми.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[8, 9, 10, 11], t:"Цепочка middleware", x:"Стандартные (thunk и проверки) плюс наш логгер, в конце — редьюсер.", hl:"chain", p:{chain:[it("thunk → проверки → logger → reducer",'new')],out:[]}},
+   {line:[12, 1, 2], t:"dispatch доходит до logger", x:"Действие проходит по цепочке и попадает в наш middleware до редьюсера.", hl:"out", p:{chain:[it("thunk → проверки → +logger ● → reducer")],out:[it("до 0",'new')]}},
+   {line:[3], t:"next(action)", x:"<code>next</code> передаёт действие дальше — до редьюсера. Состояние обновилось.", hl:"chain", p:{chain:[it("thunk → проверки → logger → +reducer ●")],out:[it("до 0")]}},
+   {line:[4], t:"После редьюсера", x:"Вернулись в middleware — видно новое состояние.", hl:"out", p:{chain:[it("thunk → проверки → logger → +reducer ●")],out:[it("до 0"),it("после 1",'new')]}},
+   {line:[3], t:"Без next", x:"Если не вызвать <code>next(action)</code>, действие до редьюсера не дойдёт — так фильтруют действия.", hl:"chain", p:{chain:[it("logger без next → reducer не вызван <span class=\"chip cbad\">действие остановлено</span>",'new')],out:[it("до 0"),it("после 1")]}},
+   {line:[], t:"Итог", x:"Middleware — прослойка между dispatch и редьюсером: логи, аналитика, асинхронность (thunk). Редьюсеры остаются чистыми.", fin:true, p:{chain:[it("logger без next → reducer не вызван <span class=\"chip cbad\">действие остановлено</span>")],out:[it("до 0"),it("после 1")]}},
+  ]
+},
+
+/* ===== НОРМАЛИЗАЦИЯ ===== */
+rtk_norm: {
+  name:"Нормализация",
+  code:[
+  "<span class=\"cm\">// было: массив</span>",
+  "[{ id: <span class=\"num\">1</span>, title: <span class=\"str\">'Чай'</span> }, { id: <span class=\"num\">2</span>, title: <span class=\"str\">'Сыр'</span> }]",
+  "",
+  "<span class=\"cm\">// стало: нормализовано</span>",
+  "<span class=\"kw\">const</span> adapter = <span class=\"fn\">createEntityAdapter</span>();",
+  "<span class=\"cm\">// { ids: [1, 2], entities: { 1: {...}, 2: {...} } }</span>",
+  "",
+  "adapter.<span class=\"fn\">updateOne</span>(state, { id: <span class=\"num\">2</span>, changes: { title: <span class=\"str\">'Сыр гауда'</span> } });",
+  "adapter.<span class=\"fn\">removeOne</span>(state, <span class=\"num\">1</span>);"],
+  panels:[["arr", "Массив", "items"], ["norm", "Нормализованно", "items"], ["cost", "Цена операции", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> нормализация — хранить сущности как <b>словарь по id</b> плюс <b>массив id</b>, а не вложенными массивами.</li><li><b>Зачем:</b> быстрый доступ по id, <b>нет дублей</b>, обновление одного элемента не требует обхода массива.</li><li><b>createEntityAdapter:</b> даёт готовую форму <code>{ ids: [], entities: {} }</code>, редьюсеры <code>addOne</code>, <code>updateOne</code>, <code>removeOne</code>, <code>setAll</code> и селекторы <code>selectAll</code>, <code>selectById</code>.</li><li><b>Пример:</b> список задач: <code>entities: { 1: {...}, 2: {...} }, ids: [1, 2]</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"Массив", x:"Чтобы найти или обновить элемент по id — обходим массив.", hl:"arr", p:{arr:[it("[0] { id: 1, Чай }",'new'),it("[1] { id: 2, Сыр }",'new')],norm:[it("—")],cost:[it("—")]}},
+   {line:[5, 6], t:"Словарь по id", x:"Сущности — в объекте по id, порядок — в массиве <code>ids</code>.", hl:"norm", p:{arr:[it("[0] { id: 1, Чай }"),it("[1] { id: 2, Сыр }")],norm:[it("ids: [1, 2]",'new'),it("entities[1] = Чай",'new'),it("entities[2] = Сыр",'new')],cost:[it("—")]}},
+   {line:[8], t:"updateOne", x:"Обновление — сразу по ключу, без поиска.", hl:"cost", p:{arr:[it("[0] { id: 1, Чай }"),it("[1] { id: 2, Сыр }")],norm:[it("ids: [1, 2]"),it("entities[1] = Чай"),it("entities[2] = Сыр гауда",'new')],cost:[it("массив: find по всем элементам",'new'),it("словарь: entities[2] — сразу <span class=\"chip cok\">O(1)</span>",'new')]}},
+   {line:[9], t:"removeOne", x:"Удаление — убрать ключ и id.", hl:"norm", p:{arr:[it("[0] { id: 1, Чай }"),it("[1] { id: 2, Сыр }")],norm:[it("ids: [2]",'new'),it("entities[2] = Сыр гауда")],cost:[it("массив: find по всем элементам"),it("словарь: entities[2] — сразу <span class=\"chip cok\">O(1)</span>")]}},
+   {line:[], t:"Итог", x:"Нормализация — словарь по id плюс массив id: нет дублей, быстрые обновления. <code>createEntityAdapter</code> даёт эту форму, CRUD-редьюсеры и селекторы.", fin:true, p:{arr:[it("[0] { id: 1, Чай }"),it("[1] { id: 2, Сыр }")],norm:[it("ids: [2]"),it("entities[2] = Сыр гауда")],cost:[it("массив: find по всем элементам"),it("словарь: entities[2] — сразу <span class=\"chip cok\">O(1)</span>")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ rtk_why:[
+  {"t": "★ Redux", "d": "Библиотека для глобального состояния: одно хранилище (store), изменения только через действия (actions) и чистые функции-редьюсеры. Поток данных предсказуемый и отлаживается через Redux DevTools.", "open": true},
+  {"t": "★ Redux и Context", "d": "Компонент подписывается на конкретную часть стора через <code>useSelector</code> и рендерится только при её изменении. В Context при смене value рендерятся все потребители. Плюс DevTools, middleware, единые правила."},
+  {"t": "★ Когда не нужен Redux", "d": "В небольших приложениях, для локального состояния компонента и для редко меняющихся глобальных данных — там хватает <code>useState</code> и Context. Данные с сервера удобнее держать в RTK Query или TanStack Query."},
+ ],
+ rtk_flow:[
+  {"t": "★ Action", "d": "Обычный объект, который описывает, что произошло. Поле <code>type</code> обязательно, данные обычно кладут в <code>payload</code>.", "c": "{ type: 'cart/add', payload: { id: 1, title: 'Чай' } }", "open": true},
+  {"t": "★ Dispatch", "d": "Отправляет action в store. Store передаёт его в редьюсер, сохраняет новое состояние и уведомляет подписчиков.", "c": "const dispatch = useDispatch();\ndispatch(addToCart(item));"},
+  {"t": "★ Reducer", "d": "Чистая функция <code>(state, action) =&gt; newState</code>. Не мутирует старое состояние, не делает запросов и не вызывает случайностей.", "c": "function counter(state = 0, action) {\n  if (action.type === 'inc') return state + 1;\n  return state;\n}"},
+  {"t": "★ Store", "d": "Объект, который хранит всё состояние приложения, принимает действия через <code>dispatch</code>, отдаёт состояние через <code>getState</code> и уведомляет подписчиков об изменениях."},
+ ],
+ rtk_store:[
+  {"t": "★ configureStore", "d": "Создаёт store: объединяет редьюсеры, подключает thunk, включает Redux DevTools и в dev-режиме проверяет мутации и несериализуемые данные.", "c": "export const store = configureStore({\n  reducer: { cart: cartReducer, user: userReducer },\n});", "open": true},
+  {"t": "★ RootState", "d": "Через <code>ReturnType&lt;typeof store.getState&gt;</code>. А тип dispatch — <code>typeof store.dispatch</code>, с ним правильно типизируются thunk-и.", "c": "export type RootState = ReturnType<typeof store.getState>;\nexport type AppDispatch = typeof store.dispatch;"},
+  {"t": "★ Provider", "d": "Обернуть приложение в <code>Provider</code> из <code>react-redux</code> и передать store. Внутри компоненты используют <code>useSelector</code> и <code>useDispatch</code>.", "c": "<Provider store={store}>\n  <App />\n</Provider>"},
+ ],
+ rtk_slice:[
+  {"t": "★ createSlice", "d": "Создаёт кусок состояния: редьюсер и action creators. Тип действия генерируется из имени: <code>cart/add</code>.", "c": "const cartSlice = createSlice({\n  name: 'cart',\n  initialState: { items: [] },\n  reducers: {\n    add(state, action) { state.items.push(action.payload); },\n  },\n});\nexport const { add } = cartSlice.actions;", "open": true},
+  {"t": "★ Immer в RTK", "d": "<code>createSlice</code> использует Immer: мы меняем черновик (draft), а Immer создаёт новую неизменяемую копию. Снаружи состояние остаётся иммутабельным."},
+  {"t": "★ Мутация или return", "d": "Нельзя одновременно менять draft и возвращать новое значение — Immer выбросит ошибку. Либо мутируем draft, либо возвращаем новый объект.", "c": "reset(state) {\n  state.items = [];\n  return { items: [] };\n}"},
+  {"t": "★ extraReducers", "d": "Чтобы slice реагировал на действия, которые он сам не создавал: от thunk-ов (<code>pending</code>, <code>fulfilled</code>, <code>rejected</code>) или других слайсов.", "c": "extraReducers: (builder) => {\n  builder.addCase(fetchUser.fulfilled, (state, action) => {\n    state.user = action.payload;\n  });\n}"},
+ ],
+ rtk_thunk:[
+  {"t": "★ createAsyncThunk", "d": "Функция для асинхронных действий. Она сама отправляет <code>pending</code> в начале, <code>fulfilled</code> с результатом или <code>rejected</code> с ошибкой.", "c": "export const fetchUsers = createAsyncThunk('users/fetch', async () => {\n  const res = await fetch('/api/users');\n  return res.json();\n});", "open": true},
+  {"t": "★ pending fulfilled rejected", "d": "В <code>extraReducers</code>: <code>pending</code> — включаем загрузку, <code>fulfilled</code> — сохраняем <code>action.payload</code>, <code>rejected</code> — сохраняем ошибку и выключаем загрузку.", "c": "builder\n  .addCase(fetchUsers.pending, (s) => { s.loading = true; })\n  .addCase(fetchUsers.fulfilled, (s, a) => { s.loading = false; s.list = a.payload; })\n  .addCase(fetchUsers.rejected, (s, a) => { s.loading = false; s.error = a.error.message; });"},
+  {"t": "★ rejectWithValue", "d": "Чтобы передать в <code>rejected</code> свои данные об ошибке (например, ответ сервера) в <code>action.payload</code>. Иначе там будет только сериализованный <code>action.error</code>.", "c": "async (id, { rejectWithValue }) => {\n  const res = await fetch(`/api/users/${id}`);\n  if (!res.ok) return rejectWithValue(await res.json());\n  return res.json();\n}"},
+  {"t": "★ unwrap", "d": "Превращает результат <code>dispatch(thunk())</code> в обычный промис: возвращает данные при успехе или бросает ошибку при <code>rejected</code>. Удобно в обработчиках формы.", "c": "try {\n  const user = await dispatch(fetchUser(1)).unwrap();\n} catch (e) { showToast(e); }"},
+ ],
+ rtk_select:[
+  {"t": "★ Селектор", "d": "Функция, которая получает весь state и возвращает нужную часть. Позволяет не знать структуру стора в компонентах.", "c": "const selectItems = (state) => state.cart.items;\nconst items = useSelector(selectItems);", "open": true},
+  {"t": "★ useSelector и ре-рендер", "d": "Когда результат селектора изменился по ссылке (<code>===</code>). Если селектор возвращает новый массив на каждый вызов, компонент будет рендериться при любом действии."},
+  {"t": "★ createSelector", "d": "Создаёт мемоизированный селектор: пересчитывает результат только при изменении входных данных, иначе отдаёт ту же ссылку.", "c": "const selectDone = createSelector(\n  [(s) => s.todos.items],\n  (items) => items.filter((t) => t.done),\n);"},
+ ],
+ rtk_query:[
+  {"t": "★ RTK Query", "d": "Инструмент RTK для запросов: по описанию endpoints генерирует хуки с данными, статусом загрузки и ошибкой, а результаты кэширует.", "c": "export const api = createApi({\n  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),\n  endpoints: (b) => ({\n    getUsers: b.query({ query: () => 'users' }),\n  }),\n});\nexport const { useGetUsersQuery } = api;", "open": true},
+  {"t": "★ Query и mutation", "d": "Query — получение данных (GET), вызывается автоматически при монтировании и кэшируется. Mutation — изменение данных (POST, PUT, DELETE), вызывается вручную функцией-триггером."},
+  {"t": "★ Теги кэша", "d": "Через теги: запрос помечает данные <code>providesTags</code>, мутация объявляет их устаревшими <code>invalidatesTags</code> — RTK Query сам перезапросит список.", "c": "getUsers: b.query({ query: () => 'users', providesTags: ['User'] }),\naddUser: b.mutation({ query: (u) => ({ url: 'users', method: 'POST', body: u }), invalidatesTags: ['User'] }),"},
+  {"t": "★ RTK Query или thunk", "d": "RTK Query — для обычной работы с API: кэш, загрузка, повторные запросы из коробки. <code>createAsyncThunk</code> — когда нужна своя асинхронная логика: несколько шагов, работа с разными слайсами."},
+ ],
+ rtk_mw:[
+  {"t": "★ Middleware", "d": "Функция-прослойка между <code>dispatch</code> и редьюсером. Видит каждое действие и может его залогировать, изменить, задержать или не пропустить дальше.", "c": "const logger = (store) => (next) => (action) => {\n  console.log('до', store.getState());\n  const result = next(action);\n  console.log('после', store.getState());\n  return result;\n};", "open": true},
+  {"t": "★ Thunk", "d": "Позволяет диспатчить функцию вместо объекта. Middleware вызывает её и передаёт <code>dispatch</code> и <code>getState</code> — так пишут асинхронную логику.", "c": "const loadUser = (id) => async (dispatch) => {\n  dispatch(started());\n  const user = await api.get(id);\n  dispatch(loaded(user));\n};"},
+  {"t": "★ next", "d": "Действие не дойдёт до редьюсера — состояние не изменится. Так можно фильтровать действия."},
+ ],
+ rtk_norm:[
+  {"t": "★ Нормализация", "d": "Сущности хранятся в словаре по id, а порядок — отдельным массивом id. Нет дублей, доступ и обновление по id — без обхода массива.", "c": "{\n  ids: [1, 2],\n  entities: {\n    1: { id: 1, title: 'Купить чай' },\n    2: { id: 2, title: 'Учить RTK' },\n  },\n}", "open": true},
+  {"t": "★ createEntityAdapter", "d": "Готовую нормализованную структуру, редьюсеры для CRUD (<code>addOne</code>, <code>updateOne</code>, <code>removeOne</code>, <code>setAll</code>) и селекторы (<code>selectAll</code>, <code>selectById</code>).", "c": "const adapter = createEntityAdapter();\nconst slice = createSlice({\n  name: 'todos',\n  initialState: adapter.getInitialState(),\n  reducers: { added: adapter.addOne, removed: adapter.removeOne },\n});"},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"redux",n:"Redux Toolkit",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

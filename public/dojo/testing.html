@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Тесты по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>Тестирование</span></nav>
+<div class="wrap">
+  <header>
+    <h1>Тесты <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== ЗАЧЕМ ТЕСТЫ ===== */
+test_why: {
+  name:"Зачем тесты",
+  code:[
+  "<span class=\"cm\">// formatPrice(1500) → '1 500 ₽'</span>",
+  "<span class=\"fn\">test</span>(<span class=\"str\">'форматирует цену'</span>, () =&gt; {",
+  "  <span class=\"fn\">expect</span>(<span class=\"fn\">formatPrice</span>(<span class=\"num\">1500</span>)).<span class=\"fn\">toBe</span>(<span class=\"str\">'1 500 ₽'</span>);",
+  "});",
+  "",
+  "<span class=\"cm\">// через месяц кто-то «оптимизировал» formatPrice</span>"],
+  panels:[["ci", "Проверка при каждом изменении", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> тесты <b>автоматически проверяют</b>, что код работает как задумано.</li><li><b>Зачем:</b> ловить ошибки <b>до пользователя</b>, смело <b>рефакторить</b>, тесты служат <b>документацией</b> поведения.</li><li><b>Как отвечать с небольшим опытом:</b> «писал unit-тесты на Jest/Vitest для утилит и компонентов через Testing Library, пробовал e2e на Playwright» — <b>конкретно</b>, без преувеличений.</li><li><b>Плюс:</b> показать готовность — «понимаю пирамиду тестирования и что тестировать в первую очередь».</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3, 4], t:"Тест описывает поведение", x:"Тест — исполняемая документация: что функция должна делать.", hl:"ci", p:{ci:[it("formatPrice(1500) → '1 500 ₽' ✓",'new')]}},
+   {line:[6], t:"Рефакторинг", x:"Кто-то поменял функцию и сломал пробел между разрядами. Тест упал в CI до слияния — пользователи не увидели ошибку.", hl:"ci", p:{ci:[it("formatPrice(1500) → '1 500 ₽' ✓"),it("после правки: '1500 ₽' ✗ <span class=\"chip cok\">пойман до продакшена</span>",'new')]}},
+   {line:[], t:"Итог", x:"Тесты ловят ошибки до пользователя, дают смело рефакторить и описывают поведение. Отвечаем честно и конкретно, что уже писал.", fin:true, p:{ci:[it("formatPrice(1500) → '1 500 ₽' ✓"),it("после правки: '1500 ₽' ✗ <span class=\"chip cok\">пойман до продакшена</span>")]}},
+  ]
+},
+
+/* ===== ПИРАМИДА ТЕСТОВ ===== */
+test_types: {
+  name:"Пирамида тестов",
+  code:[
+  "unit:         <span class=\"fn\">formatPrice</span>(<span class=\"num\">1500</span>) === <span class=\"str\">'1 500 ₽'</span>",
+  "интеграция:   &lt;CartForm /&gt; + валидация + мок API",
+  "e2e:          браузер: каталог → корзина → оплата"],
+  panels:[["pyr", "Пирамида", "items", "wide"], ["cost", "Скорость и цена", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Unit</b> — одна функция или компонент <b>в изоляции</b>; быстрые и дешёвые.</li><li><b>Интеграционные</b> — несколько частей <b>вместе</b>: компонент с формой, хуком и запросом (замоканным).</li><li><b>E2E</b> — весь сценарий <b>в настоящем браузере</b>: открыть сайт, войти, оформить заказ; медленные и дорогие.</li><li><b>Пирамида:</b> внизу <b>много unit</b>, в середине интеграционных, сверху <b>мало e2e</b>. Для фронтенда часто говорят про <b>«кубок»</b> (testing trophy) — упор на <b>интеграционные</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Unit", x:"Одна функция или компонент изолированно. Миллисекунды.", hl:"pyr", p:{pyr:[it("низ: unit — много",'new')],cost:[it("unit: мс, дёшево, точно указывает место ошибки",'new')]}},
+   {line:[2], t:"Интеграция", x:"Несколько частей вместе: форма, валидация, обработка ответа.", hl:"pyr", p:{pyr:[it("низ: unit — много"),it("середина: интеграционные",'new')],cost:[it("unit: мс"),it("интеграция: секунды, ближе к реальности",'new')]}},
+   {line:[3], t:"E2E", x:"Весь сценарий в браузере. Самые близкие к реальности, но медленные и хрупкие.", hl:"pyr", p:{pyr:[it("низ: unit — много"),it("середина: интеграционные"),it("верх: e2e — мало",'new')],cost:[it("unit: мс"),it("интеграция: секунды"),it("e2e: секунды-минуты, дорого поддерживать",'new')]}},
+   {line:[], t:"Кубок тестирования", x:"Во фронтенде часто делают упор на интеграционные тесты компонентов — «testing trophy».", hl:"pyr", p:{pyr:[it("unit"),it("интеграционные — основной упор <span class=\"chip c2\">trophy</span>",'new'),it("e2e")],cost:[it("unit: мс"),it("интеграция: секунды"),it("e2e: секунды-минуты, дорого поддерживать")]}},
+   {line:[], t:"Итог", x:"Unit — быстро и точно, интеграционные — части вместе, e2e — сценарий в браузере. Много внизу, мало наверху.", fin:true, p:{pyr:[it("unit"),it("интеграционные — основной упор <span class=\"chip c2\">trophy</span>"),it("e2e")],cost:[it("unit: мс"),it("интеграция: секунды"),it("e2e: секунды-минуты, дорого поддерживать")]}},
+  ]
+},
+
+/* ===== КАК УСТРОЕН ТЕСТ ===== */
+test_jest: {
+  name:"Как устроен тест",
+  code:[
+  "<span class=\"fn\">describe</span>(<span class=\"str\">'cart'</span>, () =&gt; {",
+  "  <span class=\"fn\">test</span>(<span class=\"str\">'считает сумму'</span>, () =&gt; {",
+  "    <span class=\"kw\">const</span> cart = [{ price: <span class=\"num\">100</span> }, { price: <span class=\"num\">50</span> }];     <span class=\"cm\">// Arrange</span>",
+  "    <span class=\"kw\">const</span> total = <span class=\"fn\">sum</span>(cart);                          <span class=\"cm\">// Act</span>",
+  "    <span class=\"fn\">expect</span>(total).<span class=\"fn\">toBe</span>(<span class=\"num\">150</span>);                          <span class=\"cm\">// Assert</span>",
+  "  });",
+  "  <span class=\"fn\">test</span>(<span class=\"str\">'объекты сравнивает по содержимому'</span>, () =&gt; {",
+  "    <span class=\"fn\">expect</span>({ a: <span class=\"num\">1</span> }).<span class=\"fn\">toEqual</span>({ a: <span class=\"num\">1</span> });",
+  "  });",
+  "});"],
+  panels:[["run", "Запуск vitest", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>Jest</b> и <b>Vitest</b> — тест-раннеры с почти <b>одинаковым API</b>; Vitest работает на <b>Vite</b> — быстрее и без отдельной настройки сборки в Vite-проекте.</li><li><b>Устройство теста:</b> <code>describe</code> — группа, <code>test</code>/<code>it</code> — один случай, <code>expect(...).toBe/ toEqual/ toHaveBeenCalled</code> — проверки.</li><li><b>Схема AAA:</b> <b>Arrange</b> (подготовить) → <b>Act</b> (выполнить) → <b>Assert</b> (проверить).</li><li><b>Подвох:</b> <code>toBe</code> сравнивает по ссылке (<code>Object.is</code>), для объектов и массивов — <b><code>toEqual</code></b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"describe и test", x:"Группа и отдельный случай.", hl:"run", p:{run:[it("cart",'new')]}},
+   {line:[3], t:"Arrange", x:"Подготовили данные.", hl:"run", p:{run:[it("cart"),it("  считает сумму: подготовка",'new')]}},
+   {line:[4], t:"Act", x:"Выполнили действие.", hl:"run", p:{run:[it("cart"),it("  считает сумму: вызвали sum",'new')]}},
+   {line:[5], t:"Assert", x:"Проверили результат матчером.", hl:"run", p:{run:[it("cart"),it("  ✓ считает сумму (2 мс)",'new')]}},
+   {line:[8], t:"toEqual", x:"<code>toBe</code> упал бы — это разные объекты. <code>toEqual</code> сравнивает содержимое.", hl:"run", p:{run:[it("cart"),it("  ✓ считает сумму"),it("  ✓ объекты сравнивает по содержимому",'new')]}},
+   {line:[], t:"Итог", x:"describe → test → expect. Схема AAA: подготовить, выполнить, проверить. Vitest и Jest почти одинаковы, Vitest — на Vite.", fin:true, p:{run:[it("cart"),it("  ✓ считает сумму"),it("  ✓ объекты сравнивает по содержимому")]}},
+  ]
+},
+
+/* ===== МОКИ ===== */
+test_mock: {
+  name:"Моки",
+  code:[
+  "vi.<span class=\"fn\">mock</span>(<span class=\"str\">'./api'</span>, () =&gt; ({",
+  "  getUser: vi.<span class=\"fn\">fn</span>().<span class=\"fn\">mockResolvedValue</span>({ name: <span class=\"str\">'Саша'</span> }),",
+  "}));",
+  "",
+  "<span class=\"fn\">test</span>(<span class=\"str\">'показывает имя'</span>, <span class=\"kw\">async</span> () =&gt; {",
+  "  <span class=\"fn\">render</span>(&lt;Profile id={<span class=\"num\">5</span>} /&gt;);",
+  "  <span class=\"fn\">expect</span>(<span class=\"kw\">await</span> screen.<span class=\"fn\">findByText</span>(<span class=\"str\">'Саша'</span>)).<span class=\"fn\">toBeInTheDocument</span>();",
+  "  <span class=\"fn\">expect</span>(getUser).<span class=\"fn\">toHaveBeenCalledWith</span>(<span class=\"num\">5</span>);",
+  "});"],
+  panels:[["real", "Настоящая зависимость", "items"], ["mock", "Мок", "items"], ["check", "Проверки", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> мок — <b>подмена</b> реальной зависимости управляемой заглушкой.</li><li><b>Зачем:</b> тест не зависит от <b>сети, времени, случайности</b>; можно задать ответ и <b>проверить вызов</b>.</li><li><b>Как:</b> <code>vi.fn()</code> / <code>jest.fn()</code> — функция-шпион; <code>vi.mock('./api')</code> — подмена модуля; <b>MSW</b> — перехват сетевых запросов на уровне fetch.</li><li><b>Что мокать:</b> <b>внешнее</b> — API, таймеры, даты, <code>localStorage</code>; <b>не мокать</b> то, что тестируешь, иначе тест ничего не проверяет.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Подменяем модуль", x:"Вместо настоящего запроса к серверу — функция, которая сразу отдаёт заданные данные.", hl:"mock", p:{real:[it("api.getUser → сеть <span class=\"chip cbad\">нестабильно</span>",'new')],mock:[it("getUser → { name: 'Саша' }",'new')],check:[it("—")]}},
+   {line:[6], t:"Рендер", x:"Компонент вызывает getUser — на самом деле мок.", hl:"mock", p:{real:[it("api.getUser → сеть <span class=\"chip cbad\">нестабильно</span>")],mock:[it("getUser → { name: 'Саша' }"),it("вызван с 5",'new')],check:[it("—")]}},
+   {line:[7], t:"Проверка экрана", x:"Ждём появления имени.", hl:"check", p:{real:[it("api.getUser → сеть <span class=\"chip cbad\">нестабильно</span>")],mock:[it("getUser → { name: 'Саша' }"),it("вызван с 5")],check:[it("findByText('Саша') ✓",'new')]}},
+   {line:[8], t:"Проверка вызова", x:"Мок помнит, как его вызвали.", hl:"check", p:{real:[it("api.getUser → сеть <span class=\"chip cbad\">нестабильно</span>")],mock:[it("getUser → { name: 'Саша' }"),it("вызван с 5")],check:[it("findByText('Саша') ✓"),it("toHaveBeenCalledWith(5) ✓",'new')]}},
+   {line:[], t:"Итог", x:"Мок — управляемая подмена внешней зависимости: сеть, таймеры, даты. Можно задать ответ и проверить вызов. Сам тестируемый код не мокаем.", fin:true, p:{real:[it("api.getUser → сеть <span class=\"chip cbad\">нестабильно</span>")],mock:[it("getUser → { name: 'Саша' }"),it("вызван с 5")],check:[it("findByText('Саша') ✓"),it("toHaveBeenCalledWith(5) ✓")]}},
+  ]
+},
+
+/* ===== REACT TESTING LIBRARY ===== */
+test_rtl: {
+  name:"React Testing Library",
+  code:[
+  "<span class=\"fn\">render</span>(&lt;LoginForm /&gt;);",
+  "",
+  "<span class=\"kw\">await</span> user.<span class=\"fn\">type</span>(screen.<span class=\"fn\">getByLabelText</span>(<span class=\"str\">'Email'</span>), <span class=\"str\">'a@b.ru'</span>);",
+  "<span class=\"kw\">await</span> user.<span class=\"fn\">click</span>(screen.<span class=\"fn\">getByRole</span>(<span class=\"str\">'button'</span>, { name: <span class=\"str\">'Войти'</span> }));",
+  "",
+  "<span class=\"fn\">expect</span>(screen.<span class=\"fn\">queryByText</span>(<span class=\"str\">'Ошибка'</span>)).not.<span class=\"fn\">toBeInTheDocument</span>();",
+  "<span class=\"fn\">expect</span>(<span class=\"kw\">await</span> screen.<span class=\"fn\">findByText</span>(<span class=\"str\">'Добро пожаловать'</span>)).<span class=\"fn\">toBeInTheDocument</span>();"],
+  panels:[["screen", "Экран", "items"], ["queries", "Запросы", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> RTL тестирует компоненты <b>как пользователь</b>: ищет элементы по <b>роли, тексту, подписи</b>, а не по классам и внутреннему состоянию.</li><li><b>Как работает:</b> <code>render(&lt;Comp /&gt;)</code> → <code>screen.getByRole('button', { name: 'Войти' })</code> → <code>userEvent.click</code> → <code>expect(...).toBeInTheDocument()</code>.</li><li><b>Запросы:</b> <b>getBy</b> — элемент есть, иначе <b>ошибка</b>; <b>queryBy</b> — вернёт <b>null</b>, для проверки отсутствия; <b>findBy</b> — <b>ждёт</b> появления (асинхронно).</li><li><b>Принцип:</b> «чем больше тест похож на реальное использование, тем больше уверенности»; приоритет поиска — <b>getByRole</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"render", x:"Компонент отрисован в тестовый DOM.", hl:"screen", p:{screen:[it("форма: Email, Войти",'new')],queries:[it("—")]}},
+   {line:[3], t:"getByLabelText", x:"Ищем поле по подписи — как пользователь. Нет элемента — тест сразу падает.", hl:"queries", p:{screen:[it("форма: Email, Войти")],queries:[it("getByLabelText('Email') — нашёл, ввели a@b.ru",'new')]}},
+   {line:[4], t:"getByRole", x:"Кнопку — по роли и названию. Так ищет и скринридер.", hl:"queries", p:{screen:[it("форма: Email, Войти")],queries:[it("getByLabelText('Email')"),it("getByRole('button', { name: 'Войти' }) — клик",'new')]}},
+   {line:[6], t:"queryBy", x:"Проверяем отсутствие: queryBy вернёт null, а не упадёт.", hl:"queries", p:{screen:[it("форма: Email, Войти")],queries:[it("getByLabelText"),it("getByRole"),it("queryByText('Ошибка') → null ✓",'new')]}},
+   {line:[7], t:"findBy", x:"Текст появится после ответа — findBy ждёт.", hl:"screen", p:{screen:[it("Добро пожаловать",'new')],queries:[it("getByLabelText"),it("getByRole"),it("queryByText → null"),it("findByText — дождался ✓",'new')]}},
+   {line:[], t:"Итог", x:"Тестируем как пользователь: по роли, подписи, тексту. getBy — должен быть, queryBy — проверить отсутствие, findBy — подождать.", fin:true, p:{screen:[it("Добро пожаловать")],queries:[it("getByLabelText"),it("getByRole"),it("queryByText → null"),it("findByText — дождался ✓")]}},
+  ]
+},
+
+/* ===== PLAYWRIGHT ===== */
+test_e2e: {
+  name:"Playwright",
+  code:[
+  "<span class=\"fn\">test</span>(<span class=\"str\">'оформление заказа'</span>, <span class=\"kw\">async</span> ({ page }) =&gt; {",
+  "  <span class=\"kw\">await</span> page.<span class=\"fn\">goto</span>(<span class=\"str\">'/catalog'</span>);",
+  "  <span class=\"kw\">await</span> page.<span class=\"fn\">getByRole</span>(<span class=\"str\">'button'</span>, { name: <span class=\"str\">'В корзину'</span> }).<span class=\"fn\">first</span>().<span class=\"fn\">click</span>();",
+  "  <span class=\"kw\">await</span> page.<span class=\"fn\">getByRole</span>(<span class=\"str\">'link'</span>, { name: <span class=\"str\">'Корзина'</span> }).<span class=\"fn\">click</span>();",
+  "  <span class=\"kw\">await</span> <span class=\"fn\">expect</span>(page.<span class=\"fn\">getByText</span>(<span class=\"str\">'1 товар'</span>)).<span class=\"fn\">toBeVisible</span>();",
+  "});"],
+  panels:[["browser", "Браузер", "items"], ["log", "Шаги теста", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Playwright запускает <b>настоящий браузер</b> (Chromium, Firefox, WebKit) и проходит сценарий пользователя.</li><li><b>Устройство теста:</b> <code>test('логин', async ({ page }) =&gt; { await page.goto('/'); await page.getByLabel('Email').fill(...); await page.getByRole('button', { name: 'Войти' }).click(); await expect(page).toHaveURL('/profile'); })</code>.</li><li><b>Плюсы:</b> <b>автоожидание</b> элементов, локаторы по роли и тексту, трейсы и скриншоты при падении, параллельный запуск.</li><li><b>Что покрывать:</b> <b>критичные сценарии</b> — вход, регистрация, оплата, основная форма.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2], t:"goto", x:"Настоящий Chromium открывает страницу.", hl:"browser", p:{browser:[it("/catalog",'new')],log:[it("goto /catalog ✓",'new')]}},
+   {line:[3], t:"Клик", x:"Playwright сам ждёт, пока кнопка появится и станет кликабельной — без sleep.", hl:"log", p:{browser:[it("/catalog")],log:[it("goto ✓"),it("click «В корзину» (подождал 120 мс) ✓",'new')]}},
+   {line:[4], t:"Переход", x:"Переход в корзину.", hl:"browser", p:{browser:[it("/cart",'new')],log:[it("goto ✓"),it("click ✓"),it("click «Корзина» ✓",'new')]}},
+   {line:[5], t:"Проверка", x:"expect тоже ждёт появления. При падении — скриншот и трейс.", hl:"log", p:{browser:[it("/cart")],log:[it("goto ✓"),it("click ✓"),it("click ✓"),it("expect «1 товар» visible ✓",'new')]}},
+   {line:[], t:"Итог", x:"Playwright — настоящий браузер, локаторы по роли и тексту, автоожидание, трейсы. E2E — для критичных сценариев.", fin:true, p:{browser:[it("/cart")],log:[it("goto ✓"),it("click ✓"),it("click ✓"),it("expect «1 товар» visible ✓")]}},
+  ]
+},
+
+/* ===== ЧТО ТЕСТИРОВАТЬ ===== */
+test_what: {
+  name:"Что тестировать",
+  code:[
+  "utils/price.ts       → unit: расчёты, скидки, формат",
+  "components/CartForm  → RTL: ввод, валидация, loading, error",
+  "e2e/checkout.spec    → вход → корзина → заказ",
+  "bug #<span class=\"num\">123</span>             → сначала падающий тест, потом фикс"],
+  panels:[["plan", "План покрытия", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Бизнес-логику:</b> утилиты расчётов, форматирования, валидации — unit-тестами.</li><li><b>Ключевые компоненты и формы:</b> ввод, валидация, отправка, состояния <b>загрузки и ошибки</b> — через Testing Library.</li><li><b>Критичные сценарии:</b> вход, оформление заказа — <b>e2e</b>.</li><li><b>Не тратить время:</b> на стили, сторонние библиотеки и детали реализации; на <b>баг</b> — сначала тест, который его воспроизводит, потом исправление.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"Логика", x:"Там, где ошибка стоит денег, — unit-тесты.", hl:"plan", p:{plan:[it("1. расчёты и валидация — unit",'new')]}},
+   {line:[2], t:"Ключевые формы", x:"Компоненты, которыми пользуются чаще всего, включая состояния загрузки и ошибки.", hl:"plan", p:{plan:[it("1. логика — unit"),it("2. формы и их состояния — RTL",'new')]}},
+   {line:[3], t:"Критичный путь", x:"Пара e2e на главные сценарии.", hl:"plan", p:{plan:[it("1. логика"),it("2. формы"),it("3. 1–2 e2e на главные сценарии",'new')]}},
+   {line:[4], t:"Баг", x:"Сначала тест, который воспроизводит баг и падает, потом исправление — баг не вернётся.", hl:"plan", p:{plan:[it("1. логика"),it("2. формы"),it("3. e2e"),it("4. каждый баг → тест",'new')]}},
+   {line:[], t:"Итог", x:"В первую очередь — логика, ключевые формы, критичные сценарии и тесты на найденные баги. Не тестируем стили и чужие библиотеки.", fin:true, p:{plan:[it("1. логика"),it("2. формы"),it("3. e2e"),it("4. каждый баг → тест")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ test_why:[
+  {"t": "★ Зачем тесты", "d": "Чтобы ловить ошибки до пользователя, спокойно менять и рефакторить код — тесты сразу покажут, что сломалось, — и чтобы описывать ожидаемое поведение кода.", "open": true},
+  {"t": "★ Мало опыта", "d": "Честно и конкретно: что именно писал (unit на Vitest, компоненты через Testing Library, e2e на Playwright в учебном проекте), что понимаю (пирамида, моки) и что готов углублять."},
+ ],
+ test_types:[
+  {"t": "★ Unit", "d": "Тест одной функции или компонента в изоляции от остального. Быстрый, точно показывает, где ошибка.", "c": "test('sum складывает', () => {\n  expect(sum(2, 3)).toBe(5);\n});", "open": true},
+  {"t": "★ E2E", "d": "Проверка целого сценария пользователя в настоящем браузере: от открытия страницы до результата. Самые близкие к реальности, но медленные и хрупкие."},
+  {"t": "★ Пирамида", "d": "Принцип пропорций: много быстрых unit-тестов внизу, меньше интеграционных в середине и немного медленных e2e сверху. Во фронтенде часто делают упор на интеграционные — «кубок тестирования»."},
+ ],
+ test_jest:[
+  {"t": "★ Jest и Vitest", "d": "API почти одинаковый. Vitest работает поверх Vite: использует ту же конфигурацию и трансформации, быстрее запускается и нативно понимает ESM и TypeScript.", "open": true},
+  {"t": "★ Структура теста", "d": "<code>describe</code> группирует тесты, <code>test</code> — один случай, <code>expect</code> с матчером — проверка. Внутри — подготовить, выполнить, проверить (Arrange, Act, Assert).", "c": "describe('formatPrice', () => {\n  test('добавляет валюту', () => {\n    const result = formatPrice(1500);      // act\n    expect(result).toBe('1 500 ₽');         // assert\n  });\n});"},
+  {"t": "★ toBe и toEqual", "d": "<code>toBe</code> сравнивает строго (<code>Object.is</code>), разные объекты не равны. <code>toEqual</code> сравнивает содержимое рекурсивно.", "c": "expect({ a: 1 }).toBe({ a: 1 });    // ✗\nexpect({ a: 1 }).toEqual({ a: 1 });  // ✓"},
+ ],
+ test_mock:[
+  {"t": "★ Мок", "d": "Заглушка вместо настоящей зависимости. Можно задать её результат и проверить, как и с чем её вызвали.", "c": "const onSave = vi.fn();\nrender(<Form onSave={onSave} />);\nawait user.click(screen.getByRole('button', { name: 'Сохранить' }));\nexpect(onSave).toHaveBeenCalledWith({ name: '' });", "open": true},
+  {"t": "★ Что мокать", "d": "Мокать внешнее и нестабильное: сеть, таймеры, даты, случайные числа, браузерные API. Не мокать то, что проверяешь, и не мокать всё подряд — иначе тест проверяет моки, а не код."},
+  {"t": "★ MSW", "d": "Mock Service Worker — библиотека, которая перехватывает сетевые запросы и отдаёт заданные ответы. Компонент делает настоящий fetch, а тест не зависит от сервера."},
+ ],
+ test_rtl:[
+  {"t": "★ Принцип RTL", "d": "Как пользователь: найти элемент по роли, тексту или подписи, сделать действие, проверить результат на экране. Не проверять внутреннее состояние и детали реализации.", "open": true},
+  {"t": "★ getBy queryBy findBy", "d": "<code>getBy</code> бросает ошибку, если элемента нет. <code>queryBy</code> возвращает <code>null</code> — для проверки отсутствия. <code>findBy</code> возвращает промис и ждёт появления элемента.", "c": "screen.getByText('Привет');          // нет — ошибка\nscreen.queryByText('Ошибка');        // нет — null\nawait screen.findByText('Загружено'); // ждёт"},
+  {"t": "★ getByRole", "d": "Так ищут элементы пользователи и скринридеры. Заодно тест проверяет доступность: если кнопку нельзя найти по роли, с ней проблемы и у скринридера.", "c": "screen.getByRole('button', { name: 'Отправить' });"},
+ ],
+ test_e2e:[
+  {"t": "★ Playwright", "d": "Тест получает объект <code>page</code> — вкладку настоящего браузера. Переходим по адресу, находим элементы локаторами, действуем и проверяем результат через <code>expect</code>.", "c": "test('вход', async ({ page }) => {\n  await page.goto('/login');\n  await page.getByLabel('Email').fill('a@b.ru');\n  await page.getByRole('button', { name: 'Войти' }).click();\n  await expect(page).toHaveURL('/profile');\n});", "open": true},
+  {"t": "★ Автоожидание", "d": "Перед действием Playwright сам ждёт, пока элемент появится, станет видимым и доступным. Не нужны ручные <code>sleep</code>, тесты стабильнее."},
+ ],
+ test_what:[
+  {"t": "★ Приоритеты", "d": "Логику, от которой зависят деньги и данные (расчёты, валидация), ключевые формы и их состояния загрузки и ошибки, и пару критичных сценариев целиком в e2e.", "open": true},
+  {"t": "★ Тест на баг", "d": "Сначала написать тест, который воспроизводит баг и падает, потом исправить код. Так баг не вернётся незаметно."},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"testing",n:"Тестирование",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>

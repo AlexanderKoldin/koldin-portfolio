@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Додзё — по шагам</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Додзё">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#080808;--card:#111;--line:#242424;--txt:#ededed;--mut:#8f8f8f;--acc:#C1121F;--accbg:#2a0a0d}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:400 16px/1.5 Onest,system-ui,-apple-system,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 16px max(40px,env(safe-area-inset-bottom))}
+h1{font:700 30px/1.1 Unbounded,system-ui,sans-serif;margin:0 0 6px;letter-spacing:-.01em}
+h1 em{font-style:normal;color:var(--acc)}
+.sub{color:var(--mut);margin:0 0 22px}
+h2{font:500 13px/1 Onest,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:28px 0 12px}
+a{color:inherit}
+.resume{display:none;text-decoration:none;background:var(--accbg);border:1px solid var(--acc);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+.resume small{display:block;color:#e8a0a6;font-size:13px}
+.resume b{font-weight:600}
+.search{width:100%;font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 16px;outline:none}
+.search:focus{border-color:var(--acc)}
+.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.sec[data-now]{border-color:var(--acc)}
+.sec summary{list-style:none;display:flex;align-items:center;gap:10px;padding:16px;cursor:pointer;min-height:56px}
+.sec summary::-webkit-details-marker{display:none}
+.st{flex:1;display:flex;flex-direction:column;gap:2px}
+.st b{font-weight:600;font-size:17px}
+.st small{color:var(--mut);font-size:13px}
+.badge{display:none;font-size:12px;font-weight:600;color:#fff;background:var(--acc);border-radius:999px;padding:3px 9px}
+.sec[data-now] .badge{display:inline-block}
+.sec[data-done] .st b::after{content:" ✓";color:var(--mut);font-weight:400}
+.chev{width:10px;height:10px;border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:rotate(45deg);margin:0 4px 4px;transition:transform .2s}
+.sec[open] .chev{transform:rotate(225deg);margin-bottom:-4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 14px}
+.chip{text-decoration:none;font-size:15px;padding:9px 13px;border:1px solid var(--line);border-radius:999px;background:#0c0c0c}
+.chip:active,.open:active{background:#1c1c1c}
+.chip.hit{border-color:var(--acc);background:var(--accbg)}
+.open{display:block;text-decoration:none;color:var(--acc);font-weight:500;padding:12px 16px 16px;border-top:1px solid var(--line)}
+.tool{display:flex;gap:14px;align-items:center;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:10px}
+.tool i{font-style:normal;font-size:24px;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--accbg);flex:none}
+.tool b{display:block;font-weight:600;font-size:17px}
+.tool small{color:var(--mut);font-size:13px;line-height:1.35;display:block}
+.empty{display:none;color:var(--mut);padding:8px 2px}
+footer{color:#555;font-size:12px;margin-top:30px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Додзё <em>по шагам</em></h1>
+<p class="sub">121 тем в 10 разделах: код, шаги и «Как сказать на собеседовании».</p>
+
+<a class="resume" id="resume" href="#"><small>Продолжить</small><b id="resumeT"></b></a>
+<input class="search" id="q" type="search" placeholder="Найти тему: this, CORS, useEffect…" autocomplete="off">
+<p class="empty" id="empty">Ничего не нашлось.</p>
+
+<h2>Разделы</h2>
+<details class="sec" data-slug="js" data-from="2026-10-12" data-to="2026-10-30">
+<summary><span class="st"><b>JavaScript</b><small>12–30.10 · 22 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="js.html#closure" data-q="замыкание javascript">Замыкание</a><a class="chip" href="js.html#eventloop" data-q="event loop javascript">Event Loop</a><a class="chip" href="js.html#promise" data-q="promise и async/await javascript">Promise и async/await</a><a class="chip" href="js.html#this" data-q="this javascript">this</a><a class="chip" href="js.html#callapplybind" data-q="call, apply, bind javascript">call, apply, bind</a><a class="chip" href="js.html#varletconst" data-q="var, let, const javascript">var, let, const</a><a class="chip" href="js.html#proto" data-q="прототипы javascript">Прототипы</a><a class="chip" href="js.html#classes" data-q="классы javascript">Классы</a><a class="chip" href="js.html#primitives" data-q="примитивы и объекты javascript">Примитивы и объекты</a><a class="chip" href="js.html#equality" data-q="== и === javascript">== и ===</a><a class="chip" href="js.html#functions" data-q="виды функций javascript">Виды функций</a><a class="chip" href="js.html#arrays" data-q="методы массивов javascript">Методы массивов</a><a class="chip" href="js.html#destructuring" data-q="деструктуризация и spread javascript">Деструктуризация и spread</a><a class="chip" href="js.html#syntax" data-q="?. и ?? javascript">?. и ??</a><a class="chip" href="js.html#immutability" data-q="иммутабельность javascript">Иммутабельность</a><a class="chip" href="js.html#debounce" data-q="debounce и throttle javascript">Debounce и Throttle</a><a class="chip" href="js.html#mapset" data-q="map и set javascript">Map и Set</a><a class="chip" href="js.html#dom" data-q="dom события javascript">DOM события</a><a class="chip" href="js.html#modules" data-q="es-модули javascript">ES-модули</a><a class="chip" href="js.html#gc" data-q="сборка мусора javascript">Сборка мусора</a><a class="chip" href="js.html#hof" data-q="фвп и каррирование javascript">ФВП и каррирование</a><a class="chip" href="js.html#polyfills" data-q="полифиллы javascript">Полифиллы</a></div>
+<a class="open" href="js.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="react" data-from="2026-10-31" data-to="2026-11-05">
+<summary><span class="st"><b>React</b><small>31.10–05.11 · 23 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="react.html#vdom" data-q="virtual dom react">Virtual DOM</a><a class="chip" href="react.html#jsx" data-q="jsx react">JSX</a><a class="chip" href="react.html#props" data-q="props и state react">Props и state</a><a class="chip" href="react.html#lifecycle" data-q="жизненный цикл react">Жизненный цикл</a><a class="chip" href="react.html#rerender" data-q="ре-рендер react">Ре-рендер</a><a class="chip" href="react.html#key" data-q="key в списках react">key в списках</a><a class="chip" href="react.html#controlled" data-q="controlled и uncontrolled react">Controlled и uncontrolled</a><a class="chip" href="react.html#events" data-q="события в react react">События в React</a><a class="chip" href="react.html#usestate" data-q="usestate и батчинг react">useState и батчинг</a><a class="chip" href="react.html#useeffect" data-q="useeffect react">useEffect</a><a class="chip" href="react.html#useref" data-q="useref и usestate react">useRef и useState</a><a class="chip" href="react.html#usereducer" data-q="usereducer react">useReducer</a><a class="chip" href="react.html#memo" data-q="memo, usememo, usecallback react">memo, useMemo, useCallback</a><a class="chip" href="react.html#compiler" data-q="react compiler react">React Compiler</a><a class="chip" href="react.html#hooksrules" data-q="правила хуков react">Правила хуков</a><a class="chip" href="react.html#customhook" data-q="custom hook react">Custom hook</a><a class="chip" href="react.html#context" data-q="context api react">Context API</a><a class="chip" href="react.html#react19" data-q="новое в react 19 react">Новое в React 19</a><a class="chip" href="react.html#transition" data-q="usetransition react">useTransition</a><a class="chip" href="react.html#suspense" data-q="lazy, suspense, errorboundary react">lazy, Suspense, ErrorBoundary</a><a class="chip" href="react.html#ssr" data-q="csr, ssr, rsc react">CSR, SSR, RSC</a><a class="chip" href="react.html#classes_r" data-q="классы и функции react">Классы и функции</a><a class="chip" href="react.html#perf" data-q="оптимизация react react">Оптимизация React</a></div>
+<a class="open" href="react.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="typescript" data-from="2026-11-06" data-to="2026-11-08">
+<summary><span class="st"><b>TypeScript</b><small>06–07.11 · 10 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="typescript.html#ts_why" data-q="зачем typescript typescript">Зачем TypeScript</a><a class="chip" href="typescript.html#ts_interface" data-q="interface и type typescript">interface и type</a><a class="chip" href="typescript.html#ts_basic" data-q="any, unknown, never typescript">any, unknown, never</a><a class="chip" href="typescript.html#ts_narrowing" data-q="сужение типов typescript">сужение типов</a><a class="chip" href="typescript.html#ts_generics" data-q="дженерики typescript">дженерики</a><a class="chip" href="typescript.html#ts_utility" data-q="utility types typescript">utility types</a><a class="chip" href="typescript.html#ts_keyof" data-q="keyof, typeof, t[k] typescript">keyof, typeof, T[K]</a><a class="chip" href="typescript.html#ts_enum" data-q="enum и as const typescript">enum и as const</a><a class="chip" href="typescript.html#ts_as" data-q="as и satisfies typescript">as и satisfies</a><a class="chip" href="typescript.html#ts_react" data-q="типизация react typescript">типизация React</a></div>
+<a class="open" href="typescript.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="redux" data-from="2026-11-09" data-to="2026-11-09">
+<summary><span class="st"><b>Redux Toolkit</b><small>09.11 · 9 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="redux.html#rtk_why" data-q="зачем redux redux toolkit">Зачем Redux</a><a class="chip" href="redux.html#rtk_flow" data-q="поток данных redux toolkit">Поток данных</a><a class="chip" href="redux.html#rtk_store" data-q="configurestore redux toolkit">configureStore</a><a class="chip" href="redux.html#rtk_slice" data-q="createslice redux toolkit">createSlice</a><a class="chip" href="redux.html#rtk_thunk" data-q="createasyncthunk redux toolkit">createAsyncThunk</a><a class="chip" href="redux.html#rtk_select" data-q="селекторы redux toolkit">Селекторы</a><a class="chip" href="redux.html#rtk_query" data-q="rtk query redux toolkit">RTK Query</a><a class="chip" href="redux.html#rtk_mw" data-q="middleware redux toolkit">Middleware</a><a class="chip" href="redux.html#rtk_norm" data-q="нормализация redux toolkit">Нормализация</a></div>
+<a class="open" href="redux.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="router" data-from="2026-11-10" data-to="2026-11-10">
+<summary><span class="st"><b>React Router</b><small>10.11 · 8 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="router.html#rr_spa" data-q="роутинг в spa react router">Роутинг в SPA</a><a class="chip" href="router.html#rr_routes" data-q="routes и outlet react router">Routes и Outlet</a><a class="chip" href="router.html#rr_link" data-q="link и navlink react router">Link и NavLink</a><a class="chip" href="router.html#rr_hooks" data-q="хуки роутера react router">Хуки роутера</a><a class="chip" href="router.html#rr_protected" data-q="защищённый маршрут react router">Защищённый маршрут</a><a class="chip" href="router.html#rr_loader" data-q="loader и action react router">loader и action</a><a class="chip" href="router.html#rr_lazy" data-q="ленивые страницы react router">Ленивые страницы</a><a class="chip" href="router.html#rr_new" data-q="react router v7+ react router">React Router v7+</a></div>
+<a class="open" href="router.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="network" data-from="2026-11-11" data-to="2026-11-12">
+<summary><span class="st"><b>Сеть и REST API</b><small>11–12.11 · 11 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="network.html#net_url" data-q="что происходит при вводе адреса сеть и rest api">Что происходит при вводе адреса</a><a class="chip" href="network.html#net_methods" data-q="http-методы сеть и rest api">HTTP-методы</a><a class="chip" href="network.html#net_codes" data-q="статус-коды сеть и rest api">Статус-коды</a><a class="chip" href="network.html#net_rest" data-q="rest сеть и rest api">REST</a><a class="chip" href="network.html#net_https" data-q="http и https сеть и rest api">HTTP и HTTPS</a><a class="chip" href="network.html#net_cors" data-q="cors сеть и rest api">CORS</a><a class="chip" href="network.html#net_fetch" data-q="fetch, ошибки, отмена сеть и rest api">fetch, ошибки, отмена</a><a class="chip" href="network.html#net_auth" data-q="аутентификация сеть и rest api">Аутентификация</a><a class="chip" href="network.html#net_storage" data-q="хранилища браузера сеть и rest api">Хранилища браузера</a><a class="chip" href="network.html#net_cache" data-q="http-кэширование сеть и rest api">HTTP-кэширование</a><a class="chip" href="network.html#net_ws" data-q="websocket, polling, sse сеть и rest api">WebSocket, polling, SSE</a></div>
+<a class="open" href="network.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="git" data-from="2026-11-13" data-to="2026-11-13">
+<summary><span class="st"><b>Git</b><small>13.11 · 7 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="git.html#git_basics" data-q="основные команды git">Основные команды</a><a class="chip" href="git.html#git_flow" data-q="ветки и pull request git">Ветки и Pull Request</a><a class="chip" href="git.html#git_rebase" data-q="merge и rebase git">merge и rebase</a><a class="chip" href="git.html#git_conflict" data-q="конфликт git">Конфликт</a><a class="chip" href="git.html#git_reset" data-q="reset и revert git">reset и revert</a><a class="chip" href="git.html#git_stash" data-q="stash и cherry-pick git">stash и cherry-pick</a><a class="chip" href="git.html#git_ignore" data-q=".gitignore и коммиты git">.gitignore и коммиты</a></div>
+<a class="open" href="git.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="testing" data-from="2026-11-13" data-to="2026-11-13">
+<summary><span class="st"><b>Тестирование</b><small>13.11 · 7 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="testing.html#test_why" data-q="зачем тесты тестирование">Зачем тесты</a><a class="chip" href="testing.html#test_types" data-q="пирамида тестов тестирование">Пирамида тестов</a><a class="chip" href="testing.html#test_jest" data-q="как устроен тест тестирование">Как устроен тест</a><a class="chip" href="testing.html#test_mock" data-q="моки тестирование">Моки</a><a class="chip" href="testing.html#test_rtl" data-q="react testing library тестирование">React Testing Library</a><a class="chip" href="testing.html#test_e2e" data-q="playwright тестирование">Playwright</a><a class="chip" href="testing.html#test_what" data-q="что тестировать тестирование">Что тестировать</a></div>
+<a class="open" href="testing.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="browser" data-from="2026-11-14" data-to="2026-11-15">
+<summary><span class="st"><b>Браузер и производительность</b><small>14.11 · 9 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="browser.html#br_crp" data-q="critical rendering path браузер и производительность">Critical rendering path</a><a class="chip" href="browser.html#br_reflow" data-q="reflow и repaint браузер и производительность">Reflow и repaint</a><a class="chip" href="browser.html#br_vitals" data-q="core web vitals браузер и производительность">Core Web Vitals</a><a class="chip" href="browser.html#br_speed" data-q="ускорение загрузки браузер и производительность">Ускорение загрузки</a><a class="chip" href="browser.html#br_security" data-q="xss, csrf, clickjacking браузер и производительность">XSS, CSRF, clickjacking</a><a class="chip" href="browser.html#br_vite" data-q="сборщик vite браузер и производительность">Сборщик Vite</a><a class="chip" href="browser.html#br_workers" data-q="web workers браузер и производительность">Web Workers</a><a class="chip" href="browser.html#br_observer" data-q="intersectionobserver браузер и производительность">IntersectionObserver</a><a class="chip" href="browser.html#br_devtools" data-q="devtools браузер и производительность">DevTools</a></div>
+<a class="open" href="browser.html">Открыть раздел целиком →</a>
+</details>
+<details class="sec" data-slug="html-css" data-from="2026-11-16" data-to="2026-11-17">
+<summary><span class="st"><b>HTML и CSS</b><small>16–17.11 · 15 тем</small></span><span class="badge">сейчас</span><span class="chev" aria-hidden="true"></span></summary>
+<div class="chips"><a class="chip" href="html-css.html#css_semantic" data-q="семантические теги html и css">Семантические теги</a><a class="chip" href="html-css.html#css_a11y" data-q="доступность html и css">Доступность</a><a class="chip" href="html-css.html#css_script" data-q="script, async, defer html и css">script, async, defer</a><a class="chip" href="html-css.html#css_box" data-q="box model html и css">Box model</a><a class="chip" href="html-css.html#css_spec" data-q="специфичность html и css">Специфичность</a><a class="chip" href="html-css.html#css_position" data-q="position и z-index html и css">position и z-index</a><a class="chip" href="html-css.html#css_flexgrid" data-q="flexbox и grid html и css">Flexbox и Grid</a><a class="chip" href="html-css.html#css_center" data-q="центрирование html и css">Центрирование</a><a class="chip" href="html-css.html#css_hide" data-q="скрытие элементов html и css">Скрытие элементов</a><a class="chip" href="html-css.html#css_units" data-q="единицы измерения html и css">Единицы измерения</a><a class="chip" href="html-css.html#css_adaptive" data-q="адаптивная вёрстка html и css">Адаптивная вёрстка</a><a class="chip" href="html-css.html#css_bem" data-q="бэм html и css">БЭМ</a><a class="chip" href="html-css.html#css_pseudo" data-q="псевдоклассы и псевдоэлементы html и css">Псевдоклассы и псевдоэлементы</a><a class="chip" href="html-css.html#css_modern" data-q="css-переменные html и css">CSS-переменные</a><a class="chip" href="html-css.html#css_react" data-q="стили в react html и css">Стили в React</a></div>
+<a class="open" href="html-css.html">Открыть раздел целиком →</a>
+</details>
+
+<h2>Тренировка</h2>
+<a class="tool" href="quiz.html"><i>?</i><span><b>Что выведет</b><small>10 случайных задач. Темы React работают только с интернетом. Результаты здесь не сохраняются.</small></span></a>
+<a class="tool" href="https://claude.ai/artifact/Pay5A9mCTkxyutzhj8P7nQ" target="_blank" rel="noopener"><i>🃏</i><span><b>Карточки Додзё</b><small>На claude.ai, в Safari нужно войти в аккаунт. Там же прогресс по карточкам.</small></span></a>
+
+<footer>Личная страница, поисковики её не индексируют.</footer>
+</div>
+<script>
+(function(){
+  var today = new Date(); var iso = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  var secs = [].slice.call(document.querySelectorAll('.sec')), now = null;
+  secs.forEach(function(s){
+    if (iso > s.dataset.to) s.setAttribute('data-done','');
+    if (!now && iso >= s.dataset.from && iso <= s.dataset.to) now = s;
+  });
+  if (!now) now = secs.filter(function(s){return iso < s.dataset.from})[0] || secs[secs.length-1];
+  now.setAttribute('data-now',''); now.open = true;
+
+  try {
+    var last = JSON.parse(localStorage.getItem('dojo-last')||'null');
+    if (last && last.s) {
+      var r = document.getElementById('resume');
+      r.href = last.s + '.html' + (last.k ? '#'+last.k : '');
+      document.getElementById('resumeT').textContent = last.n + (last.t ? ' · ' + last.t : '');
+      r.style.display = 'block';
+    }
+  } catch(e){}
+
+  var q = document.getElementById('q'), empty = document.getElementById('empty');
+  var openState = secs.map(function(s){return s.open});
+  q.addEventListener('input', function(){
+    var v = q.value.trim().toLowerCase(), any = false;
+    secs.forEach(function(s,i){
+      var chips = [].slice.call(s.querySelectorAll('.chip')), hit = 0;
+      chips.forEach(function(c){var m = v && c.dataset.q.indexOf(v) > -1; c.classList.toggle('hit', !!m); c.style.display = (!v||m)?'':'none'; if(m) hit++;});
+      s.style.display = (!v || hit) ? '' : 'none';
+      s.open = v ? hit > 0 : openState[i];
+      if (hit) any = true;
+    });
+    empty.style.display = (v && !any) ? 'block' : 'none';
+  });
+})();
+</script>
+</body></html>

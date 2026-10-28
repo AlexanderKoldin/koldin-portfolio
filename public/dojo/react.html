@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>React по шагам</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Onest:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: вкладки тем сверху; слева код и пояснение шага, справа панели памяти/очередей; внизу пульт шагов */
+:root{
+  --bg:#080808; --panel:#121112; --panel2:#1d1a1b; --line:#2a2627; --fg:#ece8e8; --muted:#9a9192;
+  --accent:#C1121F; --accent-soft:rgba(193,18,31,.18);
+  --a1:#e0a43a; --a2:#4fa3c7; --ok:#6cc08b; --bad:#e2685f;
+  --display:"Unbounded","Onest",system-ui,sans-serif;
+  --body:"Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:18px}
+header{display:grid;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(22px,3.4vw,30px);margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font-family:var(--body);font-size:13px;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.tab:hover{color:var(--fg)}
+@media (max-width:600px){.tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding:0 16px 4px;scroll-snap-type:x proximity}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;scroll-snap-align:start}}
+.tab[aria-selected="true"]{color:#fff;background:var(--accent);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;transition:border-color .3s}
+.box.hl{border-color:var(--accent)}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 10px;font-weight:600}
+pre{margin:0;font-family:var(--mono);font-size:14px;line-height:1.75;overflow-x:auto}
+.ln{display:block;padding-right:10px;border-left:3px solid transparent;white-space:pre;transition:background .25s,border-color .25s}
+.ln i{display:inline-block;width:2.2em;color:#5a5254;font-style:normal;text-align:right;margin-right:12px;user-select:none}
+.ln.on{background:var(--accent-soft);border-left-color:var(--accent)}
+.ln.skip{opacity:.35;text-decoration:line-through}
+.kw{color:#d9779a}.fn{color:#e8c37a}.num{color:#9fd3a8}.str{color:#9fd3a8}.cm{color:#6f6668}
+.explain h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0 0 6px}
+.explain p,.say p{margin:0;max-width:62ch}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);padding:1px 5px;border-radius:4px}
+.say{border-color:var(--accent)}
+.say-steps{margin:0;padding-left:1.3em;max-width:62ch;display:flex;flex-direction:column;gap:6px}
+.say-steps b{color:var(--accent)}
+.say-note{margin:8px 0 0;font-size:.85em;opacity:.75}
+.panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panels .wide{grid-column:1/-1}
+@media (max-width:480px){.panels{grid-template-columns:minmax(0,1fr)}}
+.items{display:grid;gap:6px}
+.it{font-family:var(--mono);font-size:13px;padding:6px 10px;border-radius:6px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.it.new{animation:pop .9s ease}
+@keyframes pop{0%{background:var(--accent);color:#fff}100%{background:var(--panel2)}}
+.it.top{box-shadow:inset 3px 0 0 var(--accent)}
+.stack{display:flex;flex-direction:column-reverse;gap:6px}
+.queue{display:flex;flex-wrap:wrap;gap:6px}
+.queue .it{flex:0 1 auto}
+.empty{color:var(--muted);font-size:13px;font-family:var(--body)}
+.console .it{background:transparent;padding:1px 0}
+.console .it::before{content:"› ";color:var(--muted)}
+.chip{font-family:var(--body);font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.c1{color:var(--a1)}.c2{color:var(--a2)}.cok{color:var(--ok)}.cbad{color:var(--bad)}.cmut{color:var(--muted)}
+.env{border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px;min-width:0}
+.env.e1{border-color:var(--a1)}.env.e2{border-color:var(--a2)}
+.env h3{margin:0;font-size:13px;font-weight:600;font-family:var(--body)}
+.env .note{font-size:12px;color:var(--muted);font-family:var(--body)}
+.envs{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+button.b{font-family:var(--body);font-size:14px;font-weight:600;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 16px;cursor:pointer}
+button.b:hover{border-color:var(--muted)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.dot{width:20px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0;cursor:pointer}
+.dot.done{background:#5a2328}.dot.cur{background:var(--accent)}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.hint{color:var(--muted);font-size:12.5px;margin:0}
+.rel{display:grid;gap:4px;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;align-items:start}
+@media (max-width:480px){.rel-grid{grid-template-columns:minmax(0,1fr)}}
+.rel details{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.rel details[open]{border-color:var(--muted)}
+.rel summary{cursor:pointer;padding:11px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:70px}
+.rel summary::-webkit-details-marker{display:none}
+.rel summary::after{content:"+";color:var(--muted);font-weight:400}
+.rel details[open] summary::after{content:"−"}
+.rel summary:focus-visible{outline:2px solid var(--fg);outline-offset:-2px;border-radius:10px}
+.rel .rb{padding:0 14px 13px;display:grid;gap:8px}
+.rel .rb p{margin:0;font-size:14px}
+.rel .rb pre{white-space:pre-wrap;word-break:break-word;font-size:12.5px;line-height:1.6;background:var(--panel2);border-radius:6px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080808">
+<link rel="apple-touch-icon" href="icon.png">
+<style>
+.dojo-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1100px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) 16px 0;font:500 15px/1.2 Onest,system-ui,sans-serif}
+.dojo-bar a{color:#e9e9e9;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border:1px solid #2a2a2a;border-radius:999px;background:#111}
+.dojo-bar a:active{background:#1c1c1c}
+.dojo-bar span{color:#8a8a8a;font-size:13px}
+</style>
+</head>
+<body><nav class="dojo-bar"><a href="./">← Все разделы</a><span>React</span></nav>
+<div class="wrap">
+  <header>
+    <h1>React <span>по шагам</span></h1>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+
+  <div class="grid">
+    <div class="col">
+      <div class="box"><p class="lbl">Код</p><pre id="code"></pre></div>
+      <div class="box explain" aria-live="polite">
+        <p class="lbl" id="stepLbl"></p>
+        <h2 id="stepTitle"></h2>
+        <p id="stepText"></p>
+      </div>
+    </div>
+    <div class="col"><div class="panels" id="panels"></div></div>
+  </div>
+
+  <div class="box say" id="sayBox" hidden>
+    <p class="lbl">Как сказать на собеседовании</p>
+    <div id="sayText"></div>
+  </div>
+
+  <div class="ctrl">
+    <button class="b" id="prev">← Назад</button>
+    <button class="b primary" id="next">Вперёд →</button>
+    <button class="b" id="play">▶ Автоплей</button>
+    <span class="count" id="count"></span>
+    <div class="dots" id="dots"></div>
+  </div>
+  <p class="hint">Перед каждым «Вперёд» скажи вслух, что изменится. Стрелки ← → на клавиатуре тоже работают.</p>
+
+  <section class="rel">
+    <p class="lbl">Термины и смежные темы — нажми, чтобы раскрыть · ★ — термин для собеса, учить наизусть</p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<script>
+/* ---------- помощники для разметки ---------- */
+const it = (html, cls='') => ({html, cls});
+const fnv = (link, c) => `<span>function</span>${link?`<span class="chip ${c}">→ ${link}</span>`:''}`;
+const env = (n, count, note, extra='') => it(
+  `<div class="env e${n}" style="width:100%"><h3 class="c${n}">Окружение №${n}</h3>
+   <div><b>count</b> = <code>${count}</code></div>${extra}<div class="note">${note}</div></div>`, 'raw');
+
+/* ---------- ТЕМЫ ---------- */
+const TOPICS = {
+
+/* ===== VIRTUAL DOM ===== */
+vdom: {
+  name:"Virtual DOM",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Counter</span>() {",
+  "  <span class=\"kw\">const</span> [count, setCount] = <span class=\"fn\">useState</span>(<span class=\"num\">0</span>);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;div className=<span class=\"str\">\"card\"</span>&gt;",
+  "      &lt;h2&gt;Счётчик&lt;/h2&gt;",
+  "      &lt;p&gt;{count}&lt;/p&gt;",
+  "      &lt;button onClick={() =&gt; <span class=\"fn\">setCount</span>(count + <span class=\"num\">1</span>)}&gt;+<span class=\"num\">1</span>&lt;/button&gt;",
+  "    &lt;/div&gt;",
+  "  );",
+  "}"],
+  panels:[["old", "Старое дерево (Virtual DOM)", "items"], ["new", "Новое дерево", "items"], ["dom", "Изменения в настоящем DOM", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Virtual DOM — это <b>лёгкое описание интерфейса в виде JS-объектов</b>, которое React держит в памяти.</li><li><b>Как работает:</b> при изменении состояния React строит <b>новое дерево</b>, <b>сравнивает</b> его со старым (<b>reconciliation</b>) и вносит в настоящий DOM <b>только отличия</b>.</li><li><b>Пример:</b> поменялся счётчик в одной кнопке — React обновит один текстовый узел, а не перерисует страницу.</li><li><b>Зачем:</b> работа с настоящим DOM дорогая; React собирает изменения и применяет их пачкой, а мы пишем UI <b>декларативно</b> — описываем результат, а не шаги.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], t:"Первый рендер", x:"React вызывает компонент и получает дерево <b>объектов</b> — описание интерфейса. По нему создаёт настоящий DOM целиком.", p:{old:[it("div.card",'new'),it("  h2: 'Счётчик'",'new'),it("  p: 0",'new'),it("  button: '+1'",'new')],new:[it("—")],dom:[it("создано 4 узла — первый показ",'new')]}},
+   {line:[7], t:"Клик: setCount(1)", x:"Состояние изменилось — React снова вызывает <code>Counter</code> и строит <b>новое дерево</b> объектов. Настоящий DOM пока не тронут.", hl:"new", p:{old:[it("div.card"),it("  h2: 'Счётчик'"),it("  p: 0"),it("  button: '+1'")],new:[it("div.card",'new'),it("  h2: 'Счётчик'",'new'),it("  p: 1",'new'),it("  button: '+1'",'new')],dom:[it("пока ничего")]}},
+   {line:[4, 5, 6, 7], t:"Reconciliation: сравнение", x:"React сравнивает деревья сверху вниз. Тип и атрибуты <code>div</code>, <code>h2</code>, <code>button</code> те же — пропускаем. У <code>p</code> изменился текст.", hl:"new", p:{old:[it("div.card"),it("  h2: 'Счётчик'"),it("  p: 0 <span class=\"chip cmut\">было</span>"),it("  button: '+1'")],new:[it("div.card <span class=\"chip cmut\">то же</span>"),it("  h2: 'Счётчик' <span class=\"chip cmut\">то же</span>"),it("  p: 1 <span class=\"chip cbad\">изменилось</span>"),it("  button: '+1' <span class=\"chip cmut\">то же</span>")],dom:[it("пока ничего")]}},
+   {line:[6], t:"Commit: только разница", x:"В настоящий DOM уходит <b>одна операция</b> — заменить текст в <code>p</code>. Остальные узлы не пересоздаются.", hl:"dom", p:{old:[it("div.card"),it("  h2: 'Счётчик'"),it("  p: 0 <span class=\"chip cmut\">было</span>"),it("  button: '+1'")],new:[it("div.card <span class=\"chip cmut\">то же</span>"),it("  h2: 'Счётчик' <span class=\"chip cmut\">то же</span>"),it("  p: 1 <span class=\"chip cbad\">изменилось</span>"),it("  button: '+1' <span class=\"chip cmut\">то же</span>")],dom:[it("p.textContent = '1' <span class=\"chip cok\">1 операция</span>",'new')]}},
+   {line:[], t:"Если поменялся тип", x:"Если бы вместо <code>&lt;p&gt;</code> стал <code>&lt;span&gt;</code>, React не сравнивал бы глубже: удалил бы старый узел со всем поддеревом и создал новый. Состояние внутри при этом теряется.", hl:"dom", p:{old:[it("div.card"),it("  h2: 'Счётчик'"),it("  p: 0 <span class=\"chip cmut\">было</span>"),it("  button: '+1'")],new:[it("div.card <span class=\"chip cmut\">то же</span>"),it("  h2: 'Счётчик' <span class=\"chip cmut\">то же</span>"),it("  p: 1 <span class=\"chip cbad\">изменилось</span>"),it("  button: '+1' <span class=\"chip cmut\">то же</span>")],dom:[it("p.textContent = '1'"),it("другой тип элемента → удалить и создать заново <span class=\"chip cbad\">состояние сброшено</span>",'new')]}},
+   {line:[], t:"Итог", x:"Render — вычислить новое дерево объектов. Reconciliation — сравнить со старым. Commit — применить к DOM только отличия.", fin:true, p:{old:[it("div.card"),it("  h2: 'Счётчик'"),it("  p: 0 <span class=\"chip cmut\">было</span>"),it("  button: '+1'")],new:[it("div.card <span class=\"chip cmut\">то же</span>"),it("  h2: 'Счётчик' <span class=\"chip cmut\">то же</span>"),it("  p: 1 <span class=\"chip cbad\">изменилось</span>"),it("  button: '+1' <span class=\"chip cmut\">то же</span>")],dom:[it("p.textContent = '1'"),it("другой тип элемента → удалить и создать заново <span class=\"chip cbad\">состояние сброшено</span>")]}},
+  ]
+},
+
+/* ===== JSX ===== */
+jsx: {
+  name:"JSX",
+  code:[
+  "<span class=\"kw\">const</span> user = { name: <span class=\"str\">'Саша'</span>, isAdmin: <span class=\"kw\">true</span> };",
+  "",
+  "<span class=\"kw\">const</span> el = (",
+  "  &lt;div className=<span class=\"str\">\"profile\"</span>&gt;",
+  "    &lt;h1&gt;{user.name}&lt;/h1&gt;",
+  "    {user.isAdmin &amp;&amp; &lt;Badge text=<span class=\"str\">\"админ\"</span> /&gt;}",
+  "  &lt;/div&gt;",
+  ");"],
+  panels:[["comp", "Во что превращается после сборки", "items", "wide"], ["obj", "Объект, который получится", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> JSX — <b>синтаксическое расширение JS</b>, которое позволяет писать разметку прямо в коде.</li><li><b>Как работает:</b> сборщик компилирует JSX в <b>вызовы функции</b> (<code>jsx()</code> / раньше <code>React.createElement</code>), которые возвращают <b>объекты-элементы</b>.</li><li><b>Пример:</b> <code>&lt;Button color=\"red\"&gt;OK&lt;/Button&gt;</code> → <code>jsx(Button, { color: 'red', children: 'OK' })</code>.</li><li><b>Подвох:</b> в JSX — <code>className</code> вместо <code>class</code>, <code>htmlFor</code> вместо <code>for</code>, выражения в <code>{ }</code>, один корневой элемент или <b>фрагмент</b> <code>&lt;&gt;...&lt;/&gt;</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[3, 4, 5, 6, 7, 8], t:"Это не HTML", x:"JSX — синтаксис внутри JS. Браузер его не понимает: сборщик (Vite + Babel/SWC) переводит его в вызовы функций.", p:{comp:[it("—")],obj:[it("—")]}},
+   {line:[4], t:"Тег → вызов jsx()", x:"Каждый тег становится вызовом <code>jsx(тип, пропсы)</code>. <code>className</code> — потому что <code>class</code> зарезервировано в JS.", hl:"comp", p:{comp:[it("jsx('div', { className: 'profile', children: [ … ] })",'new')],obj:[it("—")]}},
+   {line:[5], t:"Выражение в { }", x:"В фигурных скобках — обычное JS-выражение. Его значение становится ребёнком.", hl:"comp", p:{comp:[it("jsx('div', { className: 'profile', children: ["),it("  jsx('h1', { children: user.name }),",'new')],obj:[it("—")]}},
+   {line:[6], t:"Условие через &&", x:"<code>a && b</code> — если <code>a</code> true, вернётся <code>b</code>. Компонент <code>Badge</code> — это функция, она идёт первым аргументом.", hl:"comp", p:{comp:[it("jsx('div', { className: 'profile', children: ["),it("  jsx('h1', { children: user.name }),"),it("  user.isAdmin && jsx(Badge, { text: 'админ' }),",'new'),it("] })",'new')],obj:[it("—")]}},
+   {line:[3], t:"Результат — объект", x:"Вызов возвращает <b>обычный объект</b>-описание. Именно из таких объектов состоит Virtual DOM.", hl:"obj", p:{comp:[it("jsx('div', { className: 'profile', children: ["),it("  jsx('h1', { children: user.name }),"),it("  user.isAdmin && jsx(Badge, { text: 'админ' }),"),it("] })")],obj:[it("{ type: 'div', props: { className: 'profile', children: [",'new'),it("  { type: 'h1', props: { children: 'Саша' } },",'new'),it("  { type: Badge, props: { text: 'админ' } } ] } }",'new')]}},
+   {line:[], t:"Итог", x:"JSX — сахар над вызовами <code>jsx()</code>, которые возвращают объекты. Внутри <code>{ }</code> — только выражения: <code>&&</code>, тернарный оператор, <code>map</code>.", fin:true, p:{comp:[it("jsx('div', { className: 'profile', children: ["),it("  jsx('h1', { children: user.name }),"),it("  user.isAdmin && jsx(Badge, { text: 'админ' }),"),it("] })")],obj:[it("{ type: 'div', props: { className: 'profile', children: ["),it("  { type: 'h1', props: { children: 'Саша' } },"),it("  { type: Badge, props: { text: 'админ' } } ] } }")]}},
+  ]
+},
+
+/* ===== PROPS И STATE ===== */
+props: {
+  name:"Props и state",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Parent</span>() {",
+  "  <span class=\"kw\">const</span> [likes, setLikes] = <span class=\"fn\">useState</span>(<span class=\"num\">0</span>);",
+  "  <span class=\"kw\">return</span> &lt;LikeButton count={likes} onLike={() =&gt; <span class=\"fn\">setLikes</span>(likes + <span class=\"num\">1</span>)} /&gt;;",
+  "}",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">LikeButton</span>({ count, onLike }) {",
+  "  <span class=\"kw\">return</span> &lt;button onClick={onLike}&gt;♥ {count}&lt;/button&gt;;",
+  "}"],
+  panels:[["parent", "Parent", "items"], ["child", "LikeButton", "items"], ["flow", "Поток данных", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>props</b> — данные, которые компонент получает <b>от родителя</b>; <b>state</b> — данные, которыми компонент <b>владеет сам</b>.</li><li><b>Как работает:</b> props <b>только для чтения</b>; state меняется через <b>сеттер</b>, и это вызывает <b>ре-рендер</b>.</li><li><b>Пример:</b> <code>&lt;Counter step={2} /&gt;</code> — <code>step</code> это проп; внутри <code>const [count, setCount] = useState(0)</code> — состояние.</li><li><b>Однонаправленный поток:</b> данные идут <b>сверху вниз</b> через props, а наверх — через <b>колбэки</b>, которые родитель передал вниз.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"State у родителя", x:"<code>likes</code> — состояние <code>Parent</code>. Он им владеет и только он может его менять.", hl:"parent", p:{parent:[it("state: likes = 0",'new')],child:[it("—")],flow:[it("—")]}},
+   {line:[3, 6], t:"Props вниз", x:"Родитель передаёт ребёнку число и функцию. Для <code>LikeButton</code> это <b>props</b> — только для чтения.", hl:"child", p:{parent:[it("state: likes = 0")],child:[it("props.count = 0",'new'),it("props.onLike = функция",'new')],flow:[it("Parent → LikeButton: count, onLike <span class=\"chip c1\">данные вниз</span>",'new')]}},
+   {line:[7], t:"Клик в ребёнке", x:"Ребёнок не меняет <code>count</code> сам. Он вызывает колбэк родителя.", hl:"flow", p:{parent:[it("state: likes = 0")],child:[it("props.count = 0"),it("props.onLike = функция")],flow:[it("Parent → LikeButton: count, onLike <span class=\"chip c1\">данные вниз</span>"),it("LikeButton → onLike() <span class=\"chip c2\">событие вверх</span>",'new')]}},
+   {line:[3, 2], t:"Родитель меняет state", x:"<code>setLikes(1)</code> — состояние родителя изменилось, <code>Parent</code> перерендеривается.", hl:"parent", p:{parent:[it("state: likes = 1",'new')],child:[it("props.count = 0"),it("props.onLike = функция")],flow:[it("Parent → LikeButton: count, onLike <span class=\"chip c1\">данные вниз</span>"),it("LikeButton → onLike() <span class=\"chip c2\">событие вверх</span>")]}},
+   {line:[3, 7], t:"Новые props", x:"При ре-рендере родитель передаёт новое значение. Ребёнок рендерится с <code>count = 1</code>.", hl:"child", p:{parent:[it("state: likes = 1")],child:[it("props.count = 1",'new'),it("props.onLike = новая функция")],flow:[it("Parent → LikeButton: count, onLike <span class=\"chip c1\">данные вниз</span>"),it("LikeButton → onLike() <span class=\"chip c2\">событие вверх</span>"),it("Parent → LikeButton: count = 1",'new')]}},
+   {line:[], t:"Итог", x:"State — свои данные, меняются через сеттер. Props — данные от родителя, только чтение. Вниз идут данные, вверх — вызовы колбэков.", fin:true, p:{parent:[it("state: likes = 1")],child:[it("props.count = 1"),it("props.onLike = новая функция")],flow:[it("Parent → LikeButton: count, onLike <span class=\"chip c1\">данные вниз</span>"),it("LikeButton → onLike() <span class=\"chip c2\">событие вверх</span>"),it("Parent → LikeButton: count = 1")]}},
+  ]
+},
+
+/* ===== ЖИЗНЕННЫЙ ЦИКЛ ===== */
+lifecycle: {
+  name:"Жизненный цикл",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Clock</span>() {",
+  "  <span class=\"kw\">const</span> [time, setTime] = <span class=\"fn\">useState</span>(<span class=\"kw\">new</span> <span class=\"fn\">Date</span>());",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'render'</span>);",
+  "  <span class=\"fn\">useEffect</span>(() =&gt; {",
+  "    console.<span class=\"fn\">log</span>(<span class=\"str\">'mount'</span>);",
+  "    <span class=\"kw\">const</span> id = <span class=\"fn\">setInterval</span>(() =&gt; <span class=\"fn\">setTime</span>(<span class=\"kw\">new</span> <span class=\"fn\">Date</span>()), <span class=\"num\">1000</span>);",
+  "    <span class=\"kw\">return</span> () =&gt; {",
+  "      console.<span class=\"fn\">log</span>(<span class=\"str\">'unmount'</span>);",
+  "      <span class=\"fn\">clearInterval</span>(id);",
+  "    };",
+  "  }, []);",
+  "  <span class=\"kw\">return</span> &lt;p&gt;{time.<span class=\"fn\">toLocaleTimeString</span>()}&lt;/p&gt;;",
+  "}"],
+  panels:[["phase", "Этап", "items"], ["timers", "Активные таймеры", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> у компонента три этапа: <b>монтирование</b>, <b>обновление</b>, <b>размонтирование</b>.</li><li><b>Как в хуках:</b> <code>useEffect(fn, [])</code> — после <b>монтирования</b>; с зависимостями — после <b>обновления</b> этих значений; <b>функция очистки</b> — перед следующим запуском и при <b>размонтировании</b>.</li><li><b>Пример:</b> подписка на <code>resize</code> в эффекте и <code>removeEventListener</code> в очистке.</li><li><b>Подвох:</b> в <b>StrictMode</b> в разработке эффекты запускаются <b>дважды</b> (монтирование → очистка → монтирование) — чтобы найти эффекты без очистки.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Монтирование: рендер", x:"Компонент появился на экране: React вызывает функцию — <code>render</code>. Эффекты во время рендера <b>не</b> запускаются.", hl:"phase", p:{phase:[it("монтирование → render",'new')],timers:[it("нет")],out:[it("render",'new')]}},
+   {line:[12], t:"Commit и отрисовка", x:"React вставляет <code>&lt;p&gt;</code> в DOM, браузер рисует экран.", hl:"phase", p:{phase:[it("монтирование → render"),it("commit → отрисовка",'new')],timers:[it("нет")],out:[it("render")]}},
+   {line:[4, 5, 6], t:"Эффект после монтирования", x:"После отрисовки запускается эффект с <code>[]</code> — один раз. Ставим интервал.", hl:"timers", p:{phase:[it("монтирование → render"),it("commit → отрисовка"),it("useEffect → mount",'new')],timers:[it("interval №1",'new')],out:[it("render"),it("mount",'new')]}},
+   {line:[6, 3], t:"Обновление", x:"Каждую секунду <code>setTime</code> → ре-рендер. Эффект с <code>[]</code> <b>не</b> перезапускается.", hl:"out", p:{phase:[it("обновление → render (эффект не трогаем)",'new')],timers:[it("interval №1")],out:[it("render"),it("mount"),it("render",'new'),it("render",'new')]}},
+   {line:[7, 8, 9], t:"Размонтирование", x:"Компонент убрали с экрана — React вызывает функцию очистки. Интервал остановлен, утечки нет.", hl:"timers", p:{phase:[it("размонтирование → очистка",'new')],timers:[it("нет <span class=\"chip cok\">очищено</span>",'new')],out:[it("render"),it("mount"),it("render"),it("render"),it("unmount",'new')]}},
+   {line:[], t:"А в StrictMode?", x:"В режиме разработки <code>StrictMode</code> сразу после монтирования делает очистку и монтирует снова: в консоли <code>mount → unmount → mount</code>. Так он проверяет, что очистка написана. В продакшене — один раз.", hl:"out", p:{phase:[it("размонтирование → очистка")],timers:[it("нет <span class=\"chip cok\">очищено</span>")],out:[it("StrictMode (dev):"),it("render"),it("render"),it("mount"),it("unmount"),it("mount")]}},
+   {line:[], t:"Итог", x:"Монтирование — <code>useEffect(fn, [])</code>. Обновление — эффект с зависимостями. Размонтирование — функция очистки.", fin:true, p:{phase:[it("размонтирование → очистка")],timers:[it("нет <span class=\"chip cok\">очищено</span>")],out:[it("StrictMode (dev):"),it("render"),it("render"),it("mount"),it("unmount"),it("mount")]}},
+  ]
+},
+
+/* ===== РЕ-РЕНДЕР ===== */
+rerender: {
+  name:"Ре-рендер",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">App</span>() {",
+  "  <span class=\"kw\">const</span> [n, setN] = <span class=\"fn\">useState</span>(<span class=\"num\">0</span>);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;&gt;",
+  "      &lt;button onClick={() =&gt; <span class=\"fn\">setN</span>(n + <span class=\"num\">1</span>)}&gt;{n}&lt;/button&gt;",
+  "      &lt;Header /&gt;",
+  "      &lt;MemoFooter /&gt;",
+  "    &lt;/&gt;",
+  "  );",
+  "}",
+  "<span class=\"kw\">const</span> Header = () =&gt; &lt;h1&gt;Шапка&lt;/h1&gt;;",
+  "<span class=\"kw\">const</span> MemoFooter = <span class=\"fn\">memo</span>(() =&gt; &lt;footer&gt;Подвал&lt;/footer&gt;);"],
+  panels:[["tree", "Кто вызывается при рендере", "items", "wide"], ["dom", "Изменения в DOM", "items"], ["why", "Причина", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> ре-рендер — повторный <b>вызов функции компонента</b>, чтобы получить новый JSX.</li><li><b>Причины:</b> изменился <b>state</b>, изменился <b>контекст</b>, который он читает, или <b>перерендерился родитель</b> — тогда по умолчанию перерисуются <b>все дети</b>.</li><li><b>Что происходит:</b> React вызывает компонент, <b>сравнивает</b> результат с прошлым и обновляет в DOM только отличия.</li><li><b>Подвох:</b> изменение <b>props само по себе</b> не причина — props меняются только потому, что перерендерился родитель; лишние ре-рендеры детей убирает <code>React.memo</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"Первый рендер", x:"При монтировании вызываются все компоненты.", hl:"tree", p:{tree:[it("App ✓",'new'),it("Header ✓",'new'),it("MemoFooter ✓",'new')],dom:[it("всё создано",'new')],why:[it("монтирование",'new')]}},
+   {line:[5, 2], t:"Клик: setN(1)", x:"Изменилось состояние <code>App</code> — значит, <code>App</code> перерендерится.", hl:"why", p:{tree:[it("App ✓"),it("Header ✓"),it("MemoFooter ✓")],dom:[it("всё создано")],why:[it("state App изменился",'new')]}},
+   {line:[1, 6], t:"Header тоже вызывается", x:"У <code>Header</code> нет props, но он ребёнок <code>App</code>. По умолчанию при рендере родителя <b>все дети</b> вызываются заново.", hl:"tree", p:{tree:[it("App ✓ <span class=\"chip cbad\">state</span>"),it("Header ✓ <span class=\"chip c1\">родитель рендерится</span>",'new'),it("MemoFooter …")],dom:[it("всё создано")],why:[it("state App изменился")]}},
+   {line:[7, 11], t:"MemoFooter пропущен", x:"<code>memo</code> сравнил props: их нет, сравнивать нечего — ничего не изменилось. Вызов пропущен.", hl:"tree", p:{tree:[it("App ✓ <span class=\"chip cbad\">state</span>"),it("Header ✓ <span class=\"chip c1\">родитель рендерится</span>"),it("MemoFooter ✗ <span class=\"chip cok\">memo: props те же</span>",'new')],dom:[it("всё создано")],why:[it("state App изменился")]}},
+   {line:[5], t:"DOM меняется точечно", x:"Вызовы <code>Header</code> ничего не изменили в результате — DOM не трогается. Меняется только текст кнопки.", hl:"dom", p:{tree:[it("App ✓ <span class=\"chip cbad\">state</span>"),it("Header ✓ <span class=\"chip c1\">родитель рендерится</span>"),it("MemoFooter ✗ <span class=\"chip cok\">memo: props те же</span>")],dom:[it("button.textContent = '1'",'new'),it("Header: ре-рендер был, изменений в DOM нет",'new')],why:[it("state App изменился")]}},
+   {line:[], t:"Итог", x:"Ре-рендер — вызов функции компонента. Причины: свой state, контекст, ре-рендер родителя. Ре-рендер не равен изменению DOM. Лишние вызовы детей отсекает <code>memo</code>.", fin:true, p:{tree:[it("App ✓ <span class=\"chip cbad\">state</span>"),it("Header ✓ <span class=\"chip c1\">родитель рендерится</span>"),it("MemoFooter ✗ <span class=\"chip cok\">memo: props те же</span>")],dom:[it("button.textContent = '1'"),it("Header: ре-рендер был, изменений в DOM нет")],why:[it("state App изменился")]}},
+  ]
+},
+
+/* ===== KEY В СПИСКАХ ===== */
+key: {
+  name:"key в списках",
+  code:[
+  "<span class=\"kw\">const</span> [items, setItems] = <span class=\"fn\">useState</span>([<span class=\"str\">'Молоко'</span>, <span class=\"str\">'Хлеб'</span>]);",
+  "",
+  "{items.<span class=\"fn\">map</span>((text, i) =&gt; (",
+  "  &lt;li key={i}&gt;",
+  "    {text} &lt;input placeholder=<span class=\"str\">\"заметка\"</span> /&gt;",
+  "  &lt;/li&gt;",
+  "))}",
+  "",
+  "<span class=\"cm\">// добавляем в начало:</span>",
+  "<span class=\"fn\">setItems</span>([<span class=\"str\">'Сыр'</span>, ...items]);"],
+  panels:[["withIndex", "key = индекс", "items"], ["withId", "key = id", "items"], ["note", "Что произошло", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>key</code> — <b>уникальный стабильный идентификатор</b> элемента списка.</li><li><b>Как работает:</b> при сравнении React <b>сопоставляет элементы по <code>key</code></b>: понимает, какой добавлен, удалён или переставлен, и <b>сохраняет состояние</b> нужного элемента.</li><li><b>Пример:</b> <code>todos.map((t) =&gt; &lt;Todo key={t.id} {...t} /&gt;)</code>.</li><li><b>Подвох:</b> <b>индекс</b> как key ломается при <b>вставке, удалении, сортировке</b> — состояние (текст в инпуте, чекбокс) «переезжает» к чужому элементу.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 3, 4, 5, 6, 7], t:"Список и ввод", x:"Два пункта. Во второй инпут (Хлеб) пользователь написал «свежий».", hl:"withIndex", p:{withIndex:[it("key 0: Молоко [ ]",'new'),it("key 1: Хлеб [свежий]",'new')],withId:[it("key m: Молоко [ ]",'new'),it("key h: Хлеб [свежий]",'new')],note:[it("—")]}},
+   {line:[10], t:"Вставка в начало", x:"Новый массив: Сыр, Молоко, Хлеб. React сопоставляет старые и новые элементы <b>по key</b>.", hl:"note", p:{withIndex:[it("key 0: Молоко [ ]"),it("key 1: Хлеб [свежий]")],withId:[it("key m: Молоко [ ]"),it("key h: Хлеб [свежий]")],note:[it("новый список: Сыр, Молоко, Хлеб",'new')]}},
+   {line:[4], t:"С индексом", x:"Сыр получил key 0 — React думает, что это <b>старый</b> элемент 0 и обновляет только текст. Хлеб стал key 2 — «новый». Инпут со словом «свежий» остался у key 1, теперь это Молоко!", hl:"withIndex", p:{withIndex:[it("key 0: Сыр [ ] <span class=\"chip cmut\">был Молоко</span>"),it("key 1: Молоко [свежий] <span class=\"chip cbad\">чужая заметка</span>"),it("key 2: Хлеб [ ] <span class=\"chip cbad\">создан заново</span>",'new')],withId:[it("key m: Молоко [ ]"),it("key h: Хлеб [свежий]")],note:[it("новый список: Сыр, Молоко, Хлеб")]}},
+   {line:[4], t:"Со стабильным id", x:"С <code>key={item.id}</code> React видит: появился новый элемент <code>s</code> в начале, остальные просто сдвинулись. Заметка осталась у Хлеба.", hl:"withId", p:{withIndex:[it("key 0: Сыр [ ] <span class=\"chip cmut\">был Молоко</span>"),it("key 1: Молоко [свежий] <span class=\"chip cbad\">чужая заметка</span>"),it("key 2: Хлеб [ ] <span class=\"chip cbad\">создан заново</span>")],withId:[it("key s: Сыр [ ] <span class=\"chip cok\">новый</span>",'new'),it("key m: Молоко [ ]"),it("key h: Хлеб [свежий] <span class=\"chip cok\">состояние на месте</span>")],note:[it("новый список: Сыр, Молоко, Хлеб")]}},
+   {line:[], t:"Итог", x:"<code>key</code> — по нему React сопоставляет элементы. Индекс меняется при вставке, удалении, сортировке — состояние уезжает к чужому элементу. Нужен стабильный id из данных.", fin:true, p:{withIndex:[it("key 0: Сыр [ ] <span class=\"chip cmut\">был Молоко</span>"),it("key 1: Молоко [свежий] <span class=\"chip cbad\">чужая заметка</span>"),it("key 2: Хлеб [ ] <span class=\"chip cbad\">создан заново</span>")],withId:[it("key s: Сыр [ ] <span class=\"chip cok\">новый</span>"),it("key m: Молоко [ ]"),it("key h: Хлеб [свежий] <span class=\"chip cok\">состояние на месте</span>")],note:[it("новый список: Сыр, Молоко, Хлеб")]}},
+  ]
+},
+
+/* ===== CONTROLLED И UNCONTROLLED ===== */
+controlled: {
+  name:"Controlled и uncontrolled",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Form</span>() {",
+  "  <span class=\"kw\">const</span> [name, setName] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">const</span> emailRef = <span class=\"fn\">useRef</span>(<span class=\"kw\">null</span>);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;form onSubmit={() =&gt; <span class=\"fn\">send</span>(name, emailRef.current.value)}&gt;",
+  "      &lt;input value={name} onChange={(e) =&gt; <span class=\"fn\">setName</span>(e.target.value.<span class=\"fn\">toUpperCase</span>())} /&gt;",
+  "      &lt;input defaultValue=<span class=\"str\">\"\"</span> ref={emailRef} /&gt;",
+  "    &lt;/form&gt;",
+  "  );",
+  "}"],
+  panels:[["ctrl", "Управляемое поле (name)", "items"], ["unctrl", "Неуправляемое поле (email)", "items"], ["note", "Где живёт значение", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>управляемый</b> компонент — значение поля хранится в <b>state React</b>; <b>неуправляемый</b> — значение хранит <b>сам DOM</b>.</li><li><b>Как работает:</b> управляемый — <code>value</code> + <code>onChange</code>, каждый ввод проходит через состояние; неуправляемый — <code>defaultValue</code> и чтение через <b><code>ref</code></b> или <code>FormData</code>.</li><li><b>Пример:</b> валидация на лету, маска телефона — управляемое поле; простая форма отправки — можно неуправляемое.</li><li><b>Подвох:</b> <code>value</code> без <code>onChange</code> — поле <b>только для чтения</b> и предупреждение в консоли.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 6], t:"Управляемое поле", x:"Значение поля задаёт React через <code>value</code>. Источник правды — state.", hl:"ctrl", p:{ctrl:[it("state name = ''",'new'),it("input.value = ''",'new')],unctrl:[it("—")],note:[it("name: в state React",'new')]}},
+   {line:[6], t:"Ввод «а»", x:"Браузер сообщает о вводе → <code>onChange</code> → <code>setName('А')</code> (мы переводим в верхний регистр) → ре-рендер → в поле <code>value = 'А'</code>. Можно менять ввод на лету.", hl:"ctrl", p:{ctrl:[it("onChange: 'а'",'new'),it("setName('А')",'new'),it("ре-рендер → input.value = 'А'",'new')],unctrl:[it("—")],note:[it("name: в state React")]}},
+   {line:[3, 7], t:"Неуправляемое поле", x:"Здесь значение хранит сам DOM. <code>defaultValue</code> — только начальное. React про ввод не знает, ре-рендеров нет.", hl:"unctrl", p:{ctrl:[it("onChange: 'а'"),it("setName('А')"),it("ре-рендер → input.value = 'А'")],unctrl:[it("DOM input.value = 'sasha@mail.ru'",'new'),it("React: ничего не знает",'new')],note:[it("name: в state React"),it("email: в DOM",'new')]}},
+   {line:[5], t:"Отправка", x:"Управляемое значение уже в state. Неуправляемое читаем через <code>ref</code> в момент отправки.", hl:"note", p:{ctrl:[it("onChange: 'а'"),it("setName('А')"),it("ре-рендер → input.value = 'А'")],unctrl:[it("DOM input.value = 'sasha@mail.ru'"),it("React: ничего не знает")],note:[it("name: в state React"),it("email: в DOM"),it("send('А', emailRef.current.value)",'new')]}},
+   {line:[], t:"Итог", x:"Управляемое — <code>value</code> + <code>onChange</code>, нужно для валидации и масок на лету. Неуправляемое — <code>defaultValue</code> + <code>ref</code>, меньше ре-рендеров.", fin:true, p:{ctrl:[it("onChange: 'а'"),it("setName('А')"),it("ре-рендер → input.value = 'А'")],unctrl:[it("DOM input.value = 'sasha@mail.ru'"),it("React: ничего не знает")],note:[it("name: в state React"),it("email: в DOM"),it("send('А', emailRef.current.value)")]}},
+  ]
+},
+
+/* ===== СОБЫТИЯ В REACT ===== */
+events: {
+  name:"События в React",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">List</span>({ items }) {",
+  "  <span class=\"kw\">const</span> remove = (id) =&gt; console.<span class=\"fn\">log</span>(<span class=\"str\">'удалить'</span>, id);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;ul&gt;",
+  "      {items.<span class=\"fn\">map</span>((it) =&gt; (",
+  "        &lt;li key={it.id}&gt;",
+  "          {it.name}",
+  "          &lt;button onClick={() =&gt; <span class=\"fn\">remove</span>(it.id)}&gt;×&lt;/button&gt;",
+  "        &lt;/li&gt;",
+  "      ))}",
+  "    &lt;/ul&gt;",
+  "  );",
+  "}"],
+  panels:[["dom", "Где висят слушатели", "items"], ["path", "Путь клика", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> обработчики в React получают <b>SyntheticEvent</b> — обёртку над нативным событием с <b>одинаковым API во всех браузерах</b>.</li><li><b>Как работает:</b> React <b>не вешает обработчик на каждый элемент</b>, а использует <b>делегирование</b> — один слушатель на корневом контейнере приложения.</li><li><b>Пример:</b> <code>&lt;button onClick={handleClick}&gt;</code> — передаём функцию, а не вызов <code>handleClick()</code>.</li><li><b>Подвох:</b> <code>onClick={handleClick()}</code> вызовет функцию <b>сразу при рендере</b>; аргументы передают через стрелку: <code>onClick={() =&gt; remove(id)}</code>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[8], t:"onClick на кнопках", x:"В коде обработчик на каждой кнопке. Но React <b>не вешает</b> настоящий слушатель на каждый элемент.", hl:"dom", p:{dom:[it("#root — один слушатель click <span class=\"chip c1\">делегирование</span>",'new'),it("button × 3 — без своих слушателей",'new')],path:[it("—")],out:[]}},
+   {line:[8], t:"Клик по кнопке", x:"Нативное событие всплывает от кнопки до корневого контейнера <code>#root</code>.", hl:"path", p:{dom:[it("#root — один слушатель click <span class=\"chip c1\">делегирование</span>"),it("button × 3 — без своих слушателей")],path:[it("button",'new'),it("li ↑",'new'),it("ul ↑",'new'),it("#root ↑ <span class=\"chip cok\">React поймал</span>",'new')],out:[]}},
+   {line:[8, 2], t:"React вызывает обработчик", x:"React по дереву компонентов находит <code>onClick</code> нужной кнопки и вызывает его с <b>SyntheticEvent</b> — обёрткой с одинаковым API во всех браузерах.", hl:"out", p:{dom:[it("#root — один слушатель click <span class=\"chip c1\">делегирование</span>"),it("button × 3 — без своих слушателей")],path:[it("button"),it("li ↑"),it("ul ↑"),it("#root ↑ <span class=\"chip cok\">React поймал</span>"),it("→ onClick(SyntheticEvent)",'new')],out:[it("удалить 2",'new')]}},
+   {line:[8], t:"Ошибка: вызов вместо функции", x:"Если написать <code>onClick={remove(it.id)}</code>, функция вызовется <b>при рендере</b> для каждой строки, а в onClick попадёт <code>undefined</code>.", hl:"out", p:{dom:[it("#root — один слушатель click <span class=\"chip c1\">делегирование</span>"),it("button × 3 — без своих слушателей")],path:[it("button"),it("li ↑"),it("ul ↑"),it("#root ↑ <span class=\"chip cok\">React поймал</span>"),it("→ onClick(SyntheticEvent)")],out:[it("удалить 2"),it("onClick={remove(it.id)} → при рендере: удалить 1, удалить 2, удалить 3 <span class=\"chip cbad\">баг</span>",'new')]}},
+   {line:[], t:"Итог", x:"React использует делегирование — один слушатель на корне. Обработчик получает SyntheticEvent. Передаём функцию, а не результат её вызова.", fin:true, p:{dom:[it("#root — один слушатель click <span class=\"chip c1\">делегирование</span>"),it("button × 3 — без своих слушателей")],path:[it("button"),it("li ↑"),it("ul ↑"),it("#root ↑ <span class=\"chip cok\">React поймал</span>"),it("→ onClick(SyntheticEvent)")],out:[it("удалить 2"),it("onClick={remove(it.id)} → при рендере: удалить 1, удалить 2, удалить 3 <span class=\"chip cbad\">баг</span>")]}},
+  ]
+},
+
+/* ===== USESTATE И БАТЧИНГ ===== */
+usestate: {
+  name:"useState и батчинг",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Counter</span>() {",
+  "  <span class=\"kw\">const</span> [count, setCount] = <span class=\"fn\">useState</span>(<span class=\"num\">0</span>);",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'render'</span>, count);",
+  "",
+  "  <span class=\"kw\">function</span> <span class=\"fn\">handleClick</span>() {",
+  "    <span class=\"fn\">setCount</span>(count + <span class=\"num\">1</span>);",
+  "    <span class=\"fn\">setCount</span>(count + <span class=\"num\">1</span>);",
+  "    <span class=\"fn\">setCount</span>((c) =&gt; c + <span class=\"num\">1</span>);",
+  "    console.<span class=\"fn\">log</span>(<span class=\"str\">'в обработчике'</span>, count);",
+  "  }",
+  "  <span class=\"kw\">return</span> &lt;button onClick={handleClick}&gt;{count}&lt;/button&gt;;",
+  "}"],
+  panels:[["queue", "Очередь обновлений", "queue", "wide"], ["state", "Состояние", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>useState</code> — хук <b>локального состояния</b>: возвращает <b>значение</b> и <b>сеттер</b>.</li><li><b>Как работает:</b> сеттер не меняет переменную сразу, а <b>ставит обновление в очередь</b>; новое значение появится в <b>следующем рендере</b>. Несколько обновлений в одном событии React <b>объединяет</b> (<b>batching</b>).</li><li><b>Пример:</b> <code>setCount(count + 1)</code> три раза подряд даст <b>+1</b>, а <code>setCount((c) =&gt; c + 1)</code> три раза — <b>+3</b>.</li><li><b>Подвох:</b> сразу после сеттера переменная <b>ещё старая</b>; если новое значение зависит от старого — <b>функциональное обновление</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3], t:"Первый рендер", x:"<code>count = 0</code>. В этом рендере <code>count</code> — <b>константа</b>, снимок.", hl:"state", p:{queue:[],state:[it("count = 0 (рендер №1)",'new')],out:[it("render 0",'new')]}},
+   {line:[6], t:"setCount(count + 1)", x:"Сеттер не меняет переменную. Он кладёт в очередь «поставить <code>0 + 1</code>». Почему 0 — <code>count</code> в этом рендере равен 0.", hl:"queue", p:{queue:[it("заменить на 1",'new')],state:[it("count = 0 (рендер №1)")],out:[it("render 0")]}},
+   {line:[7], t:"Ещё раз то же", x:"<code>count</code> всё ещё 0 — в очередь снова «поставить 1».", hl:"queue", p:{queue:[it("заменить на 1"),it("заменить на 1",'new')],state:[it("count = 0 (рендер №1)")],out:[it("render 0")]}},
+   {line:[8], t:"Функциональное обновление", x:"Кладём функцию: «взять то, что получится к этому моменту, и прибавить 1».", hl:"queue", p:{queue:[it("заменить на 1"),it("заменить на 1"),it("(c) => c + 1",'new')],state:[it("count = 0 (рендер №1)")],out:[it("render 0")]}},
+   {line:[9], t:"console.log в обработчике", x:"Выведет <code>0</code> — переменная этого рендера не изменилась.", hl:"out", p:{queue:[it("заменить на 1"),it("заменить на 1"),it("(c) => c + 1")],state:[it("count = 0 (рендер №1)")],out:[it("render 0"),it("в обработчике 0",'new')]}},
+   {line:[2], t:"Батчинг: одна обработка очереди", x:"Обработчик закончился. React применяет всю очередь за <b>один</b> ре-рендер: 0 → 1 → 1 → 2.", hl:"state", p:{queue:[it("0 → 1"),it("1 → 1"),it("1 → 2 <span class=\"chip cok\">функция взяла актуальное</span>")],state:[it("count = 2 (рендер №2)",'new')],out:[it("render 0"),it("в обработчике 0")]}},
+   {line:[3], t:"Один ре-рендер", x:"Три сеттера — один ре-рендер. С React 18 так везде: в обработчиках, промисах, таймерах.", hl:"out", p:{queue:[],state:[it("count = 2 (рендер №2)")],out:[it("render 0"),it("в обработчике 0"),it("render 2",'new')]}},
+   {line:[], t:"Итог", x:"Сеттер ставит обновление в очередь, значение изменится в следующем рендере. Обновления объединяются (батчинг). Если новое зависит от старого — <code>setCount((c) => c + 1)</code>.", fin:true, p:{queue:[],state:[it("count = 2 (рендер №2)")],out:[it("render 0"),it("в обработчике 0"),it("render 2")]}},
+  ]
+},
+
+/* ===== USEEFFECT ===== */
+useeffect: {
+  name:"useEffect",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Profile</span>({ userId }) {",
+  "  <span class=\"kw\">const</span> [user, setUser] = <span class=\"fn\">useState</span>(<span class=\"kw\">null</span>);",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'render'</span>, userId);",
+  "  <span class=\"fn\">useEffect</span>(() =&gt; {",
+  "    console.<span class=\"fn\">log</span>(<span class=\"str\">'effect'</span>, userId);",
+  "    <span class=\"kw\">let</span> ignore = <span class=\"kw\">false</span>;",
+  "    <span class=\"fn\">fetchUser</span>(userId).<span class=\"fn\">then</span>((u) =&gt; { <span class=\"kw\">if</span> (!ignore) <span class=\"fn\">setUser</span>(u); });",
+  "    <span class=\"kw\">return</span> () =&gt; {",
+  "      console.<span class=\"fn\">log</span>(<span class=\"str\">'cleanup'</span>, userId);",
+  "      ignore = <span class=\"kw\">true</span>;",
+  "    };",
+  "  }, [userId]);",
+  "  <span class=\"kw\">return</span> &lt;p&gt;{user?.name ?? <span class=\"str\">'Загрузка…'</span>}&lt;/p&gt;;",
+  "}"],
+  panels:[["phase", "Что происходит", "items", "wide"], ["req", "Запросы", "items"], ["out", "Консоль", "console"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>useEffect</code> — хук для <b>побочных эффектов</b>: запросы, подписки, таймеры, работа с DOM вне React.</li><li><b>Как работает:</b> запускается <b>после отрисовки</b>; <b>массив зависимостей</b> решает когда: без массива — после <b>каждого</b> рендера, <code>[]</code> — один раз после монтирования, <code>[a, b]</code> — когда изменились <code>a</code> или <code>b</code>.</li><li><b>Очистка:</b> функция из <code>return</code> вызывается <b>перед следующим запуском</b> эффекта и при <b>размонтировании</b>.</li><li><b>Подвох:</b> забытая зависимость — эффект видит <b>устаревшее значение</b>; объект или функция в зависимостях — новая ссылка каждый рендер, эффект <b>срабатывает постоянно</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3], t:"Рендер (userId = 1)", x:"React вызывает компонент. Эффект во время рендера <b>не</b> выполняется — он только запоминается.", hl:"phase", p:{phase:[it("render → JSX",'new')],req:[it("нет")],out:[it("render 1",'new')]}},
+   {line:[13], t:"Commit и отрисовка", x:"DOM обновлён, браузер нарисовал «Загрузка…».", hl:"phase", p:{phase:[it("render → JSX"),it("commit → отрисовка",'new')],req:[it("нет")],out:[it("render 1")]}},
+   {line:[4, 5, 6, 7], t:"Эффект после отрисовки", x:"Теперь запускается эффект: запрос пользователя №1.", hl:"req", p:{phase:[it("render → JSX"),it("commit → отрисовка"),it("useEffect",'new')],req:[it("запрос user 1 …",'new')],out:[it("render 1"),it("effect 1",'new')]}},
+   {line:[1, 3], t:"Пришёл новый userId = 2", x:"Родитель передал другой <code>userId</code>. Ре-рендер. Зависимость изменилась — эффект нужно перезапустить.", hl:"phase", p:{phase:[it("render (userId = 2)",'new'),it("commit → отрисовка",'new')],req:[it("запрос user 1 …")],out:[it("render 1"),it("effect 1"),it("render 2",'new')]}},
+   {line:[8, 9, 10], t:"Сначала очистка старого", x:"Перед новым запуском React вызывает <b>очистку прошлого эффекта</b> — с его <code>userId = 1</code>. Помечаем старый запрос как неактуальный.", hl:"req", p:{phase:[it("render (userId = 2)"),it("commit → отрисовка")],req:[it("запрос user 1 <span class=\"chip cmut\">ignore = true</span>",'new')],out:[it("render 1"),it("effect 1"),it("render 2"),it("cleanup 1",'new')]}},
+   {line:[4, 5, 7], t:"Новый эффект", x:"Запускается эффект для <code>userId = 2</code>.", hl:"req", p:{phase:[it("render (userId = 2)"),it("commit → отрисовка")],req:[it("запрос user 1 <span class=\"chip cmut\">ignore = true</span>"),it("запрос user 2 …",'new')],out:[it("render 1"),it("effect 1"),it("render 2"),it("cleanup 1"),it("effect 2",'new')]}},
+   {line:[7], t:"Ответ на старый запрос", x:"Запрос 1 ответил позже — но <code>ignore</code> уже true, данные не записываются. Гонки нет.", hl:"req", p:{phase:[it("render (userId = 2)"),it("commit → отрисовка")],req:[it("user 1 пришёл → проигнорирован <span class=\"chip cok\">гонки нет</span>",'new'),it("user 2 пришёл → setUser",'new')],out:[it("render 1"),it("effect 1"),it("render 2"),it("cleanup 1"),it("effect 2")]}},
+   {line:[8, 9], t:"Размонтирование", x:"Компонент убрали — последняя очистка.", hl:"out", p:{phase:[it("render (userId = 2)"),it("commit → отрисовка")],req:[it("user 1 пришёл → проигнорирован <span class=\"chip cok\">гонки нет</span>"),it("user 2 пришёл → setUser")],out:[it("render 1"),it("effect 1"),it("render 2"),it("cleanup 1"),it("effect 2"),it("render 2"),it("cleanup 2",'new')]}},
+   {line:[], t:"Итог", x:"Порядок: render → commit → отрисовка → эффект. При смене зависимостей: очистка старого → новый эффект. При размонтировании — очистка.", fin:true, p:{phase:[it("render (userId = 2)"),it("commit → отрисовка")],req:[it("user 1 пришёл → проигнорирован <span class=\"chip cok\">гонки нет</span>"),it("user 2 пришёл → setUser")],out:[it("render 1"),it("effect 1"),it("render 2"),it("cleanup 1"),it("effect 2"),it("render 2"),it("cleanup 2")]}},
+  ]
+},
+
+/* ===== USEREF И USESTATE ===== */
+useref: {
+  name:"useRef и useState",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Stopwatch</span>() {",
+  "  <span class=\"kw\">const</span> [renders, setRenders] = <span class=\"fn\">useState</span>(<span class=\"num\">0</span>);",
+  "  <span class=\"kw\">const</span> clicks = <span class=\"fn\">useRef</span>(<span class=\"num\">0</span>);",
+  "  <span class=\"kw\">let</span> local = <span class=\"num\">0</span>;",
+  "",
+  "  <span class=\"kw\">function</span> <span class=\"fn\">onRef</span>() { clicks.current++; local++; }",
+  "  <span class=\"kw\">function</span> <span class=\"fn\">onState</span>() { <span class=\"fn\">setRenders</span>(renders + <span class=\"num\">1</span>); }",
+  "",
+  "  <span class=\"kw\">return</span> &lt;p&gt;{clicks.current} / {local} / {renders}&lt;/p&gt;;",
+  "}"],
+  panels:[["mem", "Значения", "items"], ["screen", "На экране", "items"], ["note", "Почему", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>useRef</code> возвращает объект <b><code>{ current }</code></b>, который <b>живёт между рендерами</b>.</li><li><b>Отличие от state:</b> изменение <code>ref.current</code> <b>не вызывает ре-рендер</b> и происходит <b>сразу</b>.</li><li><b>Пример:</b> ссылка на DOM-элемент (<code>ref={inputRef}</code>, потом <code>inputRef.current.focus()</code>) или хранение id таймера.</li><li><b>Подвох:</b> то, что <b>показывается на экране</b>, хранят в state; в ref — то, что нужно помнить, но <b>не рисовать</b>; читать и менять ref во время рендера нельзя.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 9], t:"Первый рендер", x:"Три способа хранить число: state, ref и обычная переменная.", hl:"mem", p:{mem:[it("renders (state) = 0",'new'),it("clicks.current (ref) = 0",'new'),it("local (переменная) = 0",'new')],screen:[it("0 / 0 / 0",'new')],note:[it("—")]}},
+   {line:[6], t:"onRef() три раза", x:"<code>clicks.current</code> меняется сразу — 3. <code>local</code> тоже 3. Но ре-рендера <b>нет</b> — экран прежний.", hl:"mem", p:{mem:[it("renders (state) = 0"),it("clicks.current (ref) = 3",'new'),it("local (переменная) = 3",'new')],screen:[it("0 / 0 / 0")],note:[it("ref и переменная меняются сразу, ре-рендера нет",'new')]}},
+   {line:[7], t:"onState()", x:"Сеттер state вызывает ре-рендер — функция компонента выполняется заново.", hl:"screen", p:{mem:[it("renders (state) = 1",'new'),it("clicks.current (ref) = 3"),it("local (переменная) = 0 <span class=\"chip cbad\">создана заново</span>",'new')],screen:[it("0 / 0 / 0")],note:[it("ref и переменная меняются сразу, ре-рендера нет")]}},
+   {line:[9], t:"Что на экране", x:"Ref сохранился между рендерами — 3. Обычная переменная создалась заново — 0. State — 1.", hl:"screen", p:{mem:[it("renders (state) = 1"),it("clicks.current (ref) = 3"),it("local (переменная) = 0 <span class=\"chip cbad\">создана заново</span>")],screen:[it("3 / 0 / 1",'new')],note:[it("ref и переменная меняются сразу, ре-рендера нет"),it("ref живёт между рендерами, переменная — нет",'new')]}},
+   {line:[], t:"Итог", x:"<code>useRef</code> — коробка <code>{ current }</code>, живёт между рендерами, изменение не вызывает ре-рендер. То, что показывается на экране, — в state.", fin:true, p:{mem:[it("renders (state) = 1"),it("clicks.current (ref) = 3"),it("local (переменная) = 0 <span class=\"chip cbad\">создана заново</span>")],screen:[it("3 / 0 / 1")],note:[it("ref и переменная меняются сразу, ре-рендера нет"),it("ref живёт между рендерами, переменная — нет")]}},
+  ]
+},
+
+/* ===== USEREDUCER ===== */
+usereducer: {
+  name:"useReducer",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">reducer</span>(state, action) {",
+  "  <span class=\"fn\">switch</span> (action.type) {",
+  "    case <span class=\"str\">'add'</span>: <span class=\"kw\">return</span> { ...state, items: [...state.items, action.item] };",
+  "    case <span class=\"str\">'clear'</span>: <span class=\"kw\">return</span> { ...state, items: [] };",
+  "    <span class=\"kw\">default</span>: <span class=\"kw\">return</span> state;",
+  "  }",
+  "}",
+  "<span class=\"kw\">const</span> [cart, dispatch] = <span class=\"fn\">useReducer</span>(reducer, { items: [] });",
+  "",
+  "<span class=\"fn\">dispatch</span>({ type: <span class=\"str\">'add'</span>, item: <span class=\"str\">'чай'</span> });",
+  "<span class=\"fn\">dispatch</span>({ type: <span class=\"str\">'add'</span>, item: <span class=\"str\">'сыр'</span> });",
+  "<span class=\"fn\">dispatch</span>({ type: <span class=\"str\">'clear'</span> });"],
+  panels:[["action", "Действие", "items"], ["state", "Состояние", "items"], ["note", "Что сделал редьюсер", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>useReducer</code> — хук для состояния, где логика изменений вынесена в <b>чистую функцию-редьюсер</b>.</li><li><b>Как работает:</b> <code>dispatch({ type: 'add', payload })</code> отправляет <b>действие</b>, редьюсер <code>(state, action) =&gt; newState</code> возвращает <b>новое состояние</b>.</li><li><b>Пример:</b> корзина или форма с несколькими связанными полями и множеством действий.</li><li><b>Когда лучше useState:</b> когда <b>много связанных полей</b>, следующее состояние зависит от предыдущего сложным образом, логику хочется <b>тестировать отдельно</b> от компонента.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[8], t:"Начальное состояние", x:"<code>useReducer</code> возвращает состояние и <code>dispatch</code>.", hl:"state", p:{action:[it("—")],state:[it("items: []",'new')],note:[it("—")]}},
+   {line:[10, 3], t:"dispatch(add чай)", x:"Компонент не меняет состояние сам — отправляет действие. Редьюсер по <code>type</code> возвращает <b>новый</b> объект.", hl:"note", p:{action:[it("{ type: 'add', item: 'чай' }",'new')],state:[it("items: ['чай']",'new')],note:[it("case 'add' → новый объект и новый массив",'new')]}},
+   {line:[11, 3], t:"dispatch(add сыр)", x:"То же действие с другими данными.", hl:"state", p:{action:[it("{ type: 'add', item: 'сыр' }",'new')],state:[it("items: ['чай', 'сыр']",'new')],note:[it("case 'add' → новый объект и новый массив")]}},
+   {line:[12, 4], t:"dispatch(clear)", x:"Другая ветка switch.", hl:"state", p:{action:[it("{ type: 'clear' }",'new')],state:[it("items: []",'new')],note:[it("case 'clear' → пустой массив",'new')]}},
+   {line:[5], t:"Неизвестный type", x:"<code>default</code> возвращает то же состояние — React увидит ту же ссылку и ре-рендер пропустит.", hl:"note", p:{action:[it("{ type: 'clear' }")],state:[it("items: []")],note:[it("default → тот же state → без ре-рендера",'new')]}},
+   {line:[], t:"Итог", x:"Все изменения описаны в одной чистой функции. Компонент говорит «что случилось» (<code>dispatch</code>), редьюсер решает, как изменится состояние. Это та же модель, что в Redux.", fin:true, p:{action:[it("{ type: 'clear' }")],state:[it("items: []")],note:[it("default → тот же state → без ре-рендера")]}},
+  ]
+},
+
+/* ===== MEMO, USEMEMO, USECALLBACK ===== */
+memo: {
+  name:"memo, useMemo, useCallback",
+  code:[
+  "<span class=\"kw\">const</span> Row = <span class=\"fn\">memo</span>(<span class=\"kw\">function</span> <span class=\"fn\">Row</span>({ item, onRemove }) {",
+  "  console.<span class=\"fn\">log</span>(<span class=\"str\">'Row'</span>, item.id);",
+  "  <span class=\"kw\">return</span> &lt;li&gt;{item.name} &lt;button onClick={() =&gt; <span class=\"fn\">onRemove</span>(item.id)}&gt;×&lt;/button&gt;&lt;/li&gt;;",
+  "});",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">List</span>({ items }) {",
+  "  <span class=\"kw\">const</span> [query, setQuery] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">const</span> sorted = <span class=\"fn\">useMemo</span>(() =&gt; <span class=\"fn\">sortBy</span>(items, <span class=\"str\">'name'</span>), [items]);",
+  "  <span class=\"kw\">const</span> remove = <span class=\"fn\">useCallback</span>((id) =&gt; <span class=\"fn\">deleteItem</span>(id), []);",
+  "  <span class=\"kw\">return</span> &lt;&gt;",
+  "    &lt;input value={query} onChange={(e) =&gt; <span class=\"fn\">setQuery</span>(e.target.value)} /&gt;",
+  "    {sorted.<span class=\"fn\">map</span>((it) =&gt; &lt;Row key={it.id} item={it} onRemove={remove} /&gt;)}",
+  "  &lt;/&gt;;",
+  "}"],
+  panels:[["cache", "Кэш", "items"], ["rows", "Строки", "items"], ["out", "Консоль", "console", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> три инструмента <b>мемоизации</b>: <code>React.memo</code> — пропускает ре-рендер компонента; <code>useMemo</code> — кэширует <b>результат вычисления</b>; <code>useCallback</code> — кэширует <b>саму функцию</b>.</li><li><b>Как работает:</b> <code>React.memo</code> <b>поверхностно сравнивает props</b>; <code>useMemo</code>/<code>useCallback</code> пересчитывают значение только при изменении <b>зависимостей</b>.</li><li><b>Пример:</b> <code>memo(List)</code> + обработчик через <code>useCallback</code>, иначе новая функция каждый рендер <b>ломает</b> мемоизацию.</li><li><b>Подвох:</b> мемоизация <b>не бесплатна</b> — применяют там, где есть реальная проблема; с <b>React Compiler</b> это делается автоматически.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[6, 7, 8, 9], t:"Первый рендер", x:"<code>useMemo</code> считает сортировку и запоминает. <code>useCallback</code> запоминает функцию.", hl:"cache", p:{cache:[it("sorted → посчитан",'new'),it("remove → функция №1",'new')],rows:[it("Row 1 ✓",'new'),it("Row 2 ✓",'new')],out:[it("Row 1",'new'),it("Row 2",'new')]}},
+   {line:[11, 7], t:"Ввод в поиск", x:"<code>setQuery</code> → ре-рендер <code>List</code>. <code>items</code> не изменился — <code>useMemo</code> отдаёт старый результат без пересчёта. <code>useCallback</code> — ту же функцию.", hl:"cache", p:{cache:[it("sorted → из кэша <span class=\"chip cok\">items тот же</span>"),it("remove → функция №1 <span class=\"chip cok\">та же ссылка</span>")],rows:[it("Row 1 ✓"),it("Row 2 ✓")],out:[it("Row 1"),it("Row 2")]}},
+   {line:[1, 12], t:"memo сравнивает props", x:"У каждой <code>Row</code> props те же по ссылке: тот же <code>item</code>, тот же <code>onRemove</code>. <code>memo</code> пропускает рендер.", hl:"rows", p:{cache:[it("sorted → из кэша <span class=\"chip cok\">items тот же</span>"),it("remove → функция №1 <span class=\"chip cok\">та же ссылка</span>")],rows:[it("Row 1 ✗ <span class=\"chip cok\">пропущена</span>"),it("Row 2 ✗ <span class=\"chip cok\">пропущена</span>")],out:[it("Row 1"),it("Row 2"),it("(строки не рендерились)",'new')]}},
+   {line:[9], t:"Без useCallback", x:"Если написать <code>const remove = (id) => …</code>, каждый рендер — <b>новая</b> функция. Для <code>memo</code> props изменились — все строки рендерятся снова.", hl:"rows", p:{cache:[it("sorted → из кэша"),it("remove → новая функция каждый раз <span class=\"chip cbad\">ломает memo</span>",'new')],rows:[it("Row 1 ✓ <span class=\"chip cbad\">onRemove новый</span>",'new'),it("Row 2 ✓ <span class=\"chip cbad\">onRemove новый</span>",'new')],out:[it("Row 1"),it("Row 2"),it("(строки не рендерились)")]}},
+   {line:[], t:"А с React Compiler", x:"Компилятор сам расставит кэширование — ручные <code>memo</code>, <code>useMemo</code>, <code>useCallback</code> в большинстве мест не нужны.", hl:"cache", p:{cache:[it("React Compiler: мемоизация автоматически",'new')],rows:[it("Row 1 ✓ <span class=\"chip cbad\">onRemove новый</span>"),it("Row 2 ✓ <span class=\"chip cbad\">onRemove новый</span>")],out:[it("Row 1"),it("Row 2"),it("(строки не рендерились)")]}},
+   {line:[], t:"Итог", x:"<code>memo</code> — пропуск ре-рендера при тех же props. <code>useMemo</code> — кэш результата. <code>useCallback</code> — кэш функции, чтобы не ломать <code>memo</code> ребёнка.", fin:true, p:{cache:[it("React Compiler: мемоизация автоматически")],rows:[it("Row 1 ✓ <span class=\"chip cbad\">onRemove новый</span>"),it("Row 2 ✓ <span class=\"chip cbad\">onRemove новый</span>")],out:[it("Row 1"),it("Row 2"),it("(строки не рендерились)")]}},
+  ]
+},
+
+/* ===== REACT COMPILER ===== */
+compiler: {
+  name:"React Compiler",
+  code:[
+  "<span class=\"cm\">// пишем так:</span>",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Todos</span>({ todos, filter }) {",
+  "  <span class=\"kw\">const</span> visible = todos.<span class=\"fn\">filter</span>((t) =&gt; t.status === filter);",
+  "  <span class=\"kw\">const</span> onToggle = (id) =&gt; <span class=\"fn\">toggle</span>(id);",
+  "  <span class=\"kw\">return</span> &lt;List items={visible} onToggle={onToggle} /&gt;;",
+  "}",
+  "",
+  "<span class=\"cm\">// компилятор при сборке делает примерно так:</span>",
+  "<span class=\"cm\">//   if (todos/filter не изменились) взять visible из кэша</span>",
+  "<span class=\"cm\">//   onToggle — та же функция между рендерами</span>",
+  "<span class=\"cm\">//   &lt;List&gt; не пересоздаётся без нужды</span>"],
+  panels:[["code", "Что в коде", "items"], ["build", "Что добавил компилятор", "items"], ["run", "Ре-рендер при неизменных todos", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> React Compiler — <b>инструмент сборки</b>, который <b>автоматически мемоизирует</b> компоненты и значения.</li><li><b>Как работает:</b> анализирует код на этапе сборки и сам добавляет кэширование там, где это безопасно — как если бы мы расставили <code>memo</code>, <code>useMemo</code>, <code>useCallback</code>.</li><li><b>Пример:</b> обработчик в props больше не ломает мемоизацию ребёнка — компилятор сам сохранит ссылку.</li><li><b>Подвох:</b> работает, только если код следует <b>правилам React</b> (чистые компоненты, без мутаций); ручные <code>useMemo</code>/<code>useCallback</code> остаются как точечный инструмент, но писать их «на всякий случай» больше не нужно.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 3, 4, 5, 6], t:"Обычный компонент", x:"Ни одного <code>useMemo</code> или <code>useCallback</code>. Без компилятора каждый рендер — новый массив и новая функция.", hl:"code", p:{code:[it("visible = новый массив",'new'),it("onToggle = новая функция",'new')],build:[it("—")],run:[it("—")]}},
+   {line:[8, 9, 10, 11], t:"Сборка с компилятором", x:"React Compiler анализирует код и сам добавляет кэширование по зависимостям.", hl:"build", p:{code:[it("visible = новый массив"),it("onToggle = новая функция")],build:[it("кэш visible по [todos, filter]",'new'),it("кэш onToggle",'new'),it("кэш JSX &lt;List>",'new')],run:[it("—")]}},
+   {line:[], t:"Ре-рендер", x:"Родитель перерендерился, <code>todos</code> и <code>filter</code> те же. Всё берётся из кэша — <code>List</code> получает те же props.", hl:"run", p:{code:[it("visible = новый массив"),it("onToggle = новая функция")],build:[it("кэш visible по [todos, filter]"),it("кэш onToggle"),it("кэш JSX &lt;List>")],run:[it("visible из кэша <span class=\"chip cok\">OK</span>",'new'),it("onToggle тот же <span class=\"chip cok\">OK</span>",'new'),it("List не рендерится",'new')]}},
+   {line:[3], t:"Условие: правила React", x:"Если компонент мутирует props или читает изменяемые глобальные значения при рендере, компилятор его <b>пропустит</b> — оптимизировать небезопасно.", hl:"code", p:{code:[it("visible = новый массив"),it("onToggle = новая функция"),it("мутация props → компилятор пропускает <span class=\"chip cbad\">правила</span>",'new')],build:[it("кэш visible по [todos, filter]"),it("кэш onToggle"),it("кэш JSX &lt;List>")],run:[it("visible из кэша <span class=\"chip cok\">OK</span>"),it("onToggle тот же <span class=\"chip cok\">OK</span>"),it("List не рендерится")]}},
+   {line:[], t:"Итог", x:"React Compiler — автоматическая мемоизация при сборке. Нужны чистые компоненты по правилам React. Ручные хуки мемоизации остаются для редких случаев и проектов без компилятора.", fin:true, p:{code:[it("visible = новый массив"),it("onToggle = новая функция"),it("мутация props → компилятор пропускает <span class=\"chip cbad\">правила</span>")],build:[it("кэш visible по [todos, filter]"),it("кэш onToggle"),it("кэш JSX &lt;List>")],run:[it("visible из кэша <span class=\"chip cok\">OK</span>"),it("onToggle тот же <span class=\"chip cok\">OK</span>"),it("List не рендерится")]}},
+  ]
+},
+
+/* ===== ПРАВИЛА ХУКОВ ===== */
+hooksrules: {
+  name:"Правила хуков",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Form</span>({ isAuth }) {",
+  "  <span class=\"kw\">const</span> [email, setEmail] = <span class=\"fn\">useState</span>(<span class=\"str\">'a@b.ru'</span>);   <span class=\"cm\">// хук 1</span>",
+  "  <span class=\"kw\">if</span> (isAuth) {",
+  "    <span class=\"kw\">const</span> [nick, setNick] = <span class=\"fn\">useState</span>(<span class=\"str\">'sasha'</span>);   <span class=\"cm\">// хук 2?</span>",
+  "  }",
+  "  <span class=\"kw\">const</span> [age, setAge] = <span class=\"fn\">useState</span>(<span class=\"num\">30</span>);            <span class=\"cm\">// хук 2 или 3</span>",
+  "  ...",
+  "}"],
+  panels:[["slots", "Ячейки хуков у React (по порядку)", "items", "wide"], ["vars", "Что получили переменные", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> два правила: хуки вызываются <b>только на верхнем уровне</b> компонента и <b>только из компонентов или своих хуков</b>.</li><li><b>Почему:</b> React хранит состояние хуков <b>по порядку вызова</b>; порядок должен быть <b>одинаковым в каждом рендере</b>.</li><li><b>Пример:</b> <code>if (isAuth) useState()</code> — при смене <code>isAuth</code> порядок сдвинется, и React отдаст <b>чужое состояние</b> не тому хуку.</li><li><b>Подвох:</b> условие переносят <b>внутрь</b> хука (<code>useEffect(() =&gt; { if (...) ... })</code>); исключение — новый <code>use()</code>, его можно вызывать в условиях.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4, 6], t:"Рендер 1: isAuth = true", x:"React хранит состояние хуков в списке <b>по порядку вызова</b>, без имён.", hl:"slots", p:{slots:[it("№1 → 'a@b.ru'",'new'),it("№2 → 'sasha'",'new'),it("№3 → 30",'new')],vars:[it("email = 'a@b.ru'",'new'),it("nick = 'sasha'",'new'),it("age = 30",'new')]}},
+   {line:[3, 4], t:"Рендер 2: isAuth = false", x:"Условие ложно — второй <code>useState</code> не вызвался.", hl:"slots", p:{slots:[it("№1 → 'a@b.ru'"),it("№2 → 'sasha'"),it("№3 → 30")],vars:[it("email = 'a@b.ru'"),it("nick = 'sasha'"),it("age = 30")]}},
+   {line:[6], t:"Сдвиг порядка", x:"<code>age</code> — теперь <b>второй</b> вызов, и по порядку ему досталась бы ячейка №2 — строка <code>'sasha'</code>. На деле React замечает, что хуков стало меньше, и падает с ошибкой «Rendered fewer hooks than expected».", hl:"vars", p:{slots:[it("№1 → 'a@b.ru'"),it("№2 → 'sasha' <span class=\"chip cbad\">отдано age</span>"),it("№3 → 30 <span class=\"chip cbad\">потеряно</span>")],vars:[it("email = 'a@b.ru'"),it("age = 'sasha' <span class=\"chip cbad\">чужое состояние</span>",'new')]}},
+   {line:[], t:"Как правильно", x:"Хук вызывается всегда, условие — в использовании значения или внутри эффекта.", hl:"vars", p:{slots:[it("№1 → 'a@b.ru'"),it("№2 → 'sasha' <span class=\"chip cbad\">отдано age</span>"),it("№3 → 30 <span class=\"chip cbad\">потеряно</span>")],vars:[it("const [nick, setNick] = useState('sasha'); // всегда",'new'),it("{isAuth && &lt;p>{nick}&lt;/p>}",'new')]}},
+   {line:[], t:"Итог", x:"Хуки — только на верхнем уровне и только в компонентах и своих хуках. Состояние привязано к порядку вызовов, порядок должен быть одинаковым в каждом рендере.", fin:true, p:{slots:[it("№1 → 'a@b.ru'"),it("№2 → 'sasha' <span class=\"chip cbad\">отдано age</span>"),it("№3 → 30 <span class=\"chip cbad\">потеряно</span>")],vars:[it("const [nick, setNick] = useState('sasha'); // всегда"),it("{isAuth && &lt;p>{nick}&lt;/p>}")]}},
+  ]
+},
+
+/* ===== CUSTOM HOOK ===== */
+customhook: {
+  name:"Custom hook",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">useToggle</span>(initial = <span class=\"kw\">false</span>) {",
+  "  <span class=\"kw\">const</span> [on, setOn] = <span class=\"fn\">useState</span>(initial);",
+  "  <span class=\"kw\">const</span> toggle = () =&gt; <span class=\"fn\">setOn</span>((v) =&gt; !v);",
+  "  <span class=\"kw\">return</span> [on, toggle];",
+  "}",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Settings</span>() {",
+  "  <span class=\"kw\">const</span> [dark, toggleDark] = <span class=\"fn\">useToggle</span>(<span class=\"kw\">false</span>);",
+  "  <span class=\"kw\">const</span> [sound, toggleSound] = <span class=\"fn\">useToggle</span>(<span class=\"kw\">true</span>);",
+  "  <span class=\"kw\">return</span> &lt;&gt;",
+  "    &lt;button onClick={toggleDark}&gt;Тема&lt;/button&gt;",
+  "    &lt;button onClick={toggleSound}&gt;Звук&lt;/button&gt;",
+  "  &lt;/&gt;;",
+  "}"],
+  panels:[["s1", "Вызов №1 (dark)", "items"], ["s2", "Вызов №2 (sound)", "items"], ["note", "Вывод", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> кастомный хук — <b>функция с именем на <code>use</code></b>, которая внутри вызывает другие хуки.</li><li><b>Как работает:</b> выносит <b>повторяющуюся логику с состоянием</b> из компонентов; у <b>каждого вызова своё состояние</b> — хук делится логикой, а не данными.</li><li><b>Пример:</b> <code>useFetch(url)</code> возвращает <code>{ data, loading, error }</code>; <code>useDebounce(value, 300)</code>; <code>useLocalStorage(key)</code>.</li><li><b>Когда выносить:</b> логика повторяется в нескольких компонентах или компонент разросся и её хочется <b>назвать и протестировать</b> отдельно.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 4], t:"Свой хук", x:"Обычная функция с именем на <code>use</code>, которая вызывает другие хуки.", hl:"note", p:{s1:[it("—")],s2:[it("—")],note:[it("useToggle = useState + функция переключения",'new')]}},
+   {line:[8, 2], t:"Первый вызов", x:"Внутри — свой <code>useState</code>, своё состояние.", hl:"s1", p:{s1:[it("on = false",'new')],s2:[it("—")],note:[it("useToggle = useState + функция переключения")]}},
+   {line:[9, 2], t:"Второй вызов", x:"Ещё один <code>useState</code> — <b>отдельное</b> состояние.", hl:"s2", p:{s1:[it("on = false")],s2:[it("on = true",'new')],note:[it("useToggle = useState + функция переключения")]}},
+   {line:[11, 3], t:"Клик «Тема»", x:"Меняется только первый. Второй не затронут.", hl:"s1", p:{s1:[it("on = true",'new')],s2:[it("on = true <span class=\"chip cmut\">не изменился</span>")],note:[it("useToggle = useState + функция переключения")]}},
+   {line:[], t:"Итог", x:"Кастомный хук переиспользует <b>логику</b>, а не данные: у каждого вызова своё состояние. Выносим, когда логика повторяется или компонент разросся.", fin:true, p:{s1:[it("on = true")],s2:[it("on = true <span class=\"chip cmut\">не изменился</span>")],note:[it("useToggle = useState + функция переключения"),it("логика общая, состояние у каждого вызова своё",'new')]}},
+  ]
+},
+
+/* ===== CONTEXT API ===== */
+context: {
+  name:"Context API",
+  code:[
+  "<span class=\"kw\">const</span> ThemeContext = <span class=\"fn\">createContext</span>(<span class=\"str\">'light'</span>);",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">App</span>() {",
+  "  <span class=\"kw\">const</span> [theme, setTheme] = <span class=\"fn\">useState</span>(<span class=\"str\">'dark'</span>);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;ThemeContext value={theme}&gt;",
+  "      &lt;Layout /&gt;",
+  "    &lt;/ThemeContext&gt;",
+  "  );",
+  "}",
+  "<span class=\"kw\">const</span> Layout = <span class=\"fn\">memo</span>(() =&gt; &lt;Sidebar /&gt;);",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Sidebar</span>() { <span class=\"kw\">return</span> &lt;Button /&gt;; }",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Button</span>() {",
+  "  <span class=\"kw\">const</span> theme = <span class=\"fn\">useContext</span>(ThemeContext);",
+  "  <span class=\"kw\">return</span> &lt;button className={theme}&gt;OK&lt;/button&gt;;",
+  "}"],
+  panels:[["tree", "Дерево", "items", "wide"], ["render", "Кто рендерится при смене темы", "items"], ["note", "Почему", "items"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> Context — способ передать данные <b>глубоко по дереву без пробрасывания props</b> через каждый уровень (<b>prop drilling</b>).</li><li><b>Как работает:</b> <code>createContext</code> → <b>Provider</b> с <code>value</code> наверху → <code>useContext</code> в любом потомке.</li><li><b>Пример:</b> тема, текущий пользователь, язык интерфейса.</li><li><b>Подвох:</b> при смене <code>value</code> <b>перерисовываются все потребители</b>; для часто меняющегося большого состояния лучше <b>Redux / Zustand</b> с подпиской на часть данных.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 4, 6], t:"Провайдер наверху", x:"<code>App</code> кладёт значение в контекст. В React 19 можно писать <code>&lt;ThemeContext value&gt;</code> без <code>.Provider</code>.", hl:"tree", p:{tree:[it("App — Provider value = 'dark'",'new'),it("  Layout (memo)",'new'),it("    Sidebar",'new'),it("      Button — useContext",'new')],render:[it("—")],note:[it("—")]}},
+   {line:[13, 14], t:"Чтение без проброса", x:"<code>Button</code> берёт тему напрямую. <code>Layout</code> и <code>Sidebar</code> ничего не пробрасывают — нет prop drilling.", hl:"tree", p:{tree:[it("App — Provider value = 'dark'"),it("  Layout (memo)"),it("  Sidebar"),it("  Button → 'dark' <span class=\"chip cok\">прочитал</span>",'new')],render:[it("—")],note:[it("—")]}},
+   {line:[4], t:"setTheme('light')", x:"<code>App</code> перерендерился. <code>Layout</code> обёрнут в <code>memo</code> и props не изменились — пропущен, вместе с <code>Sidebar</code>.", hl:"render", p:{tree:[it("App — Provider value = 'dark'"),it("  Layout (memo)"),it("  Sidebar"),it("  Button → 'dark' <span class=\"chip cok\">прочитал</span>")],render:[it("App ✓",'new'),it("Layout ✗ memo",'new'),it("Sidebar ✗",'new')],note:[it("—")]}},
+   {line:[13], t:"Потребитель обновится", x:"Но <code>Button</code> читает контекст — React перерендерит его <b>напрямую</b>, минуя memo по пути.", hl:"render", p:{tree:[it("App — Provider value = 'dark'"),it("  Layout (memo)"),it("  Sidebar"),it("  Button → 'dark' <span class=\"chip cok\">прочитал</span>")],render:[it("App ✓"),it("Layout ✗ memo"),it("Sidebar ✗"),it("Button ✓ <span class=\"chip c1\">контекст изменился</span>",'new')],note:[it("все потребители контекста рендерятся при смене value",'new')]}},
+   {line:[6], t:"Подвох: новый объект в value", x:"Если передать <code>value={{ theme, setTheme }}</code>, на каждом рендере <code>App</code> будет новый объект — все потребители будут рендериться всегда. Решение — <code>useMemo</code> для value.", hl:"note", p:{tree:[it("App — Provider value = 'dark'"),it("  Layout (memo)"),it("  Sidebar"),it("  Button → 'dark' <span class=\"chip cok\">прочитал</span>")],render:[it("App ✓"),it("Layout ✗ memo"),it("Sidebar ✗"),it("Button ✓ <span class=\"chip c1\">контекст изменился</span>")],note:[it("все потребители контекста рендерятся при смене value"),it("value={{…}} → новый объект каждый рендер <span class=\"chip cbad\">лишние рендеры</span>",'new')]}},
+   {line:[], t:"Итог", x:"Context передаёт данные вглубь без проброса props. При изменении value рендерятся все потребители. Для редко меняющихся данных — Context, для большого частого состояния — стор.", fin:true, p:{tree:[it("App — Provider value = 'dark'"),it("  Layout (memo)"),it("  Sidebar"),it("  Button → 'dark' <span class=\"chip cok\">прочитал</span>")],render:[it("App ✓"),it("Layout ✗ memo"),it("Sidebar ✗"),it("Button ✓ <span class=\"chip c1\">контекст изменился</span>")],note:[it("все потребители контекста рендерятся при смене value"),it("value={{…}} → новый объект каждый рендер <span class=\"chip cbad\">лишние рендеры</span>")]}},
+  ]
+},
+
+/* ===== НОВОЕ В REACT 19 ===== */
+react19: {
+  name:"Новое в React 19",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">LikeButton</span>({ likes, sendLike }) {",
+  "  <span class=\"kw\">const</span> [optimisticLikes, addLike] = <span class=\"fn\">useOptimistic</span>(likes, (n) =&gt; n + <span class=\"num\">1</span>);",
+  "  <span class=\"kw\">const</span> [error, action, isPending] = <span class=\"fn\">useActionState</span>(<span class=\"kw\">async</span> () =&gt; {",
+  "    <span class=\"fn\">addLike</span>();",
+  "    <span class=\"kw\">try</span> { <span class=\"kw\">await</span> <span class=\"fn\">sendLike</span>(); } <span class=\"kw\">catch</span> (e) { <span class=\"kw\">return</span> <span class=\"str\">'Не удалось'</span>; }",
+  "    <span class=\"kw\">return</span> <span class=\"kw\">null</span>;",
+  "  }, <span class=\"kw\">null</span>);",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;form action={action}&gt;",
+  "      &lt;button disabled={isPending}&gt;♥ {optimisticLikes}&lt;/button&gt;",
+  "      {error &amp;&amp; &lt;p&gt;{error}&lt;/p&gt;}",
+  "    &lt;/form&gt;",
+  "  );",
+  "}"],
+  panels:[["ui", "На экране", "items"], ["server", "Сервер", "items"], ["state", "Состояние хуков", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> главное в React 19 — <b>Actions</b> (асинхронные функции для форм и мутаций) и новые хуки вокруг них.</li><li><b>Хуки:</b> <code>useActionState</code> — состояние результата и флаг <b>pending</b> для действия; <code>useOptimistic</code> — <b>оптимистичное обновление</b> UI до ответа сервера; <code>use()</code> — читает <b>промис или контекст</b>, можно в условиях.</li><li><b>Пример:</b> <code>&lt;form action={saveAction}&gt;</code> — React сам отправит форму и даст <code>isPending</code>.</li><li><b>Ещё:</b> <b><code>ref</code> как обычный проп</b> (без <code>forwardRef</code>), <code>&lt;Context&gt;</code> вместо <code>&lt;Context.Provider&gt;</code>, метаданные (<code>&lt;title&gt;</code>) прямо в компонентах.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2, 3, 10], t:"Начало", x:"Лайков 10. <code>useOptimistic</code> пока показывает настоящее значение.", hl:"ui", p:{ui:[it("♥ 10",'new')],server:[it("likes = 10",'new')],state:[it("optimisticLikes = 10",'new'),it("isPending = false",'new')]}},
+   {line:[9, 4], t:"Отправка формы → Action", x:"<code>form action</code> запускает асинхронное действие. <code>addLike()</code> сразу показывает <b>ожидаемый</b> результат — 11, не дожидаясь сервера.", hl:"ui", p:{ui:[it("♥ 11 <span class=\"chip c2\">оптимистично</span>",'new')],server:[it("likes = 10")],state:[it("optimisticLikes = 11",'new'),it("isPending = true",'new')]}},
+   {line:[5], t:"Ждём сервер", x:"Кнопка заблокирована через <code>isPending</code> — React отслеживает ожидание сам, без своего <code>useState</code>.", hl:"server", p:{ui:[it("♥ 11 <span class=\"chip c2\">оптимистично</span>")],server:[it("запрос… ",'new')],state:[it("optimisticLikes = 11"),it("isPending = true")]}},
+   {line:[5, 6], t:"Успех", x:"Сервер ответил, родитель получил <code>likes = 11</code>. Оптимистичное значение заменяется настоящим.", hl:"ui", p:{ui:[it("♥ 11 <span class=\"chip cok\">подтверждено</span>",'new')],server:[it("likes = 11",'new')],state:[it("optimisticLikes = 11"),it("isPending = false",'new'),it("error = null",'new')]}},
+   {line:[5, 11], t:"А если ошибка", x:"Если бы запрос упал, действие вернуло бы текст ошибки — это попадёт в <code>error</code>. Оптимистичный +1 <b>откатится</b> к настоящему значению.", hl:"ui", p:{ui:[it("♥ 10 <span class=\"chip cbad\">откат</span>",'new'),it("Не удалось",'new')],server:[it("likes = 11")],state:[it("optimisticLikes = 10"),it("isPending = false"),it("error = 'Не удалось'",'new')]}},
+   {line:[], t:"Итог", x:"Actions — асинхронные функции для форм. <code>useActionState</code> даёт результат и <code>isPending</code>, <code>useOptimistic</code> — мгновенный оптимистичный UI с откатом. Ещё: <code>use()</code>, <code>ref</code> как проп.", fin:true, p:{ui:[it("♥ 10 <span class=\"chip cbad\">откат</span>"),it("Не удалось")],server:[it("likes = 11")],state:[it("optimisticLikes = 10"),it("isPending = false"),it("error = 'Не удалось'")]}},
+  ]
+},
+
+/* ===== USETRANSITION ===== */
+transition: {
+  name:"useTransition",
+  code:[
+  "<span class=\"kw\">function</span> <span class=\"fn\">Search</span>() {",
+  "  <span class=\"kw\">const</span> [text, setText] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">const</span> [query, setQuery] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">const</span> [isPending, startTransition] = <span class=\"fn\">useTransition</span>();",
+  "  <span class=\"kw\">function</span> <span class=\"fn\">onChange</span>(e) {",
+  "    <span class=\"fn\">setText</span>(e.target.value);              <span class=\"cm\">// срочно</span>",
+  "    <span class=\"fn\">startTransition</span>(() =&gt; {",
+  "      <span class=\"fn\">setQuery</span>(e.target.value);           <span class=\"cm\">// не срочно</span>",
+  "    });",
+  "  }",
+  "  <span class=\"kw\">return</span> &lt;&gt;",
+  "    &lt;input value={text} onChange={onChange} /&gt;",
+  "    {isPending &amp;&amp; &lt;Spinner /&gt;}",
+  "    &lt;HugeList query={query} /&gt;",
+  "  &lt;/&gt;;",
+  "}"],
+  panels:[["urgent", "Срочные обновления", "items"], ["slow", "Несрочные (transition)", "items"], ["screen", "Экран", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> оба хука помечают обновление как <b>несрочное</b>, чтобы тяжёлый рендер <b>не блокировал ввод</b>.</li><li><b>useTransition:</b> оборачиваем <b>вызов сеттера</b> в <code>startTransition</code>, получаем <code>isPending</code>; React может <b>прервать</b> этот рендер ради срочного.</li><li><b>useDeferredValue:</b> получаем <b>отложенную копию значения</b> — когда сеттер не наш (значение пришло из props).</li><li><b>Пример:</b> ввод в поиске обновляется сразу, а тяжёлый список результатов — с отставанием, интерфейс не тормозит.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[5, 6], t:"Ввод «r»", x:"<code>setText</code> — срочное обновление: инпут должен отреагировать сразу.", hl:"urgent", p:{urgent:[it("text = 'r' → рендер сразу",'new')],slow:[it("—")],screen:[it("input: r",'new')]}},
+   {line:[7, 8], t:"Тяжёлое — в transition", x:"<code>setQuery</code> внутри <code>startTransition</code> — React начнёт рендер <code>HugeList</code> в фоне. <code>isPending = true</code>.", hl:"slow", p:{urgent:[it("text = 'r' → рендер сразу")],slow:[it("query = 'r' → фоновый рендер…",'new')],screen:[it("input: r"),it("Spinner",'new')]}},
+   {line:[12], t:"Быстро ввёл «re»", x:"Пришло срочное обновление. React <b>прерывает</b> фоновый рендер со старым <code>'r'</code> и сначала обновляет инпут.", hl:"slow", p:{urgent:[it("text = 'r'"),it("text = 're' → рендер сразу",'new')],slow:[it("query = 'r' <span class=\"chip cbad\">прерван</span>"),it("query = 're' → фоновый рендер…",'new')],screen:[it("input: re <span class=\"chip cok\">без задержки</span>",'new'),it("Spinner")]}},
+   {line:[14], t:"Фон закончил", x:"Список с <code>'re'</code> готов — показывается, спиннер исчезает. Ввод ни разу не тормозил.", hl:"screen", p:{urgent:[it("text = 'r'"),it("text = 're' → рендер сразу")],slow:[it("query = 'r' <span class=\"chip cbad\">прерван</span>"),it("query = 're' <span class=\"chip cok\">готов</span>",'new')],screen:[it("input: re"),it("HugeList(re)",'new')]}},
+   {line:[], t:"А useDeferredValue?", x:"Если сеттера нет (значение пришло в props) — <code>const deferred = useDeferredValue(query)</code> даст отстающую копию с тем же эффектом.", hl:"slow", p:{urgent:[it("text = 'r'"),it("text = 're' → рендер сразу")],slow:[it("useDeferredValue(value) — то же для чужого значения",'new')],screen:[it("input: re"),it("HugeList(re)")]}},
+   {line:[], t:"Итог", x:"Transition помечает обновление несрочным: React может его прервать ради ввода. <code>isPending</code> — для индикатора. Без фиксированной задержки, в отличие от debounce.", fin:true, p:{urgent:[it("text = 'r'"),it("text = 're' → рендер сразу")],slow:[it("useDeferredValue(value) — то же для чужого значения")],screen:[it("input: re"),it("HugeList(re)")]}},
+  ]
+},
+
+/* ===== LAZY, SUSPENSE, ERRORBOUNDARY ===== */
+suspense: {
+  name:"lazy, Suspense, ErrorBoundary",
+  code:[
+  "<span class=\"kw\">const</span> Settings = <span class=\"fn\">lazy</span>(() =&gt; <span class=\"kw\">import</span>(<span class=\"str\">'./Settings'</span>));",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">App</span>() {",
+  "  <span class=\"kw\">return</span> (",
+  "    &lt;ErrorBoundary fallback={&lt;p&gt;Что-то сломалось&lt;/p&gt;}&gt;",
+  "      &lt;Suspense fallback={&lt;Spinner /&gt;}&gt;",
+  "        &lt;Settings /&gt;",
+  "      &lt;/Suspense&gt;",
+  "    &lt;/ErrorBoundary&gt;",
+  "  );",
+  "}"],
+  panels:[["net", "Загрузка", "items"], ["screen", "Экран", "items"], ["note", "Кто сработал", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <code>React.lazy</code> — <b>ленивая загрузка</b> компонента; <b>Suspense</b> — показывает <b>fallback</b>, пока что-то внутри грузится; <b>Error Boundary</b> — ловит <b>ошибки рендера</b> в поддереве и показывает запасной UI.</li><li><b>Как работает:</b> <code>lazy(() =&gt; import('./Page'))</code> делает <b>отдельный чанк</b>; Suspense ловит «ожидание» и показывает <code>fallback</code>.</li><li><b>Пример:</b> <code>&lt;Suspense fallback={&lt;Spinner /&gt;}&gt;&lt;Settings /&gt;&lt;/Suspense&gt;</code>.</li><li><b>Подвох:</b> Error Boundary — <b>классовый компонент</b> (<code>getDerivedStateFromError</code>, <code>componentDidCatch</code>) или библиотека <code>react-error-boundary</code>; ошибки в <b>обработчиках событий и асинхронном коде</b> он <b>не ловит</b>.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1], t:"lazy", x:"<code>Settings</code> не в основном бандле. Сборщик вынес его в отдельный файл.", hl:"net", p:{net:[it("main.js — загружен",'new'),it("Settings.js — ещё нет",'new')],screen:[it("—")],note:[it("—")]}},
+   {line:[7], t:"Первый рендер Settings", x:"Код компонента ещё не загружен — компонент «приостанавливается». Ближайший <code>Suspense</code> показывает fallback.", hl:"screen", p:{net:[it("main.js — загружен"),it("Settings.js — загрузка…",'new')],screen:[it("Spinner",'new')],note:[it("Suspense: показал fallback",'new')]}},
+   {line:[7], t:"Чанк загрузился", x:"Файл пришёл — React рендерит настоящий компонент вместо спиннера.", hl:"screen", p:{net:[it("main.js — загружен"),it("Settings.js — загружен",'new')],screen:[it("Settings",'new')],note:[it("Suspense: показал fallback")]}},
+   {line:[5], t:"Ошибка при рендере", x:"Если <code>Settings</code> бросит ошибку во время рендера (или не загрузится), её поймает ближайший Error Boundary и покажет свой fallback вместо белого экрана.", hl:"note", p:{net:[it("main.js — загружен"),it("Settings.js — загружен")],screen:[it("Что-то сломалось",'new')],note:[it("Suspense: показал fallback"),it("ErrorBoundary: поймал ошибку рендера",'new')]}},
+   {line:[], t:"Что не поймает", x:"Ошибки в <code>onClick</code>, <code>setTimeout</code>, промисах Error Boundary <b>не</b> ловит — там нужен <code>try/catch</code>.", hl:"note", p:{net:[it("main.js — загружен"),it("Settings.js — загружен")],screen:[it("Что-то сломалось")],note:[it("Suspense: показал fallback"),it("ErrorBoundary: поймал ошибку рендера"),it("события и асинхронный код → try/catch <span class=\"chip cbad\">не ловит</span>",'new')]}},
+   {line:[], t:"Итог", x:"<code>lazy</code> — отдельный чанк по требованию. <code>Suspense</code> — fallback на время ожидания. Error Boundary — запасной UI при ошибке рендера.", fin:true, p:{net:[it("main.js — загружен"),it("Settings.js — загружен")],screen:[it("Что-то сломалось")],note:[it("Suspense: показал fallback"),it("ErrorBoundary: поймал ошибку рендера"),it("события и асинхронный код → try/catch <span class=\"chip cbad\">не ловит</span>")]}},
+  ]
+},
+
+/* ===== CSR, SSR, RSC ===== */
+ssr: {
+  name:"CSR, SSR, RSC",
+  code:[
+  "<span class=\"cm\">// CSR (Vite + React):</span>",
+  "<span class=\"cm\">//   index.html: &lt;div id=\"root\"&gt;&lt;/div&gt; + bundle.js</span>",
+  "",
+  "<span class=\"cm\">// SSR (Next.js):</span>",
+  "<span class=\"cm\">//   сервер отдаёт готовый HTML, потом hydrateRoot</span>",
+  "",
+  "<span class=\"cm\">// Server Component:</span>",
+  "<span class=\"kw\">async</span> <span class=\"kw\">function</span> <span class=\"fn\">ProductList</span>() {",
+  "  <span class=\"kw\">const</span> products = <span class=\"kw\">await</span> db.products.<span class=\"fn\">findMany</span>();   <span class=\"cm\">// прямо на сервере</span>",
+  "  <span class=\"kw\">return</span> products.<span class=\"fn\">map</span>((p) =&gt; &lt;ProductCard key={p.id} product={p} /&gt;);",
+  "}"],
+  panels:[["csr", "CSR — время", "items"], ["ssr", "SSR — время", "items"], ["rsc", "Server Components", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> <b>CSR</b> — HTML собирается <b>в браузере</b> из JS; <b>SSR</b> — сервер отдаёт <b>готовый HTML</b>, потом браузер его <b>гидрирует</b>; <b>Server Components</b> — компоненты, которые <b>выполняются только на сервере</b> и не отправляют свой JS клиенту.</li><li><b>Как работает:</b> при CSR сначала пустая страница и загрузка бандла; при SSR контент виден сразу, интерактивность — после <b>гидратации</b>.</li><li><b>Пример:</b> Vite + React — CSR; Next.js — SSR и Server Components.</li><li><b>Зачем:</b> SSR — быстрый первый показ и <b>SEO</b>; Server Components — меньше JS в браузере, данные прямо с сервера; но в них <b>нет state и эффектов</b> — для интерактива нужны <code>'use client'</code> компоненты.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[1, 2], t:"CSR: пустая страница", x:"Сервер отдаёт почти пустой HTML. Пока грузится и выполняется бандл, пользователь видит белый экран.", hl:"csr", p:{csr:[it("0 мс: пустой HTML",'new'),it("…загрузка bundle.js",'new'),it("…React собирает DOM",'new'),it("контент виден и интерактивен",'new')],ssr:[it("—")],rsc:[it("—")]}},
+   {line:[4, 5], t:"SSR: HTML сразу", x:"Сервер выполнил React и отдал готовый HTML — контент виден сразу, поисковик его читает.", hl:"ssr", p:{csr:[it("0 мс: пустой HTML"),it("…загрузка bundle.js"),it("…React собирает DOM"),it("контент виден и интерактивен")],ssr:[it("0 мс: готовый HTML — контент виден <span class=\"chip cok\">быстро</span>",'new'),it("…загрузка JS",'new')],rsc:[it("—")]}},
+   {line:[5], t:"Гидратация", x:"JS загрузился — React «оживляет» существующий HTML: навешивает обработчики. До этого кнопки не работают.", hl:"ssr", p:{csr:[it("0 мс: пустой HTML"),it("…загрузка bundle.js"),it("…React собирает DOM"),it("контент виден и интерактивен")],ssr:[it("0 мс: готовый HTML — контент виден"),it("…загрузка JS"),it("гидратация → интерактивен",'new')],rsc:[it("—")]}},
+   {line:[7, 8, 9, 10], t:"Server Component", x:"Выполняется только на сервере: может читать базу напрямую. Его код не попадает в бандл браузера.", hl:"rsc", p:{csr:[it("0 мс: пустой HTML"),it("…загрузка bundle.js"),it("…React собирает DOM"),it("контент виден и интерактивен")],ssr:[it("0 мс: готовый HTML — контент виден"),it("…загрузка JS"),it("гидратация → интерактивен")],rsc:[it("await db… — на сервере",'new'),it("в браузер: результат, а не код <span class=\"chip cok\">меньше JS</span>",'new')]}},
+   {line:[], t:"Ограничение RSC", x:"В Server Component нет <code>useState</code>, <code>useEffect</code>, <code>onClick</code>. Интерактивные части — клиентские компоненты с директивой <code>'use client'</code>.", hl:"rsc", p:{csr:[it("0 мс: пустой HTML"),it("…загрузка bundle.js"),it("…React собирает DOM"),it("контент виден и интерактивен")],ssr:[it("0 мс: готовый HTML — контент виден"),it("…загрузка JS"),it("гидратация → интерактивен")],rsc:[it("await db… — на сервере"),it("в браузер: результат, а не код"),it("нет state и событий → 'use client' для интерактива <span class=\"chip cbad\">важно</span>",'new')]}},
+   {line:[], t:"Итог", x:"CSR — всё в браузере. SSR — готовый HTML с сервера + гидратация, быстрее первый показ и SEO. RSC — компоненты только на сервере, без JS в браузере.", fin:true, p:{csr:[it("0 мс: пустой HTML"),it("…загрузка bundle.js"),it("…React собирает DOM"),it("контент виден и интерактивен")],ssr:[it("0 мс: готовый HTML — контент виден"),it("…загрузка JS"),it("гидратация → интерактивен")],rsc:[it("await db… — на сервере"),it("в браузер: результат, а не код"),it("нет state и событий → 'use client' для интерактива <span class=\"chip cbad\">важно</span>")]}},
+  ]
+},
+
+/* ===== КЛАССЫ И ФУНКЦИИ ===== */
+classes_r: {
+  name:"Классы и функции",
+  code:[
+  "<span class=\"kw\">class</span> Clock <span class=\"kw\">extends</span> Component {",
+  "  state = { time: <span class=\"kw\">new</span> <span class=\"fn\">Date</span>() };",
+  "  <span class=\"fn\">componentDidMount</span>() { <span class=\"kw\">this</span>.id = <span class=\"fn\">setInterval</span>(<span class=\"kw\">this</span>.tick, <span class=\"num\">1000</span>); }",
+  "  <span class=\"fn\">componentWillUnmount</span>() { <span class=\"fn\">clearInterval</span>(<span class=\"kw\">this</span>.id); }",
+  "  tick = () =&gt; <span class=\"kw\">this</span>.<span class=\"fn\">setState</span>({ time: <span class=\"kw\">new</span> <span class=\"fn\">Date</span>() });",
+  "  <span class=\"fn\">render</span>() { <span class=\"kw\">return</span> &lt;p&gt;{<span class=\"kw\">this</span>.state.time.<span class=\"fn\">toLocaleTimeString</span>()}&lt;/p&gt;; }",
+  "}",
+  "",
+  "<span class=\"kw\">function</span> <span class=\"fn\">Clock2</span>() {",
+  "  <span class=\"kw\">const</span> [time, setTime] = <span class=\"fn\">useState</span>(<span class=\"kw\">new</span> <span class=\"fn\">Date</span>());",
+  "  <span class=\"fn\">useEffect</span>(() =&gt; {",
+  "    <span class=\"kw\">const</span> id = <span class=\"fn\">setInterval</span>(() =&gt; <span class=\"fn\">setTime</span>(<span class=\"kw\">new</span> <span class=\"fn\">Date</span>()), <span class=\"num\">1000</span>);",
+  "    <span class=\"kw\">return</span> () =&gt; <span class=\"fn\">clearInterval</span>(id);",
+  "  }, []);",
+  "  <span class=\"kw\">return</span> &lt;p&gt;{time.<span class=\"fn\">toLocaleTimeString</span>()}&lt;/p&gt;;",
+  "}"],
+  panels:[["map", "Что чему соответствует", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> раньше состояние и жизненный цикл были только у <b>классовых</b> компонентов; с <b>хуками</b> (React 16.8) всё это есть у <b>функций</b>.</li><li><b>Почему функции:</b> <b>меньше кода</b>, нет путаницы с <code>this</code>, логику легко выносить в <b>кастомные хуки</b>, новые возможности React делаются для функций.</li><li><b>Соответствие:</b> <code>componentDidMount</code> → <code>useEffect(fn, [])</code>, <code>componentWillUnmount</code> → очистка эффекта, <code>this.state</code> → <code>useState</code>.</li><li><b>Где классы остались:</b> <b>Error Boundary</b> и старый код, который нужно уметь читать.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[2, 10], t:"Состояние", x:"Объект <code>this.state</code> и <code>setState</code> → отдельные <code>useState</code>.", hl:"map", p:{map:[it("this.state / setState → useState",'new')]}},
+   {line:[3, 11, 12], t:"Монтирование", x:"<code>componentDidMount</code> → <code>useEffect</code> с пустым массивом.", hl:"map", p:{map:[it("this.state / setState → useState"),it("componentDidMount → useEffect(fn, [])",'new')]}},
+   {line:[4, 13], t:"Размонтирование", x:"<code>componentWillUnmount</code> → функция очистки эффекта. Подписка и отписка теперь рядом.", hl:"map", p:{map:[it("this.state / setState → useState"),it("componentDidMount → useEffect(fn, [])"),it("componentWillUnmount → return () => …",'new')]}},
+   {line:[5], t:"this", x:"В классе метод нужно привязать к <code>this</code> (здесь — стрелкой в поле класса). В функции <code>this</code> нет вообще.", hl:"map", p:{map:[it("this.state / setState → useState"),it("componentDidMount → useEffect(fn, [])"),it("componentWillUnmount → return () => …"),it("привязка this → не нужна",'new')]}},
+   {line:[], t:"Итог", x:"Функции + хуки: меньше кода, нет <code>this</code>, логика переиспользуется через кастомные хуки. Классы остались для Error Boundary и старого кода.", fin:true, p:{map:[it("this.state / setState → useState"),it("componentDidMount → useEffect(fn, [])"),it("componentWillUnmount → return () => …"),it("привязка this → не нужна")]}},
+  ]
+},
+
+/* ===== ОПТИМИЗАЦИЯ REACT ===== */
+perf: {
+  name:"Оптимизация React",
+  code:[
+  "<span class=\"cm\">// Было: состояние ввода в корне</span>",
+  "<span class=\"kw\">function</span> <span class=\"fn\">App</span>() {",
+  "  <span class=\"kw\">const</span> [text, setText] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">return</span> &lt;&gt;",
+  "    &lt;input value={text} onChange={(e) =&gt; <span class=\"fn\">setText</span>(e.target.value)} /&gt;",
+  "    &lt;HeavyChart /&gt;",
+  "    &lt;HeavyTable /&gt;",
+  "  &lt;/&gt;;",
+  "}",
+  "",
+  "<span class=\"cm\">// Стало: состояние опущено в свой компонент</span>",
+  "<span class=\"kw\">function</span> <span class=\"fn\">SearchBox</span>() {",
+  "  <span class=\"kw\">const</span> [text, setText] = <span class=\"fn\">useState</span>(<span class=\"str\">''</span>);",
+  "  <span class=\"kw\">return</span> &lt;input value={text} onChange={(e) =&gt; <span class=\"fn\">setText</span>(e.target.value)} /&gt;;",
+  "}"],
+  panels:[["before", "Было: что рендерится на каждую букву", "items"], ["after", "Стало", "items"], ["tools", "Инструменты", "items", "wide"]],
+  say:"<ol class=\"say-steps\"><li><b>Что:</b> оптимизация начинается с <b>измерения</b>: <b>React DevTools Profiler</b> показывает, что и почему рендерится.</li><li><b>Ре-рендеры:</b> держать состояние <b>ближе к месту использования</b>, <code>memo</code> + стабильные пропсы (или React Compiler), разделять большие контексты.</li><li><b>Загрузка:</b> <b>code splitting</b> через <code>lazy</code> и <code>Suspense</code>, оптимизация картинок, меньший бандл.</li><li><b>Большие списки:</b> <b>виртуализация</b> (рисуем только видимые строки), <code>key</code> из данных, <code>useTransition</code> для тяжёлых обновлений.</li></ol><p class=\"say-note\">Жирное — обязательные слова. Тот же текст — в заметке, «Словаре собеса» и колоде «Термины собеса».</p>",
+  steps:[
+   {line:[], t:"Сначала измерить", x:"Открываем React DevTools → Profiler, записываем ввод. Видим, какие компоненты рендерятся и сколько времени.", hl:"tools", p:{before:[it("—")],after:[it("—")],tools:[it("Profiler: HeavyChart 40 мс, HeavyTable 30 мс на каждую букву",'new')]}},
+   {line:[2, 3, 5, 6, 7], t:"Причина", x:"Состояние ввода живёт в <code>App</code>: каждая буква перерендеривает всё приложение.", hl:"before", p:{before:[it("App ✓",'new'),it("input ✓",'new'),it("HeavyChart ✓ <span class=\"chip cbad\">зря</span>",'new'),it("HeavyTable ✓ <span class=\"chip cbad\">зря</span>",'new')],after:[it("—")],tools:[it("Profiler: HeavyChart 40 мс, HeavyTable 30 мс на каждую букву")]}},
+   {line:[12, 13, 14], t:"Опустить состояние", x:"Переносим state в маленький компонент, которому он нужен. Тяжёлые соседи больше не задеты — без единого <code>memo</code>.", hl:"after", p:{before:[it("App ✓"),it("input ✓"),it("HeavyChart ✓ <span class=\"chip cbad\">зря</span>"),it("HeavyTable ✓ <span class=\"chip cbad\">зря</span>")],after:[it("SearchBox ✓",'new'),it("input ✓",'new'),it("HeavyChart — не рендерится",'new'),it("HeavyTable — не рендерится",'new')],tools:[it("Profiler: HeavyChart 40 мс, HeavyTable 30 мс на каждую букву")]}},
+   {line:[], t:"Другие приёмы", x:"Тяжёлые страницы — <code>lazy</code>. Длинные списки — виртуализация. Тяжёлые обновления — <code>useTransition</code>. Точечно — <code>memo</code> или React Compiler.", hl:"tools", p:{before:[it("App ✓"),it("input ✓"),it("HeavyChart ✓ <span class=\"chip cbad\">зря</span>"),it("HeavyTable ✓ <span class=\"chip cbad\">зря</span>")],after:[it("SearchBox ✓"),it("input ✓"),it("HeavyChart — не рендерится"),it("HeavyTable — не рендерится")],tools:[it("Profiler: HeavyChart 40 мс, HeavyTable 30 мс на каждую букву"),it("lazy + Suspense, виртуализация, useTransition, memo/Compiler",'new')]}},
+   {line:[], t:"Итог", x:"Измерить Profiler'ом → держать состояние ближе к месту использования → code splitting → виртуализация → мемоизация там, где реально нужно.", fin:true, p:{before:[it("App ✓"),it("input ✓"),it("HeavyChart ✓ <span class=\"chip cbad\">зря</span>"),it("HeavyTable ✓ <span class=\"chip cbad\">зря</span>")],after:[it("SearchBox ✓"),it("input ✓"),it("HeavyChart — не рендерится"),it("HeavyTable — не рендерится")],tools:[it("Profiler: HeavyChart 40 мс, HeavyTable 30 мс на каждую букву"),it("lazy + Suspense, виртуализация, useTransition, memo/Compiler")]}},
+  ]
+},
+
+};
+
+/* ---------- СМЕЖНЫЕ ТЕМЫ: t — термин, d — суть (можно <code>), c — код (простой текст) ---------- */
+const CB = {t:'Колбэк (callback)', d:'Функция, которую передают в другую функцию как аргумент, чтобы та вызвала её позже — после события, таймера или ответа сервера. Сама по себе функция обычная, «колбэк» — это её роль.',
+  c:"function load(url, onDone) {\n  // ...загрузили\n  onDone('данные'); // вызываем переданную функцию\n}\nload('/api', (data) => console.log(data));"};
+const RELATED = {
+ vdom:[
+  {"t": "★ Virtual DOM", "d": "Описание интерфейса в виде обычных JS-объектов, которое React держит в памяти. При изменениях React сравнивает новое описание со старым и обновляет настоящий DOM только там, где есть разница.", "open": true},
+  {"t": "★ Reconciliation", "d": "Алгоритм сравнения старого и нового дерева элементов. Если тип элемента изменился — React пересоздаёт поддерево; если тот же — обновляет атрибуты и идёт вглубь. Элементы списка сопоставляет по <code>key</code>."},
+  {"t": "★ Рендер и коммит", "d": "Render — React вызывает компоненты и вычисляет, что должно получиться, DOM не трогает. Commit — применяет изменения к DOM, после этого запускаются эффекты."},
+  {"t": "★ Декларативность", "d": "Мы описываем, как интерфейс должен выглядеть при данном состоянии, а не шаги по изменению DOM. Как привести DOM к этому виду, решает React.", "c": "// декларативно\n<p>{isOpen ? 'Открыто' : 'Закрыто'}</p>\n// императивно\nel.textContent = isOpen ? 'Открыто' : 'Закрыто';"},
+ ],
+ jsx:[
+  {"t": "★ JSX", "d": "В вызовы функции <code>jsx()</code> (раньше <code>React.createElement</code>). Они возвращают обычный объект-описание элемента: тип, пропсы, дети.", "c": "const el = <h1 className=\"title\">Привет</h1>;\n// после сборки:\nconst el = jsx('h1', { className: 'title', children: 'Привет' });", "open": true},
+  {"t": "★ Фрагмент", "d": "Компонент возвращает одно значение. Фрагмент группирует несколько элементов без лишнего <code>div</code> в DOM. Если нужен <code>key</code> — пишут <code>&lt;Fragment key={...}&gt;</code>.", "c": "return (\n  <>\n    <Header />\n    <Main />\n  </>\n);"},
+  {"t": "★ Выражения в JSX", "d": "В фигурных скобках — любое JS-выражение. Условие — через <code>&amp;&amp;</code> или тернарный оператор, список — через <code>map</code> с <code>key</code>. <code>if</code> и <code>for</code> внутри JSX нельзя: это инструкции, а не выражения.", "c": "{isAuth && <Profile />}\n{isAuth ? <Profile /> : <Login />}\n{items.map((it) => <li key={it.id}>{it.name}</li>)}"},
+  {"t": "★ Подвох с &&", "d": "Отрисуется <code>0</code>. React не рисует <code>false</code>, <code>null</code>, <code>undefined</code>, но число 0 — рисует. Правильно: <code>{count &gt; 0 &amp;&amp; &lt;Badge /&gt;}</code>."},
+ ],
+ props:[
+  {"t": "★ Props", "d": "Входные данные компонента от родителя. Только для чтения: компонент не должен их менять. Новые props от родителя вызывают ре-рендер.", "c": "function Greeting({ name }) {\n  return <p>Привет, {name}</p>;\n}\n<Greeting name=\"Саша\" />", "open": true},
+  {"t": "★ State", "d": "Внутренние данные компонента, которые меняются со временем. Меняются только через сеттер — это сообщает React, что нужно перерисовать компонент.", "c": "const [count, setCount] = useState(0);"},
+  {"t": "★ Однонаправленный поток", "d": "Данные передаются сверху вниз через props. Ребёнок не меняет данные родителя напрямую, а вызывает колбэк, который родитель передал. Так понятно, кто владеет данными и откуда пришло изменение.", "c": "function Parent() {\n  const [text, setText] = useState('');\n  return <Input value={text} onChange={setText} />;\n}"},
+  {"t": "★ Подъём состояния", "d": "Если двум компонентам нужны одни данные, состояние переносят в их ближайшего общего родителя и передают вниз через props."},
+ ],
+ lifecycle:[
+  {"t": "★ Монтирование", "d": "<code>useEffect</code> с пустым массивом зависимостей. Он запускается после первого рендера и коммита в DOM.", "c": "useEffect(() => {\n  console.log('смонтирован');\n}, []);", "open": true},
+  {"t": "★ Размонтирование", "d": "Вернуть из эффекта функцию очистки. React вызовет её при размонтировании и перед каждым повторным запуском эффекта.", "c": "useEffect(() => {\n  const id = setInterval(tick, 1000);\n  return () => clearInterval(id);\n}, []);"},
+  {"t": "★ StrictMode", "d": "<code>StrictMode</code> в dev-режиме специально монтирует, размонтирует и снова монтирует компонент. Так видно эффекты без правильной очистки. В продакшене эффект запускается один раз."},
+  {"t": "★ useLayoutEffect", "d": "<code>useLayoutEffect</code> срабатывает синхронно после изменения DOM, но до отрисовки на экране — для замеров размеров без мигания. <code>useEffect</code> — после отрисовки, не блокирует экран. По умолчанию нужен <code>useEffect</code>."},
+ ],
+ rerender:[
+  {"t": "★ Ре-рендер", "d": "Повторный вызов функции компонента: React получает новый JSX, сравнивает с прошлым и обновляет в DOM только изменившееся. Ре-рендер не значит, что DOM перерисован целиком.", "open": true},
+  {"t": "★ Причины ре-рендера", "d": "Изменение его state, изменение контекста, который он использует, и ре-рендер родителя. Когда родитель рендерится, по умолчанию рендерятся все его дети."},
+  {"t": "★ Ре-рендер детей", "d": "Да. При ре-рендере родителя React по умолчанию вызывает всех детей, даже без props. Чтобы пропустить — обернуть <code>Child</code> в <code>React.memo</code>.", "c": "function Parent() {\n  const [n, setN] = useState(0);\n  return <><button onClick={() => setN(n + 1)}>+</button><Child /></>;\n}"},
+  {"t": "★ Одинаковое значение", "d": "Нет. React сравнивает новое значение со старым через <code>Object.is</code> и при равенстве пропускает обновление. Поэтому с объектами нужна новая ссылка, а не мутация."},
+ ],
+ key:[
+  {"t": "★ key", "d": "Чтобы React сопоставлял элементы старого и нового списка. По <code>key</code> он понимает, что добавилось, удалилось или переставилось, и сохраняет состояние нужного элемента.", "open": true},
+  {"t": "★ Индекс как key", "d": "При вставке в начало, удалении или сортировке индексы сдвигаются, и React сопоставляет не те элементы: состояние, например текст в инпуте, остаётся на месте, а данные уезжают. Нужен стабильный id из данных.", "c": "items.map((item, i) => <Row key={i} item={item} />)"},
+  {"t": "★ Сброс через key", "d": "Поменять ему <code>key</code>. Новый key — для React это другой компонент: старый размонтируется, новый смонтируется с чистым состоянием.", "c": "<Profile key={userId} userId={userId} />"},
+  {"t": "★ Уникальность key", "d": "Только среди соседей в одном списке. Глобально уникальным он быть не обязан. Генерировать key через <code>Math.random()</code> при рендере нельзя — он будет новым каждый раз."},
+ ],
+ controlled:[
+  {"t": "★ Управляемый компонент", "d": "Поле, значение которого хранится в state React и задаётся через <code>value</code>. Каждое изменение идёт через <code>onChange</code> и сеттер. Удобно для валидации и масок.", "c": "const [name, setName] = useState('');\n<input value={name} onChange={(e) => setName(e.target.value)} />", "open": true},
+  {"t": "★ Неуправляемый компонент", "d": "Поле хранит значение само, в DOM. Начальное значение — <code>defaultValue</code>, прочитать — через <code>ref</code> или <code>FormData</code> при отправке.", "c": "const ref = useRef(null);\n<input defaultValue=\"Саша\" ref={ref} />\n// ref.current.value"},
+  {"t": "★ value без onChange", "d": "Поле станет только для чтения: ввод не меняет state, а React всегда возвращает <code>value</code>. В консоли будет предупреждение. Нужен <code>onChange</code> или <code>readOnly</code>, или <code>defaultValue</code>."},
+ ],
+ events:[
+  {"t": "★ SyntheticEvent", "d": "Обёртка React над нативным событием браузера. API одинаковый во всех браузерах: <code>e.target</code>, <code>e.preventDefault()</code>, <code>e.stopPropagation()</code>. Нативное событие — в <code>e.nativeEvent</code>.", "open": true},
+  {"t": "★ Делегирование в React", "d": "На корневой контейнер приложения (с React 17). Событие всплывает до корня, и React сам вызывает нужные обработчики компонентов."},
+  {"t": "★ Передача обработчика", "d": "<code>remove(id)</code> вызывается сразу при рендере, а в <code>onClick</code> попадает его результат. Нужно передать функцию: <code>onClick={() =&gt; remove(id)}</code>.", "c": "<button onClick={remove(id)}>Удалить</button>"},
+ ],
+ usestate:[
+  {"t": "★ useState", "d": "Массив из двух элементов: текущее значение и функцию-сеттер. Аргумент — начальное значение, используется только при первом рендере.", "c": "const [count, setCount] = useState(0);", "open": true},
+  {"t": "★ «Асинхронность» сеттера", "d": "<code>0</code>. Сеттер не меняет переменную сразу: <code>count</code> — константа этого рендера. Новое значение будет в следующем рендере.", "c": "const [count, setCount] = useState(0);\nfunction click() {\n  setCount(count + 1);\n  console.log(count);\n}"},
+  {"t": "★ Batching", "d": "Объединение нескольких обновлений состояния в один ре-рендер. С React 18 работает везде: в обработчиках, промисах, таймерах.", "c": "setA(1);\nsetB(2);\nsetC(3); // один ре-рендер"},
+  {"t": "★ Функциональное обновление", "d": "Было 0 — станет 2. Первые два вызова оба ставят <code>0 + 1</code>. Функциональное обновление берёт актуальное значение из очереди: <code>1 + 1 = 2</code>. Если новое значение зависит от старого — используем <code>(prev) =&gt; ...</code>.", "c": "function click() {\n  setCount(count + 1);\n  setCount(count + 1);\n  setCount((c) => c + 1);\n}"},
+  {"t": "★ Ленивая инициализация", "d": "Чтобы тяжёлое начальное вычисление выполнилось только один раз, при первом рендере. Если передать результат вызова, он будет считаться на каждом рендере.", "c": "const [data] = useState(() => JSON.parse(localStorage.getItem('data')));"},
+ ],
+ useeffect:[
+  {"t": "★ useEffect", "d": "Для побочных эффектов, которые нельзя делать во время рендера: запросы к серверу, подписки, таймеры, ручная работа с DOM. Запускается после отрисовки.", "open": true},
+  {"t": "★ Массив зависимостей", "d": "Без массива — после каждого рендера. С пустым — один раз после монтирования. С <code>[id]</code> — после монтирования и каждый раз, когда изменился <code>id</code>.", "c": "useEffect(fn);          // ?\nuseEffect(fn, []);      // ?\nuseEffect(fn, [id]);    // ?"},
+  {"t": "★ Очистка эффекта", "d": "Перед каждым повторным запуском эффекта (когда изменились зависимости) и при размонтировании компонента. Нужна, чтобы не было утечек и двойных подписок.", "c": "useEffect(() => {\n  const id = setInterval(tick, 1000);\n  return () => clearInterval(id);\n}, [delay]);"},
+  {"t": "★ Гонка запросов", "d": "В очистке пометить старый запрос как неактуальный (флаг или <code>AbortController</code>). Тогда ответ на старый <code>id</code>, пришедший позже, не перезапишет данные нового.", "c": "useEffect(() => {\n  let ignore = false;\n  fetchUser(id).then((u) => { if (!ignore) setUser(u); });\n  return () => { ignore = true; };\n}, [id]);"},
+  {"t": "★ Лишний эффект", "d": "Когда значение можно вычислить из props или state прямо при рендере. Эффект ради синхронизации состояния даёт лишний ре-рендер.", "c": "// плохо\nuseEffect(() => setFull(first + ' ' + last), [first, last]);\n// хорошо\nconst full = first + ' ' + last;"},
+ ],
+ useref:[
+  {"t": "★ useRef", "d": "Хук, который возвращает объект <code>{ current }</code>, сохраняющийся между рендерами. Используют для доступа к DOM-элементам и для хранения значений без ре-рендера.", "c": "const inputRef = useRef(null);\n<input ref={inputRef} />\ninputRef.current.focus();", "open": true},
+  {"t": "★ useRef и useState", "d": "Изменение <code>ref.current</code> не вызывает ре-рендер и видно сразу. Изменение state вызывает ре-рендер, а новое значение появится в следующем рендере. Что показывается на экране — в state."},
+  {"t": "★ Хранение таймера", "d": "В <code>useRef</code>: значение нужно помнить между рендерами, но на экране оно не показывается. В обычной переменной оно пропадёт при ре-рендере, в state — вызовет лишний рендер.", "c": "const timerRef = useRef(null);\nfunction start() {\n  timerRef.current = setInterval(tick, 1000);\n}\nfunction stop() {\n  clearInterval(timerRef.current);\n}"},
+  {"t": "★ ref как проп", "d": "С React 19 <code>ref</code> — обычный проп функционального компонента. Раньше для этого нужен был <code>forwardRef</code>.", "c": "function Input({ ref, ...props }) {\n  return <input ref={ref} {...props} />;\n}"},
+ ],
+ usereducer:[
+  {"t": "★ useReducer", "d": "Хук состояния, где все изменения описаны в одной функции-редьюсере. Компонент только отправляет действия через <code>dispatch</code>.", "c": "const [state, dispatch] = useReducer(reducer, { count: 0 });\ndispatch({ type: 'inc' });", "open": true},
+  {"t": "★ Редьюсер", "d": "Чистой функцией: принимает состояние и действие, возвращает новое состояние, не мутирует старое и не делает побочных эффектов.", "c": "function reducer(state, action) {\n  switch (action.type) {\n    case 'inc': return { ...state, count: state.count + 1 };\n    default: return state;\n  }\n}"},
+  {"t": "★ useReducer или useState", "d": "Когда в состоянии много связанных полей и много разных действий над ними. Логика собрана в одном месте и тестируется отдельно. Для одного-двух простых значений хватает <code>useState</code>."},
+ ],
+ memo:[
+  {"t": "★ React.memo", "d": "Оборачивает компонент и пропускает его ре-рендер, если props не изменились. Сравнение поверхностное — по ссылкам.", "c": "const List = memo(function List({ items }) {\n  return items.map((i) => <Row key={i.id} item={i} />);\n});", "open": true},
+  {"t": "★ useMemo", "d": "Запоминает результат вычисления и пересчитывает его только при изменении зависимостей. Для тяжёлых вычислений и для стабильной ссылки на объект или массив.", "c": "const visible = useMemo(() => filterTodos(todos, tab), [todos, tab]);"},
+  {"t": "★ useCallback", "d": "Запоминает саму функцию между рендерами, пока не изменились зависимости. Нужен, когда функцию передают в <code>memo</code>-компонент или в зависимости эффекта.", "c": "const handleClick = useCallback(() => remove(id), [id]);"},
+  {"t": "★ Сломанная мемоизация", "d": "На каждом рендере <code>Parent</code> создаётся новая стрелка — новая ссылка в props, и <code>memo</code> видит изменение. Нужно стабилизировать функцию через <code>useCallback</code>.", "c": "const Child = memo(({ onClick }) => <button onClick={onClick}>+</button>);\nfunction Parent() {\n  const [n, setN] = useState(0);\n  return <Child onClick={() => setN(n + 1)} />;\n}"},
+ ],
+ compiler:[
+  {"t": "★ React Compiler", "d": "Инструмент сборки, который автоматически добавляет мемоизацию в компоненты и хуки. Убирает большую часть ручных <code>useMemo</code>, <code>useCallback</code> и <code>memo</code>.", "open": true},
+  {"t": "★ Условие работы", "d": "Соблюдать правила React: компоненты и хуки — чистые, props и state не мутируются, хуки вызываются по правилам. Код, который их нарушает, компилятор пропускает."},
+  {"t": "★ Нужны ли ещё useMemo", "d": "В основном нет: компилятор делает это сам. Вручную — в редких случаях, например для стабильной зависимости эффекта. А в проектах без компилятора они по-прежнему нужны, поэтому знать их обязательно."},
+ ],
+ hooksrules:[
+  {"t": "★ Правила хуков", "d": "Вызывать хуки только на верхнем уровне — не в условиях, циклах и вложенных функциях. Вызывать только из функциональных компонентов и своих хуков.", "open": true},
+  {"t": "★ Почему порядок", "d": "React связывает состояние с хуком по порядку вызова. Если хук пропущен в одном рендере, все следующие сдвигаются и получают чужое состояние.", "c": "if (isAuth) {\n  const [name, setName] = useState('');\n}\nconst [age, setAge] = useState(0);"},
+  {"t": "★ Условие внутри", "d": "Хук вызывать всегда, а условие ставить внутри него.", "c": "useEffect(() => {\n  if (!isAuth) return;\n  loadProfile();\n}, [isAuth]);"},
+ ],
+ customhook:[
+  {"t": "★ Кастомный хук", "d": "Функция, имя которой начинается с <code>use</code> и которая вызывает другие хуки. Выносит повторяющуюся логику с состоянием из компонентов.", "c": "function useToggle(initial = false) {\n  const [on, setOn] = useState(initial);\n  const toggle = () => setOn((v) => !v);\n  return [on, toggle];\n}", "open": true},
+  {"t": "★ Общее состояние?", "d": "Нет. Каждый вызов хука создаёт своё независимое состояние. Хук переиспользует логику, а не данные. Общие данные — через подъём состояния, контекст или стор."},
+  {"t": "★ Пример useFetch", "d": "Данные, флаг загрузки и ошибку. Внутри — <code>useState</code> для трёх значений и <code>useEffect</code>, который делает запрос и отменяет его в очистке.", "c": "const { data, loading, error } = useFetch('/api/users');"},
+ ],
+ context:[
+  {"t": "★ Prop drilling", "d": "Передача props через много промежуточных компонентов, которым эти данные не нужны, только чтобы донести их до глубокого потомка.", "open": true},
+  {"t": "★ Context", "d": "Создаём контекст, оборачиваем дерево в Provider со значением и читаем его в любом потомке через <code>useContext</code>. В React 19 можно писать <code>&lt;ThemeContext value=...&gt;</code> без <code>.Provider</code>.", "c": "const ThemeContext = createContext('light');\n<ThemeContext.Provider value=\"dark\"><App /></ThemeContext.Provider>\nconst theme = useContext(ThemeContext);"},
+  {"t": "★ Ре-рендер потребителей", "d": "Перерисовываются все компоненты, которые читают этот контекст. Если в <code>value</code> передавать новый объект на каждом рендере провайдера — они будут рендериться постоянно, поэтому <code>value</code> мемоизируют."},
+  {"t": "★ Context или Redux", "d": "Context — для редко меняющихся глобальных данных: тема, язык, пользователь. Redux — для большого часто меняющегося состояния: подписка на часть данных через селекторы, DevTools, middleware, асинхронная логика."},
+ ],
+ react19:[
+  {"t": "★ Actions", "d": "Асинхронные функции, которые можно передать в <code>action</code> формы или запустить через <code>startTransition</code>. React сам отслеживает состояние ожидания, ошибки и сбрасывает форму.", "c": "<form action={async (formData) => {\n  await save(formData.get('name'));\n}}>", "open": true},
+  {"t": "★ useActionState", "d": "Связывает действие с состоянием его результата: возвращает последний результат, обёрнутое действие для формы и флаг <code>isPending</code>.", "c": "const [state, formAction, isPending] = useActionState(saveName, null);\n<form action={formAction}>"},
+  {"t": "★ useOptimistic", "d": "Показывает ожидаемый результат сразу, до ответа сервера. Когда действие завершится, React заменит оптимистичное значение настоящим, а при ошибке откатит.", "c": "const [optimistic, addOptimistic] = useOptimistic(todos, (s, t) => [...s, t]);"},
+  {"t": "★ use()", "d": "Читает значение промиса (вместе с Suspense) или контекста. В отличие от других хуков, его можно вызывать в условиях и циклах.", "c": "const user = use(userPromise);\nconst theme = use(ThemeContext);"},
+ ],
+ transition:[
+  {"t": "★ useTransition", "d": "Помечает обновление состояния как несрочное. React сначала обработает срочные обновления (ввод, клики), а этот рендер может прервать и перезапустить. <code>isPending</code> — флаг для индикатора.", "c": "const [isPending, startTransition] = useTransition();\nstartTransition(() => setTab('posts'));", "open": true},
+  {"t": "★ useDeferredValue", "d": "Возвращает «отстающую» копию значения. Сначала рендер идёт со старым значением, а с новым — в фоне. Используют, когда нет доступа к сеттеру, например значение пришло в props.", "c": "const deferredQuery = useDeferredValue(query);\n<SearchResults query={deferredQuery} />"},
+  {"t": "★ Чем не debounce", "d": "Debounce ждёт фиксированное время. <code>useDeferredValue</code> не ждёт: React начинает фоновый рендер сразу и прерывает его, если пришло новое значение. На быстром устройстве задержки почти нет."},
+ ],
+ suspense:[
+  {"t": "★ React.lazy", "d": "Загружает компонент только когда он впервые нужен. Сборщик выносит его в отдельный файл — первоначальный бандл меньше. Используется вместе с <code>Suspense</code>.", "c": "const Settings = lazy(() => import('./Settings'));", "open": true},
+  {"t": "★ Suspense", "d": "Показывает <code>fallback</code>, пока компонент внутри ждёт: ленивую загрузку кода или данные через <code>use()</code>. Когда готово — показывает содержимое.", "c": "<Suspense fallback={<Spinner />}>\n  <Settings />\n</Suspense>"},
+  {"t": "★ Error Boundary", "d": "Компонент, который ловит ошибки рендера в своём поддереве и показывает запасной интерфейс вместо белого экрана. Пишется классом или через библиотеку <code>react-error-boundary</code>.", "c": "class ErrorBoundary extends Component {\n  state = { hasError: false };\n  static getDerivedStateFromError() { return { hasError: true }; }\n  render() { return this.state.hasError ? <p>Ошибка</p> : this.props.children; }\n}"},
+  {"t": "★ Что не ловит", "d": "Ошибки в обработчиках событий, в асинхронном коде (<code>setTimeout</code>, промисы), в самом Error Boundary и при серверном рендере. Их ловят через <code>try/catch</code>."},
+ ],
+ ssr:[
+  {"t": "★ CSR", "d": "Client-Side Rendering: сервер отдаёт почти пустой HTML и JS-бандл, интерфейс собирается в браузере. Минус — дольше первый показ и хуже SEO.", "open": true},
+  {"t": "★ SSR и гидратация", "d": "Server-Side Rendering: сервер отдаёт готовый HTML — контент виден сразу. Гидратация — браузер загружает JS и «оживляет» этот HTML: навешивает обработчики, подключает состояние."},
+  {"t": "★ Server Components", "d": "Компоненты, которые выполняются только на сервере: могут напрямую читать базу или файлы, их код не попадает в бандл. Нет <code>useState</code>, <code>useEffect</code> и обработчиков — для этого клиентские компоненты с <code>'use client'</code>."},
+ ],
+ classes_r:[
+  {"t": "★ Почему функции", "d": "Меньше кода, нет <code>this</code> и привязки методов, логику с состоянием легко переиспользовать через кастомные хуки. Новые возможности React (хуки, компилятор, Server Components) — для функций.", "open": true},
+  {"t": "★ Методы жизненного цикла", "d": "<code>componentDidMount</code> — <code>useEffect(fn, [])</code>; <code>componentDidUpdate</code> — <code>useEffect</code> с зависимостями; <code>componentWillUnmount</code> — функция очистки эффекта; <code>shouldComponentUpdate</code> — <code>React.memo</code>."},
+  {"t": "★ Где классы", "d": "Для Error Boundary — у функций нет аналога <code>componentDidCatch</code>. И в старом коде, который нужно поддерживать."},
+ ],
+ perf:[
+  {"t": "★ Profiler", "d": "С измерения: вкладка Profiler в React DevTools показывает, какие компоненты рендерились, сколько времени и почему. Оптимизировать вслепую нельзя.", "open": true},
+  {"t": "★ Состояние ниже", "d": "Держать состояние как можно ниже — в том компоненте, которому оно нужно. Тогда при его изменении перерисовывается маленькое поддерево, а не всё приложение. Ещё — передавать тяжёлые части через <code>children</code>."},
+  {"t": "★ Виртуализация", "d": "Рендер только видимых на экране элементов длинного списка вместо всех тысяч. При прокрутке строки переиспользуются. Библиотеки: <code>react-window</code>, <code>@tanstack/react-virtual</code>."},
+  {"t": "★ Code splitting", "d": "Разделение бандла на части, которые грузятся по требованию: страницы и тяжёлые компоненты через <code>lazy</code> и динамический <code>import()</code>. Первый экран загружается быстрее."},
+ ],
+
+};
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+/* ---------- движок ---------- */
+const $ = id => document.getElementById(id);
+const ORDER = Object.keys(TOPICS);
+let topic = ORDER[0], i = 0, timer = null;
+
+$('tabs').innerHTML = ORDER.map(k=>`<button class="tab" role="tab" data-k="${k}" aria-selected="false">${TOPICS[k].name}</button>`).join('');
+
+function itemsHTML(list, kind){
+  if(!list.length) return '<span class="empty">пусто</span>';
+  return list.map((x,n)=> x.cls==='raw' ? x.html
+    : `<div class="it ${x.cls||''} ${kind==='stack'&&n===list.length-1?'top':''}">${x.html}</div>`).join('');
+}
+function setTopic(k){
+  if(!TOPICS[k]) k = ORDER[0];
+  topic = k; i = 0; stop();
+  const T = TOPICS[k];
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected', b.dataset.k===k));
+  document.querySelector('.tab[aria-selected="true"]')?.scrollIntoView({block:'nearest',inline:'center'});
+  $('code').innerHTML = T.code.map((l,n)=>`<span class="ln" data-n="${n+1}"><i>${n+1}</i>${l||' '}</span>`).join('');
+  $('panels').innerHTML = T.panels.map(([id,label,kind,w])=>
+    `<div class="box ${w||''}" id="p-${id}"><p class="lbl">${label}</p><div class="${kind==='stack'?'stack':kind==='queue'?'queue':kind==='envs'?'envs':kind==='console'?'items console':'items'}" id="v-${id}"></div></div>`).join('');
+  $('sayText').innerHTML = T.say;
+  $('related').innerHTML = (RELATED[k]||[]).map(r=>`<details${r.open?' open':''}><summary>${r.t}</summary><div class="rb"><p>${r.d}</p>${r.c?`<pre>${esc(r.c)}</pre>`:''}</div></details>`).join('');
+  $('dots').innerHTML = T.steps.map((_,n)=>`<button class="dot" data-i="${n}" aria-label="Шаг ${n+1}"></button>`).join('');
+  try{ history.replaceState(null,'','#'+k) }catch(e){}
+  render();
+}
+function render(){
+  const T = TOPICS[topic], s = T.steps[i];
+  document.querySelectorAll('.ln').forEach(el=>{
+    const n=+el.dataset.n;
+    el.classList.toggle('on', s.line.includes(n));
+    el.classList.toggle('skip', (s.skip||[]).includes(n));
+  });
+  $('stepLbl').textContent = `Шаг ${i+1} из ${T.steps.length}`;
+  $('stepTitle').textContent = s.t;
+  $('stepText').innerHTML = s.x;
+  T.panels.forEach(([id,,kind])=>{
+    $('v-'+id).innerHTML = itemsHTML(s.p[id]||[], kind);
+    $('p-'+id).classList.toggle('hl', s.hl===id);
+  });
+  $('sayBox').hidden = !s.fin;
+  $('prev').disabled = i===0; $('next').disabled = i===T.steps.length-1;
+  $('count').textContent = `${i+1} / ${T.steps.length}`;
+  document.querySelectorAll('.dot').forEach((d,n)=>{d.classList.toggle('cur',n===i);d.classList.toggle('done',n<i)});
+}
+function go(n){ const L=TOPICS[topic].steps.length; i=Math.max(0,Math.min(L-1,n)); render(); }
+function stop(){ clearInterval(timer); timer=null; $('play').textContent='▶ Автоплей'; }
+$('tabs').onclick=e=>{const b=e.target.closest('.tab'); if(b) setTopic(b.dataset.k)};
+$('prev').onclick=()=>{stop();go(i-1)};
+$('next').onclick=()=>{stop();go(i+1)};
+$('dots').onclick=e=>{const d=e.target.closest('.dot'); if(d){stop();go(+d.dataset.i)}};
+$('play').onclick=()=>{
+  if(timer){stop();return}
+  if(i===TOPICS[topic].steps.length-1) go(0);
+  $('play').textContent='❚❚ Пауза';
+  timer=setInterval(()=>{ if(i>=TOPICS[topic].steps.length-1){stop();return} go(i+1) },4500);
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'){stop();go(i+1)}
+  if(e.key==='ArrowLeft'){stop();go(i-1)}
+});
+window.addEventListener('hashchange',()=>setTopic(location.hash.slice(1)));
+setTopic(location.hash.slice(1));
+</script>
+<script>
+(function(){function save(){try{var k=location.hash.slice(1);var t=document.querySelector('.tab[aria-selected="true"]');
+localStorage.setItem('dojo-last',JSON.stringify({s:"react",n:"React",k:k,t:t?t.textContent.trim():'',at:Date.now()}))}catch(e){}}
+addEventListener('hashchange',save);addEventListener('load',function(){setTimeout(save,300)});
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('.tab'))setTimeout(save,50)});})();
+</script>
+</body>
+</html>
